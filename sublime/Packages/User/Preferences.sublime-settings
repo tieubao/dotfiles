@@ -1,0 +1,9 @@
+{
+	"color_scheme": "Packages/User/SublimeLinter/Monokai (SL).tmTheme",
+	"font_face": "Source Code Pro for Powerline",
+	"font_size": 12,
+	"ignored_packages":
+	[
+		"Vintage"
+	]
+}

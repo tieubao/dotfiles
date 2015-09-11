@@ -1,0 +1,1 @@
+{"url": "https://github.com/buaazp/Godef", "description": "Plugin of sublime to use godef to go to definitions accurately.", "sublime_text": "*", "version": "2015.06.16.06.40.38", "platforms": ["*"], "dependencies": []}
