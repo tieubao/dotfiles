@@ -1,2 +1,5 @@
 .DS_Store
 rc/.ssh
+rc/.git-credential-cache
+rc/mix/archives
+rc/.z

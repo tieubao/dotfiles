@@ -1,8 +1,5 @@
 # npm list -g --depth=0 	> npm-g-list.txt
 
-# # Install & home brew
-# ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-
 ##############################################################################################################
 ### homebrew!
 # (if your maching has /usr/local locked down (like google's), you can do this to place everything in ~/.homebrew
@@ -37,13 +34,36 @@ fi
 ###
 ##############################################################################################################
 
-
 ###
 ##############################################################################################################
+gem install cocoapods
+gem install tmuxinator
 
-sudo gem install cocoapods
-wget -O - https://raw.githubusercontent.com/nvbn/thefuck/master/install.sh | sh - && $0
+# gem query --local
+# cocoapods (0.39.0)
+# fastlane (1.49.0)
+# rvm (1.11.3.9)
+# synx (0.1.1)
+# tmuxinator (0.7.1)
+
 
 # setting up the sublime symlink
-ln -sf "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl" ~/bin/subl
+# ln -sf "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl" ~/bin/subl
 cp -rf "sublime/*" "~/Library/Application Support/Sublime Text 3/"
+
+###
+
+touch ~/.cdg_paths
+cp rc/cdscuts_list_echo /usr/local/bin/cdscuts_list_echo
+cp rc/cdscuts_glob_echo /usr/local/bin/cdscuts_glob_echo
+
+# Setup todo.sh
+touch /usr/local/bin/hey.txt
+
+cp rc/v /usr/local/bin
+pip install rainbowstream
+
+##############
+
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install

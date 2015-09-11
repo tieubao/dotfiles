@@ -8,3 +8,4 @@ npm install -g babel
 npm install -g bower
 npm install -g coffee
 npm install -g coffee-script
+npm install -g tldr

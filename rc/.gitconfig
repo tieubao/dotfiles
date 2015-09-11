@@ -8,7 +8,7 @@
 	name = Han Ngo
 	email = nntruonghan@gmail.com
 [core]
-	editor = subl -n -w
+	editor = vim
 	excludesfile = ~/.gitignore
   	autocrlf = input
 [credential]
@@ -21,12 +21,12 @@
   ci = commit -v
   co = checkout
   st = status
-[merge]
-  ff = only
+; [merge]
+  ; ff = only
 [commit]
   template = ~/.gitmessage
-[fetch]
-  prune = true
+; [fetch]
+  ; prune = true
 [rebase]
   autosquash = true
 [include]

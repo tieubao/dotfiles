@@ -1,3 +1,0 @@
-Bug Fixes:
-
-* Changed next/last error key bindings so not to prevent Sublime default New File key binding

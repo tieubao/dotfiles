@@ -1,3 +1,0 @@
-Bug Fixes
-
-* Moved chmod to post upgrade not pre upgrade

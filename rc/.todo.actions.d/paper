@@ -1,0 +1,110 @@
+#!/bin/bash
+# 2010 Matthew Bauer
+# License:  GPL, http://www.gnu.org/copyleft/gpl.html
+
+usage(){
+	echo "$(basename $0) [todo_file]"
+	echo "  Print your todo file."
+	echo "  Defaults to todo.txt"
+}
+
+get_tasks_raw(){
+	## If the file starts with a "/" use absolute path. Otherwise,
+	## try to find it in either $TODO_DIR or using a relative path
+	if [ "${1:0:1}" == / ]
+	then
+		## Absolute path
+		src="$1"
+	elif [ -f "$TODO_DIR/$1" ]
+	then
+		## Path relative to todo.sh directory
+		src="$TODO_DIR/$1"
+	elif [ -f "$1" ]
+	then
+		## Path relative to current working directory
+		src="$1"
+	else
+		echo "TODO: File $1 does not exist."
+		return 1
+	fi
+
+	cat "$src"
+}
+
+get_tasks_markdown(){
+	echo 'todo.txt-paper'
+	echo '===================='
+	echo
+
+	get_tasks_raw "$1" | while read line
+	do
+		echo "$line"
+	done
+}
+
+print_tasks(){
+	get_tasks_raw "$1" | lpr
+}
+
+if [ -z "$TODO_DIR" ]
+then
+	source ~/.todo/config
+fi
+
+if [ -z "$@" ]
+then
+	print_tasks "$TODO_FILE"
+	exit
+fi
+
+ran=0
+raw=0
+options=""
+
+while true; do
+	case "$1" in
+		usage|--help|-h|help)
+			usage
+			break
+		;;
+		-r|--raw)
+			raw=1
+		;;
+		-d|-p|--destination|--printer)
+			shift
+			if [ -z "$options" ]
+			then
+				options="-d $1"
+			else
+				options="$options -d $1"
+			fi
+		;;
+		-o|--options|-l|--lp|--lp-options)
+			shift
+			options="$1"
+		;;
+		-N|--no-raw|-R)
+			raw=0
+		;;
+		-n|--no-run)
+			ran=1
+		;;
+		'')
+			if [ $ran == 0 ]
+			then
+				print_tasks "$TODO_FILE"
+			fi
+			break
+		;;
+		*)
+			if [ $raw == 0 ]
+			then
+				print_tasks "$1"
+			else
+				get_tasks "$1"
+			fi
+			ran=1
+		;;
+	esac
+	shift
+done
