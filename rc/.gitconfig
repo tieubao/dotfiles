@@ -21,6 +21,8 @@
   ci = commit -v
   co = checkout
   st = status
+  up = pull --rebase --autostash
+
 ; [merge]
   ; ff = only
 [commit]

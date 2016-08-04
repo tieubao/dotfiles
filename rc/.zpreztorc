@@ -42,9 +42,6 @@ zstyle ':prezto:load' pmodule \
   'tmux' \
   'fasd'
 
-
-
-
 #
 # Autosuggestions
 #
