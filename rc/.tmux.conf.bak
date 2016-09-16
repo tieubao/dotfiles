@@ -1,0 +1,43 @@
+# Hierarchy:
+#  Server
+#  ㄴSession
+#    ㄴWindow
+#      ㄴPane
+
+# Options:
+# - Session options (set-option [-g] (set))
+# - Window options (set-window-option [-g] (setw))
+
+# -------------------------------------------------------------------
+# Session options
+# -------------------------------------------------------------------
+# Change bind key to ctrl-a
+unbind C-b
+set -g prefix C-a
+set -g prefix2 C-s
+
+# -------------------------------------------------------------------
+# Key bindings
+# -------------------------------------------------------------------
+
+# Split panes
+bind \ split-window -h # split horizontal
+bind - split-window -v # split vertical
+
+# Reload tmux config
+bind r source-file ~/.tmux.conf \; display-message "Reloaded!"
+
+# Clear screen
+bind C-l send-keys 'C-l'
+
+# -------------------------------------------------------------------
+# Tmux Plugin Manager
+# Install: git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+# -------------------------------------------------------------------
+
+# List of plugins
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'christoomey/vim-tmux-navigator'
+
+# Initialize TMUX plugin manager (keep this line at the very bottom of tmux.conf)
+run '~/.tmux/plugins/tpm/tpm'

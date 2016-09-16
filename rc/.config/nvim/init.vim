@@ -60,6 +60,7 @@ Plug 'slashmili/alchemist.vim'
 
 " Golang
 Plug 'nsf/gocode', { 'rtp': 'nvim', 'do': '~/.config/nvim/plugged/gocode/nvim/symlink.sh' }
+Plug 'fatih/vim-go'
 
 " Elm
 Plug 'elmcast/elm-vim'

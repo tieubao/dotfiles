@@ -26,6 +26,8 @@ values."
 
      auto-completion
      emacs-lisp
+     syntax-checking
+     version-control
      git
      github
      markdown
@@ -34,12 +36,10 @@ values."
             shell-default-height 30
             shell-default-position 'bottom)
 
-     syntax-checking
      ;; spell-checking
-     version-control
+     ;; themes-megapack
 
      colors
-     ;; themes-megapack
      osx
 
      go
@@ -61,6 +61,7 @@ values."
    ;; configuration in `dotspacemacs/user-config'.
    dotspacemacs-additional-packages
    '(
+     base16-theme
      editorconfig
      company
 
@@ -68,17 +69,15 @@ values."
      ag
      ctags
      project-explorer
-
-     flycheck-elixir
      helm-fuzzy-find
 
+     flycheck-elixir
+     flycheck-gometalinter
      direx
      go-direx
-
      go-projectile
-     flycheck-gometalinter
-
      git-gutter
+     vlf
      )
    ;; A list of packages and/or extensions that will not be install and loaded.
    dotspacemacs-excluded-packages '()
@@ -134,7 +133,8 @@ values."
    ;; List of themes, the first of the list is loaded when spacemacs starts.
    ;; Press <SPC> T n to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
-   dotspacemacs-themes '(spacemacs-dark
+   dotspacemacs-themes '(base16-eighties-dark
+                         spacemacs-dark
                          spacemacs-light
                          solarized-light
                          solarized-dark
@@ -292,9 +292,13 @@ you should place your code here."
   (setq gofmt-command "goimports")
 
   ;; change indentation
-  (setq-default tab-width 8)
+  (setq-default tab-width 4)
   (setq-default indent-tabs-mode nil)
   (setq tab-stop-list (number-sequence 8 200 8))
+
+  ;; ;; Show 80-column marker
+  ;; (define-globalized-minor-mode global-fci-mode fci-mode (lambda () (fci-mode 1)))
+  ;; (global-fci-mode 1)
 
   ;; flycheck
   (setq flycheck-gometalinter-fast t)
@@ -337,7 +341,8 @@ you should place your code here."
 
   ;; apply theme nerdtree for NeoTree
   (setq neo-theme 'nerd)
-  (call-interactively 'neotree-show)
+  (call-interactively 'neotree-find-project-root)
+  ;; (call-interactively 'neotree-show)
 
   (spacemacs/toggle-indent-guide-globally-on)
 
@@ -364,3 +369,18 @@ you should place your code here."
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("e254f8e18ba82e55572c5e18f3ac9c2bd6728a7e500f6cc216e0c6f6f8ea7003" "b4ec581daad15aa7020b722523dc6bcea850bfbdbe31bfeb11c45ea51899bd75" "50e7f9d112e821e42bd2b8410d50de966c35c7434dec12ddea99cb05dd368dd8" "03e3e79fb2b344e41a7df897818b7969ca51a15a67dc0c30ebbdeb9ea2cd4492" "e8e744a1b0726814ac3ab86ad5ccdf658b9ff1c5a63c4dc23841007874044d4a" "101a10b15bbbd0d5a0e56e4773e614962197886780afb2d62523a63a144ad96c" "e1551b5516e0a439b6ab019ba00cee866e735f66f22ff67a5d882ad0f1383454" "f245c9f24b609b00441a6a336bcc556fe38a6b24bfc0ca4aedd4fe23d858ba31" default))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(company-tooltip-common ((t (:inherit company-tooltip :weight bold :underline nil))))
+ '(company-tooltip-common-selection ((t (:inherit company-tooltip-selection :weight bold :underline nil)))))
