@@ -15,7 +15,6 @@ fi
 alias vimdiff='nvim -d'
 export EDITOR='nvim'
 export HOMEBREW_CASK_OPTS="--appdir=/Applications"
-
 # export TERM=xterm-256color
 [[ $TMUX = "" ]] && export TERM="xterm-256color"
 
@@ -149,7 +148,8 @@ export UNDERLINE='\\033[4m'
 
 # ------------------
 export MYVIMRC=~/.config/nvim/init.vim
-export ELIXIR_SERVER=~/Workspace/elixir/alchemist-server
+export ELIXIR_SERVER='/usr/local/share/src/alchemist-server'
 export FZF_DEFAULT_OPTS='--bind alt-j:down,alt-k:up'
 
 # export SSL_CERT_FILE=/usr/local/etc/openssl/cert.pem
+export HOMEBREW_GITHUB_API_TOKEN="84aae8d4f6e53eea7b0cc1eea93d40698d141304"

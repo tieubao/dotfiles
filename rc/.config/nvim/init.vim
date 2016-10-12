@@ -55,15 +55,18 @@ call plug#begin()
 
 " Elixir
 Plug 'elixir-lang/vim-elixir'
-Plug 'avdgaag/vim-phoenix'
 Plug 'slashmili/alchemist.vim'
+Plug 'avdgaag/vim-phoenix'
+Plug 'lucidstack/hex.vim'
 
 " Golang
-Plug 'nsf/gocode', { 'rtp': 'nvim', 'do': '~/.config/nvim/plugged/gocode/nvim/symlink.sh' }
 Plug 'fatih/vim-go'
+Plug 'garyburd/go-explorer'
+Plug 'nsf/gocode', { 'rtp': 'nvim', 'do': '~/.config/nvim/plugged/gocode/nvim/symlink.sh' }
 
-" Elm
-Plug 'elmcast/elm-vim'
+" " Elm
+" Plug 'elmcast/elm-vim'
+" Plug 'lambdatoast/elm.vim'
 
 " HTML
 Plug 'othree/html5.vim'
@@ -140,6 +143,7 @@ if has('nvim') && has('python3')
 
     Plug 'Shougo/deoplete.nvim', { 'do': function('DoRemote') }
     Plug 'zchee/deoplete-go', { 'do': 'make'}
+    Plug 'carlitux/deoplete-ternjs'
     Plug 'Shougo/neosnippet'
     Plug 'Shougo/neosnippet-snippets'
 endif
@@ -161,7 +165,8 @@ set background=dark
 colorscheme base16-eighties
 
 syntax enable
-syntax sync minlines=250
+syntax sync minlines=256
+set synmaxcol=300        " do not highlith very long lines
 if has("syntax")
     syntax on
 endif
@@ -207,10 +212,20 @@ map === mmgg=G`m^zz
 " a trick for sudo save
 cmap w!! w !sudo tee % >/dev/null
 
+" Do not show stupid q: window
+map q: :q
+
 inoremap <S-Tab> <C-x><C-l>
+
+" map jj to go to normal mode
+inoremap jj <Esc>
 
 " Ctrl + Space to auto complete on local buff
 imap <C-Space> <C-P>
+
+" Center search result
+" nnoremap n nzzzv
+" nnoremap N Nzzzv
 
 " Increase indent / tab of current line
 nmap <Leader>] >>
@@ -377,6 +392,17 @@ function! CopyCurrentFilePath() " {{{
     echo @+
 endfunction
 
+" Visual Mode */# from Scrooloose {{{
+function! s:VSetSearch()
+  let temp = @@
+  norm! gvy
+  let @/ = '\V' . substitute(escape(@@, '\'), '\n', '\\n', 'g')
+  let @@ = temp
+endfunction
+
+vnoremap * :<c-u>call <sid>vsetsearch()<cr>//<cr><c-o>
+vnoremap # :<c-u>call <sid>vsetsearch()<cr>??<cr><c-o>
+
 "-----------------------------------------------------------------------------
 " Backup
 "-----------------------------------------------------------------------------
@@ -528,9 +554,6 @@ nmap <silent> <leader>d <Plug>DashSearch
 let g:elm_format_autosave         = 1
 let g:elm_syntastic_show_warnings = 1
 
-" delimitMate
-let g:delimitMate_expand_cr=1   " Put new brace on newline after CR
-
 " -----------------------------------------------------------------------------
 " Easy Align
 " -----------------------------------------------------------------------------
@@ -557,3 +580,4 @@ exe 'source' '~/.vim-plug/lightline.vim'
 exe 'source' '~/.vim-plug/fzf.vim'
 exe 'source' '~/.vim-plug/deoplete.vim'
 exe 'source' '~/.vim-plug/go.vim'
+exe 'source' '~/.vim-plug/elixir.vim'

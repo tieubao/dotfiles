@@ -62,3 +62,9 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 
 # Copy dotfiles to $HOME
 cp -rf "./rc/*" "~/"
+
+# Download source file for Erlang and Elixir
+mkdir -p "/usr/local/share/src"
+git clone git@github.com:elixir-lang/elixir.git
+git clone git@github.com:erlang/otp.git
+git clone git@github.com:tonini/alchemist-server.git
