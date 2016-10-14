@@ -1,0 +1,267 @@
+"-----------------------------------------------------------------------------
+" Mapping keys
+"-----------------------------------------------------------------------------
+" remap Leader to , instead of \
+let mapleader = ","
+
+" format the entire file
+map === mmgg=G`m^zz
+
+" a trick for sudo save
+cmap w!! w !sudo tee % >/dev/null
+
+" Do not show stupid q: window
+map q: :q
+
+inoremap <S-Tab> <C-x><C-l>
+
+" map jj to go to normal mode
+inoremap jj <Esc>
+
+" Disable search highlighting
+nnoremap <silent> <Esc><Esc> :nohlsearch<CR><Esc>
+
+" Keep search results at the center of screen
+nmap n nzz
+nmap N Nzz
+nmap * *zz
+nmap # #zz
+nmap g* g*zz
+nmap g# g#zz
+
+" Select all text
+noremap vA ggVG
+
+"-----------------------------------------------------------------------------
+" Auto commands
+"-----------------------------------------------------------------------------
+nmap gt gt<sid>ts
+nmap gT gT<sid>ts
+nn <script> <sid>ts+ gt<sid>ts
+nn <script> <sid>ts- gT<sid>ts
+nmap <sid>ts <nop>
+
+"-----------------------------------------------------------------------------
+" Text formatting
+"-----------------------------------------------------------------------------
+set termencoding=utf-8  " we like utf-8
+set encoding=utf-8
+
+set laststatus=2
+set tabstop=4
+set softtabstop=4
+set shiftwidth=4
+set textwidth=0
+set smarttab
+set expandtab
+set smartindent
+set ttyfast
+set autoread
+set more
+" set cursorline!
+set splitright                  " Split vertical windows right to the current windows
+set splitbelow                  " Split horizontal windows below to the current windows
+
+" Use Unix as the standard file type
+set ffs=unix,dos,mac
+
+set ai "Auto indent
+set si "Smart indent
+set wrap "Wrap lines
+
+func! DeleteTrailingWS()
+    exe "normal mz"
+    %s/\s\+$//ge
+    exe "normal `z"
+endfunc
+autocmd BufWrite *.ex :call DeleteTrailingWS()
+autocmd BufWrite *.exs :call DeleteTrailingWS()
+
+" Visualize tabs, trailing whitespaces and funny characters
+" http://www.reddit.com/r/programming/comments/9wlb7/proggitors_do_you_like_the_idea_of_indented/c0esam1
+" https://wincent.com/blog/making-vim-highlight-suspicious-characters
+" set list
+" set listchars=nbsp:¬,tab:»·,trail:·
+set foldmethod=syntax
+set foldnestmax=10
+set nofoldenable                        "don't fold by default
+set foldlevel=1
+set clipboard+=unnamed                  " yanks go on clipboard instead
+set cinoptions=:0,p0,t0
+set cinwords=if,else,while,do,for,switch,case
+set cindent
+
+" Move a line of text using ALT+[jk] or Comamnd+[jk] on mac
+nmap <M-j> mz:m+<cr>`z
+nmap <M-k> mz:m-2<cr>`z
+vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
+vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
+
+if has("mac") || has("macunix")
+    nmap <D-j> <M-j>
+    nmap <D-k> <M-k>
+    vmap <D-j> <M-j>
+    vmap <D-k> <M-k>
+endif
+
+command! RemoveTrailingSpaces :silent! %s/\v(\s+$)|(\r+$)//g<bar>
+            \:exe 'normal ``'<bar>
+            \:echo 'Remove trailing spaces and ^Ms.'
+
+command! JustOneInnerSpace :let pos=getpos('.')<bar>
+            \:silent! s/\S\+\zs\s\+/ /g<bar>
+            \:silent! s/\s$//<bar>
+            \:call setpos('.', pos)<bar>
+            \:nohl<bar>
+            \:echo 'Just one space'
+
+command! CapitalizeWord :let pos=getpos('.')<bar>
+            \:exe 'normal guiw~'<bar>
+            \:call setpos('.', pos)
+
+command! UppercaseWord :let pos=getpos('.')<bar>
+            \:exe 'normal gUiw'<bar>
+            \:call setpos('.', pos)
+
+command! LowercaseWord :let pos=getpos('.')<bar>
+            \:exe 'normal guiw'<bar>
+            \:call setpos('.', pos)
+
+" Capitalize Inner word
+nnoremap <leader>tc :CapitalizeWord<CR>
+" UPPERCASE inner word
+nnoremap <leader>tu :UppercaseWord<CR>
+" lowercase inner word
+nnoremap <leader>tl :LowercaseWord<CR>
+
+" just one space on the line, preserving indent
+nnoremap <leader>tos :JustOneInnerSpace<CR>
+" remove trailing spaces
+nnoremap <leader>tts :RemoveTrailingSpaces<CR>
+
+" Copy current file path to clipboard
+nnoremap <leader>% :call CopyCurrentFilePath()<CR>
+function! CopyCurrentFilePath() " {{{
+    let @+ = expand('%')
+    echo @+
+endfunction
+
+" Visual Mode */# from Scrooloose {{{
+function! s:VSetSearch()
+  let temp = @@
+  norm! gvy
+  let @/ = '\V' . substitute(escape(@@, '\'), '\n', '\\n', 'g')
+  let @@ = temp
+endfunction
+
+vnoremap * :<c-u>call <sid>vsetsearch()<cr>//<cr><c-o>
+vnoremap # :<c-u>call <sid>vsetsearch()<cr>??<cr><c-o>
+
+"-----------------------------------------------------------------------------
+" Backup
+"-----------------------------------------------------------------------------
+set nobackup
+set nowritebackup
+set noswapfile
+set backupdir=~/tmp,/tmp
+set backupcopy=yes
+set backupskip=/tmp/*,$TMPDIR/*,$TMP/*,$TEMP/*
+set directory=/tmp
+
+"-----------------------------------------------------------------------------
+" Visual cues
+"-----------------------------------------------------------------------------
+
+" No annoying sound on errors
+set noerrorbells
+set visualbell
+set t_vb=
+
+" set paste
+set showmatch
+set incsearch
+set magic
+set ignorecase                        " case insensitive search
+set mat=5                             " bracket blinking
+
+set scrolloff=5
+set history=1000
+set surround
+set relativenumber
+set number
+set smartcase
+set hlsearch
+set timeoutlen=400
+
+set showmode
+set showcmd
+set autowrite
+set autoread
+
+" Starting from vim 7.3 undo can be persisted across sessions
+" http://www.reddit.com/r/vim/comments/kz84u/what_are_some_simple_yet_mindblowing_tweaks_to/c2onmqe
+if has("persistent_undo")
+    set undodir=~/.vim/undodir
+    set undofile
+endif
+
+highlight ExtraWhitespace ctermbg=yellow guibg=yellow
+match ExtraWhitespace /\s\+$/
+autocmd BufWinEnter * match ExtraWhitespace /\s\+$/
+autocmd InsertEnter * match ExtraWhitespace /\s\+\%#\@<!$/
+autocmd InsertLeave * match ExtraWhitespace /\s\+$/
+autocmd BufWinLeave * call clearmatches()
+
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" Splitting Windows
+nmap <Leader>\ :vsplit<CR>
+nmap <Leader>v :vsplit<CR>
+nmap <Leader>- :split<CR>
+nmap <Leader>h :split<CR>
+
+" " -------------------------------------------------------------------
+" " Splits
+" " -------------------------------------------------------------------
+" nnoremap <leader>v <C-w>v<C-w>l   " open a vertical split and switch to it (,v)
+" nnoremap <leader>h <C-w>s<C-w>j   " open a horizontal split and switch to it (,h)
+
+" Project Shortcuts
+" =================
+" Close Project
+nmap <Leader>q :action CloseProject<CR>
+nmap <Leader>w :action CloseAllEditorsButActive<CR>
+
+" Some Action commands to memic my native vim
+" For a list of :action try :actionlist
+" ===========================================
+" Hide open panels
+nmap <Leader>f :action HideAllWindows<CR>
+" Open Global Find Dialog box
+nmap <Leader><Leader>f :action FindInPath<CR>
+" Open recent project dialog box
+nmap <Leader><Leader>p :action ManageRecentProjects<CR>
+" Mapping to mimic BufferExplorer
+nmap <Leader>be :action Switcher<CR>
+" Toggle code minimap
+nmap <Leader>m :action CodeGlance.toggle<CR>
+" Nerdtree want to be
+nmap <Leader>nt :action ActivateProjectToolWindow<CR>
+
+nmap <Leader>bp :action ToggleLineBreakpoint<CR>
+" Some Git Shortcuts for view status, pull, and branches
+" Mapping mimic Fugitive in my native vim
+nmap <Leader>gs :action ChangesView.Commit<CR>
+nmap <Leader>gc :action ChangesView.Commit<CR>
+nmap <Leader>ga :action Git.Add<CR>
+nmap <Leader>gp :action Git.Pull<CR>
+nmap <Leader>gb :action Annotate<CR>
+nmap <Leader>gl :action Git.Log<CR>
+nmap <Leader>go :action Github.Open.In.Browser<CR>
+nmap <Leader>br :action Git.Branches<CR>
+
+" AceJump Plugin - Jump to Character
+nmap <Leader><Leader>w :action AceJumpAction<CR>
