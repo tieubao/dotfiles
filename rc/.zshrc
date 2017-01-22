@@ -32,9 +32,6 @@ export PATH="$PATH:${HOME}/Library/Android/sdk/platform-tools"
 export PATH=/Library/Developer/Toolchains/swift-latest.xctoolchain/usr/bin:"${PATH}"
 export JAVA_HOME=$(/usr/libexec/java_home)
 
-eval "$(docker-machine env dev)"
-# eval "$(docker-machine env default)"
-
 alias subl="open -a 'Sublime Text'"
 alias git=hub
 alias fuck='$(thefuck $(fc -ln -1))'
@@ -68,10 +65,6 @@ source "${HOME}/.zplugin/elixir.plugin.zsh"
 export ANDROID_NDK="${HOME}/Library/Android/sdk/ndk-bundle"
 export ANDROID_SDK="${HOME}/Library/Android/sdk"
 export ANDROID_HOME=$ANDROID_SDK
-
-docker-ip() {
-    docker inspect --format '{{ .NetworkSettings.IPAddress }}' "$@"
-}
 
 set-window-title() {
     window_title="\033]0;${PWD##*/}\007"

@@ -265,3 +265,4 @@ nmap <Leader>br :action Git.Branches<CR>
 
 " AceJump Plugin - Jump to Character
 nmap <Leader><Leader>w :action AceJumpAction<CR>
+

@@ -1,10 +1,35 @@
 "-----------------------------------------------------------------------------
 " Lightline
 "-----------------------------------------------------------------------------
+" let g:lightline = {
+            " \ 'colorscheme': 'wombat',
+            " \ 'active': {
+            " \   'left': [ [ 'mode', 'paste' ], [ 'fugitive', 'filename' ], ['ctrlpmark'] ],
+            " \   'right': [ [ 'syntastic', 'lineinfo' ], ['percent'], [ 'fileformat', 'fileencoding', 'filetype' ] ]
+            " \ },
+            " \ 'component_function': {
+            " \   'fugitive': 'LightLineFugitive',
+            " \   'filename': 'LightLineFilename',
+            " \   'fileformat': 'LightLineFileformat',
+            " \   'filetype': 'LightLineFiletype',
+            " \   'fileencoding': 'LightLineFileencoding',
+            " \   'mode': 'LightLineMode',
+            " \   'ctrlpmark': 'CtrlPMark',
+            " \ },
+            " \ 'component_expand': {
+            " \   'syntastic': 'SyntasticStatuslineFlag',
+            " \ },
+            " \ 'component_type': {
+            " \   'syntastic': 'error',
+            " \ },
+            " \ 'separator': { 'left': '', 'right': '' },
+            " \ 'subseparator': { 'left': '', 'right': '' }
+            " \ }
+            "
 let g:lightline = {
             \ 'colorscheme': 'wombat',
             \ 'active': {
-            \   'left': [ [ 'mode', 'paste' ], [ 'fugitive', 'filename' ], ['ctrlpmark'] ],
+            \   'left': [ [ 'mode', 'paste' ], [ 'fugitive', 'relativepath' ], ['ctrlpmark'] ],
             \   'right': [ [ 'syntastic', 'lineinfo' ], ['percent'], [ 'fileformat', 'fileencoding', 'filetype' ] ]
             \ },
             \ 'component_function': {

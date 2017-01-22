@@ -15,6 +15,7 @@ let g:syntastic_html_tidy_ignore_errors  = [" proprietary attribute " ,"trimming
 
 let g:syntastic_enable_elixir_checker = 1
 let g:syntastic_elixir_checkers = ['elixir']
+let g:syntastic_swift_checkers = ['swiftpm', 'swiftlint']
 
 " Press Ctrl-w + Shift-e to toggle syntastic
 " let g:syntastic_mode_map = { 'mode': 'active', 'passive_filetypes': ['go'] }

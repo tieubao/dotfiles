@@ -5,7 +5,14 @@
 if has('nvim') && has('python3')
     let g:deoplete#enable_at_startup = 1
     let g:deoplete#enable_smart_case = 1
-    let g:deoplete#auto_complete_start_length = 3
+    let g:deoplete#auto_complete_start_length = 1
+
+    let g:deoplete#keyword_patterns = {}
+    let g:deoplete#keyword_patterns._ = '[a-zA-Z_]\k*\(?'
+
+    let g:deoplete#tag#cache_limit_size = 5000000
+
+    let g:deoplete#auto_complete_delay = 50
 
     " neocomplete like
     set completeopt+=noinsert
@@ -14,8 +21,8 @@ if has('nvim') && has('python3')
     set completeopt+=noselect
 
     " <TAB>: completion.
-    inoremap <expr><tab> pumvisible() ? "\<C-n>" : "\<TAB>"
-    inoremap <expr><s-tab> pumvisible() ? "\<C-p>" : "\<TAB>"
+    " inoremap <expr><tab> pumvisible() ? "\<C-n>" : "\<TAB>"
+    " inoremap <expr><s-tab> pumvisible() ? "\<C-p>" : "\<TAB>"
 
     " <C-h>, <BS>: close popup and delete backword char.
     inoremap <expr><C-h> deoplete#smart_close_popup()."\<C-h>"

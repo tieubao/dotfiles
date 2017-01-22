@@ -64,6 +64,8 @@ Plug 'fatih/vim-go'
 Plug 'garyburd/go-explorer'
 Plug 'nsf/gocode', { 'rtp': 'nvim', 'do': '~/.config/nvim/plugged/gocode/nvim/symlink.sh' }
 
+Plug 'keith/swift.vim'
+
 " " Elm
 " Plug 'elmcast/elm-vim'
 " Plug 'lambdatoast/elm.vim'
@@ -131,9 +133,14 @@ Plug 'rizzatti/dash.vim'
 Plug 'Raimondi/delimitMate'
 Plug 'majutsushi/tagbar'
 Plug 'junegunn/vim-easy-align'
+Plug 'ashisha/image.vim'
+Plug 'tpope/vim-surround'
+Plug 'posva/vim-vue'
 
 " Indent guide
 Plug 'Yggdroot/indentLine'
+
+Plug 'editorconfig/editorconfig-vim'
 
 " Autocompletion
 if has('nvim') && has('python3')
@@ -547,6 +554,7 @@ let g:python3_host_skip_check = 1
 
 " Dash.app
 nmap <silent> <leader>d <Plug>DashSearch
+
 
 " ---------------------------------------------------------------------------
 "  Elm

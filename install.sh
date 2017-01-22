@@ -68,3 +68,8 @@ mkdir -p "/usr/local/share/src"
 git clone git@github.com:elixir-lang/elixir.git
 git clone git@github.com:erlang/otp.git
 git clone git@github.com:tonini/alchemist-server.git
+
+# Restore Xcode setting
+cp -rf "./FontAndColorThemes" "~/Library/Developer/Xcode/UserData/"
+
+
