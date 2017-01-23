@@ -72,4 +72,6 @@ git clone git@github.com:tonini/alchemist-server.git
 # Restore Xcode setting
 cp -rf "./FontAndColorThemes" "~/Library/Developer/Xcode/UserData/"
 
-
+# Restore Mac Terminal
+# ~/Library/Preferences/com.apple.Terminal.plist
+cp "./rc/com.apple.Terminal.plist" "~/Library/Preferences/"
