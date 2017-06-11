@@ -38,11 +38,6 @@ gem install tmuxinator
 gem install fastlane
 gem install synx
 
-# Setup docker-machine
-sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
-sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
-docker-machine create dev --driver xhyve --xhyve-experimental-nfs-share
-
 # Setup emacs
 git clone https://github.com/syl20bnr/spacemacs ~/.emacs.d
 
@@ -70,7 +65,7 @@ git clone git@github.com:erlang/otp.git
 git clone git@github.com:tonini/alchemist-server.git
 
 # Restore Xcode setting
-cp -rf "./FontAndColorThemes" "~/Library/Developer/Xcode/UserData/"
+cp -rf ./FontAndColorThemes ~/Library/Developer/Xcode/UserData/
 
 # Restore Mac Terminal
 # ~/Library/Preferences/com.apple.Terminal.plist
