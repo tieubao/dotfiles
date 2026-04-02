@@ -333,17 +333,21 @@ run_apply() {
     # since gum spin suppresses output.
     local apply_log
     apply_log=$(mktemp)
-    # shellcheck disable=SC2046
+    local apply_cmd="chezmoi apply"
+    if [ "$CONFIG_ONLY" -eq 1 ]; then
+        apply_cmd="chezmoi apply --exclude=scripts"
+    fi
+
     if command -v gum &>/dev/null && [ -t 0 ]; then
         if ! gum spin --spinner dot --title "Applying configs..." -- \
-            bash -c "chezmoi apply $(apply_flags) 2>'$apply_log'"; then
+            bash -c "$apply_cmd 2>\"$apply_log\""; then
             echo "==> ERROR: chezmoi apply failed"
             cat "$apply_log" 2>/dev/null
             rm -f "$apply_log"
             exit 2
         fi
     else
-        if ! chezmoi apply $(apply_flags) 2>"$apply_log"; then
+        if ! bash -c "$apply_cmd 2>\"$apply_log\""; then
             echo "==> ERROR: chezmoi apply failed"
             cat "$apply_log" 2>/dev/null
             rm -f "$apply_log"
