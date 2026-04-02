@@ -96,7 +96,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             end
 
             # Key CLI tools
-            for tool in fzf bat eza zoxide delta mise
+            for tool in fzf bat eza zoxide delta mise starship
                 if command -q $tool
                     echo "[ok] $tool"
                 else
@@ -171,6 +171,107 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "  4. Add encrypted files:"
             echo "     chezmoi add --encrypt ~/.kube/config"
 
+        case update u
+            # Source path is home/ inside the git repo; find the repo root
+            set -l src (chezmoi source-path)
+            if not test -d $src
+                echo "chezmoi source not found"
+                return 1
+            end
+            set -l repo (git -C $src rev-parse --show-toplevel 2>/dev/null)
+            if test -z "$repo"
+                echo "Not a git repo: $src"
+                return 1
+            end
+
+            echo "==> Pulling latest..."
+            git -C $repo pull --ff-only
+            or begin
+                echo "Pull failed. Resolve manually in $repo"
+                return 1
+            end
+
+            echo "==> Applying..."
+            chezmoi apply
+            and echo "Updated and applied."
+
+        case bench
+            echo "Fish shell startup benchmark (10 runs):"
+            echo ""
+            set -l total 0
+            for i in (seq 10)
+                set -l start (perl -MTime::HiRes=time -e 'printf "%.0f\n", time*1000')
+                fish -i -c exit 2>/dev/null
+                set -l end (perl -MTime::HiRes=time -e 'printf "%.0f\n", time*1000')
+                set -l ms (math "$end - $start")
+                set total (math "$total + $ms")
+                printf "  run %2d: %d ms\n" $i $ms
+            end
+            set -l avg (math "$total / 10")
+            echo ""
+            echo "Average: $avg ms"
+            if test $avg -gt 500
+                echo "Slow! (>500ms). Check config.fish for expensive init calls."
+            else if test $avg -gt 200
+                echo "Acceptable (200-500ms)."
+            else
+                echo "Fast (<200ms)."
+            end
+
+        case backup
+            echo "Dotfiles backup"
+            echo "==============="
+            echo ""
+
+            set -l config_path (chezmoi config-path 2>/dev/null)
+            set -l key_path "$HOME/.config/chezmoi/key.txt"
+
+            if test -z "$config_path"; or not test -f "$config_path"
+                echo "[!!] chezmoi config not found"
+                return 1
+            end
+
+            echo "[1/3] chezmoi config: $config_path"
+            if command -q op
+                echo "      Backing up to 1Password..."
+                op document create "$config_path" --title "chezmoi config (dotfiles backup)" --vault=Developer 2>/dev/null
+                and echo "      [ok] Uploaded to 1Password"
+                or echo "      [!!] Upload failed. Are you signed in? (op signin)"
+            else
+                echo "      [--] 1Password CLI not found, skipping"
+            end
+
+            echo ""
+            echo "[2/3] age encryption key: $key_path"
+            if test -f "$key_path"
+                if command -q op
+                    echo "      Backing up to 1Password..."
+                    op document create "$key_path" --title "chezmoi age key (dotfiles backup)" --vault=Developer 2>/dev/null
+                    and echo "      [ok] Uploaded to 1Password"
+                    or echo "      [!!] Upload failed"
+                else
+                    echo "      [--] 1Password CLI not found, skipping"
+                end
+            else
+                echo "      [--] No age key (not set up)"
+            end
+
+            echo ""
+            echo "[3/3] Local fallback: ~/dotfiles-backup/"
+            mkdir -p ~/dotfiles-backup
+            cp "$config_path" ~/dotfiles-backup/chezmoi.toml 2>/dev/null
+            and echo "      [ok] chezmoi.toml copied"
+            if test -f "$key_path"
+                cp "$key_path" ~/dotfiles-backup/key.txt 2>/dev/null
+                chmod 600 ~/dotfiles-backup/key.txt
+                and echo "      [ok] key.txt copied (mode 600)"
+            end
+            echo ""
+            echo "Done. Restore on a new machine:"
+            echo "  mkdir -p ~/.config/chezmoi"
+            echo "  cp ~/dotfiles-backup/chezmoi.toml ~/.config/chezmoi/"
+            echo "  cp ~/dotfiles-backup/key.txt ~/.config/chezmoi/  # if using age"
+
         case ''
             echo "Usage: dotfiles <command>"
             echo ""
@@ -178,11 +279,14 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "  edit <file>     Edit a managed file"
             echo "  diff            Show pending changes"
             echo "  sync            Apply all changes"
+            echo "  update          Pull latest + apply"
             echo "  status          Show managed file count + pending diffs"
             echo "  cd              cd to chezmoi source directory"
             echo "  refresh         Re-download external files (fish plugins)"
             echo "  add <file>      Add a new file to chezmoi"
             echo "  doctor          Run health check on dotfiles setup"
+            echo "  bench           Benchmark shell startup time"
+            echo "  backup          Back up chezmoi config + age key"
             echo "  encrypt-setup   Set up age encryption"
         case '*'
             chezmoi $argv

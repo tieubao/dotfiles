@@ -1,0 +1,75 @@
+# Starship prompt — managed by chezmoi
+# Docs: https://starship.rs/config/
+
+# Minimal, fast prompt. Shows only what matters right now.
+# Modules not listed here use starship defaults (hidden when inactive).
+
+format = """
+$directory\
+$git_branch\
+$git_status\
+$golang\
+$python\
+$nodejs\
+$rust\
+$elixir\
+$kubernetes\
+$terraform\
+$docker_context\
+$cmd_duration\
+$line_break\
+$character"""
+
+[character]
+success_symbol = "[❯](green)"
+error_symbol = "[❯](red)"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+format = "[$symbol$branch(:$remote_branch)]($style) "
+symbol = " "
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+
+[cmd_duration]
+min_time = 3_000
+format = "[$duration]($style) "
+
+[golang]
+format = "[$symbol($version)]($style) "
+symbol = " "
+
+[python]
+format = "[$symbol($version)]($style) "
+symbol = " "
+
+[nodejs]
+format = "[$symbol($version)]($style) "
+symbol = " "
+
+[rust]
+format = "[$symbol($version)]($style) "
+symbol = " "
+
+[elixir]
+format = "[$symbol($version)]($style) "
+symbol = " "
+
+[kubernetes]
+disabled = false
+format = "[$symbol$context(/$namespace)]($style) "
+symbol = "☸ "
+detect_folders = ["k8s", "kube", "kubernetes"]
+detect_env_vars = ["KUBECONFIG"]
+
+[terraform]
+format = "[$symbol$workspace]($style) "
+
+[docker_context]
+format = "[$symbol$context]($style) "
+symbol = " "
+only_with_files = true

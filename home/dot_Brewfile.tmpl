@@ -1,23 +1,27 @@
 # Brewfile — managed by chezmoi
 # Install: brew bundle --file=~/.Brewfile
 # Check:   brew bundle check --file=~/.Brewfile
+#
+# Layers: base (always) → dev (languages, infra) → apps (GUI casks)
+# Control via chezmoi init prompts: headless, use_1password
+
+# ══════════════════════════════════════════════════════════════════════
+# BASE — essentials for every machine
+# ══════════════════════════════════════════════════════════════════════
 
 # ── Taps ──────────────────────────────────────────────────────────────
 tap "homebrew/bundle"
 tap "homebrew/services"
 
 # ── Shell & Terminal ──────────────────────────────────────────────────
-brew "mas"                    # Mac App Store CLI
 brew "fish"
+brew "starship"               # cross-shell prompt (git, languages, cmd duration)
 brew "tmux"
-cask "ghostty"
 
 # ── Core CLI (modern replacements) ───────────────────────────────────
 brew "git"
 brew "gh"                     # GitHub CLI (replaces hub)
 brew "git-delta"              # better git diffs
-brew "git-filter-repo"
-brew "git-sizer"
 brew "jq"
 brew "yq"
 brew "ripgrep"                # rg (replaces ag/grep)
@@ -43,6 +47,14 @@ brew "lnav"                   # log navigator
 # ── Editors ───────────────────────────────────────────────────────────
 brew "neovim"
 
+# ── Security & Secrets ────────────────────────────────────────────────
+brew "age"                    # file encryption (chezmoi encrypted_ files)
+
+{{ if not .headless -}}
+# ══════════════════════════════════════════════════════════════════════
+# DEV — languages, toolchains, infra (skip on headless/server)
+# ══════════════════════════════════════════════════════════════════════
+
 # ── Version Management ────────────────────────────────────────────────
 brew "mise"                   # polyglot version manager (replaces nvm, rbenv, pyenv)
 
@@ -55,6 +67,10 @@ brew "uv"                     # fast Python package manager (replaces pipx)
 brew "python@3.12"
 brew "rustup"
 brew "elixir"
+
+# ── Git extras ────────────────────────────────────────────────────────
+brew "git-filter-repo"
+brew "git-sizer"
 
 # ── Containers & Infra ───────────────────────────────────────────────
 cask "orbstack"               # container runtime (replaces Docker Desktop)
@@ -86,12 +102,6 @@ brew "aichat"                 # multi-LLM CLI
 # llm via: uv tool install llm
 # opencode via: npm i -g opencode-ai
 
-# ── Security & Secrets ────────────────────────────────────────────────
-brew "age"                    # file encryption (chezmoi encrypted_ files)
-cask "1password"
-cask "1password-cli"
-brew "nordvpn"
-
 # ── Build Tools ───────────────────────────────────────────────────────
 brew "cmake"
 brew "protobuf"
@@ -101,6 +111,22 @@ brew "protobuf"
 # Install: curl -L https://foundry.paradigm.xyz | bash && foundryup
 brew "libusb"                 # hardware wallet (Ledger) support
 # leo-lang via: cargo install leo-lang (Aleo ZK)
+
+{{ if .use_1password -}}
+# ── 1Password ─────────────────────────────────────────────────────────
+cask "1password"
+cask "1password-cli"
+{{ end -}}
+
+brew "nordvpn"
+
+# ══════════════════════════════════════════════════════════════════════
+# APPS — GUI casks, fonts, Mac App Store
+# ══════════════════════════════════════════════════════════════════════
+
+# ── Terminal ──────────────────────────────────────────────────────────
+cask "ghostty"
+brew "mas"                    # Mac App Store CLI
 
 # ── macOS Apps ────────────────────────────────────────────────────────
 cask "visual-studio-code"
@@ -126,6 +152,7 @@ cask "font-jetbrains-mono"
 cask "font-jetbrains-mono-nerd-font"
 cask "font-fira-code-nerd-font"
 cask "font-source-code-pro"
+{{ end -}}
 
 # ── npm Global Tools ─────────────────────────────────────────────────
 # npm i -g ccusage markdownlint-cli2 npm-check-updates opencode-ai

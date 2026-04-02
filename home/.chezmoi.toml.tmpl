@@ -4,6 +4,7 @@
 {{- $name := promptStringOnce . "name" "Full name (for git)" -}}
 {{- $email := promptStringOnce . "email" "Email address" -}}
 {{- $editor := promptChoiceOnce . "editor" "Default editor" (list "code --wait" "zed --wait" "nvim" "vim") -}}
+{{- $headless := promptBoolOnce . "headless" "Headless/server environment (skip GUI apps, dev tools)" -}}
 {{- $use_1password := promptBoolOnce . "use_1password" "Use 1Password for secrets" -}}
 {{- $op_account := "" -}}
 {{- $op_vault := "" -}}
@@ -23,6 +24,7 @@
   name = {{ $name | quote }}
   email = {{ $email | quote }}
   editor = {{ $editor | quote }}
+  headless = {{ $headless }}
   use_1password = {{ $use_1password }}
   op_account = {{ $op_account | quote }}
   op_vault = {{ $op_vault | quote }}
