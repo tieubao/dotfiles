@@ -122,10 +122,10 @@ draw_wizard() {
     echo ""
 }
 
-# Erase gum's residual output line (cursor up + clear line)
+# Erase gum's residual output lines (header + input value)
 erase_gum_residual() {
-    tput cuu1 2>/dev/null  # move cursor up 1 line
-    tput el 2>/dev/null    # clear to end of line
+    tput cuu1 2>/dev/null; tput el 2>/dev/null  # input value line
+    tput cuu1 2>/dev/null; tput el 2>/dev/null  # header line
 }
 
 run_gum_wizard() {
@@ -323,19 +323,28 @@ run_apply() {
         echo "==> Config-only mode: deploying files, skipping scripts"
     fi
 
+    # Run apply, show spinner if gum available. Use temp file to capture errors
+    # since gum spin suppresses output.
+    local apply_log
+    apply_log=$(mktemp)
+    # shellcheck disable=SC2046
     if command -v gum &>/dev/null && [ -t 0 ]; then
-        # shellcheck disable=SC2046
-        if ! gum spin --spinner dot --title "Applying configs..." -- chezmoi apply $(apply_flags); then
+        if ! gum spin --spinner dot --title "Applying configs..." -- \
+            bash -c "chezmoi apply $(apply_flags) 2>'$apply_log'"; then
             echo "==> ERROR: chezmoi apply failed"
+            cat "$apply_log" 2>/dev/null
+            rm -f "$apply_log"
             exit 2
         fi
     else
-        # shellcheck disable=SC2046
-        if ! chezmoi apply $(apply_flags); then
+        if ! chezmoi apply $(apply_flags) 2>"$apply_log"; then
             echo "==> ERROR: chezmoi apply failed"
+            cat "$apply_log" 2>/dev/null
+            rm -f "$apply_log"
             exit 2
         fi
     fi
+    rm -f "$apply_log"
 }
 
 verify_deployment() {
