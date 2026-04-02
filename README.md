@@ -24,7 +24,7 @@ cd ~/dotfiles
 ./install.sh
 ```
 
-`chezmoi init` will prompt for your name, email, editor, and whether you use 1Password. Everything adapts accordingly.
+`chezmoi init` will prompt for your name, email, editor, headless mode, and whether you use 1Password. Everything adapts accordingly. On a headless/server machine, GUI apps, dev toolchains, and casks are skipped automatically.
 
 **Flags:**
 - `./install.sh --check` -- dry-run, validates without applying
@@ -68,7 +68,7 @@ chezmoi init --apply tieubao
 
 | Layer | Tools |
 |-------|-------|
-| **Shell** | Fish + plugins (autopair, done, sponge, async-prompt) |
+| **Shell** | Fish + Starship prompt + plugins (autopair, done, sponge, async-prompt) |
 | **Terminal** | Ghostty (catppuccin-mocha, JetBrains Mono) |
 | **Multiplexer** | tmux (C-a prefix, vim nav, fzf session picker, project launcher) |
 | **Editors** | VS Code + Zed (settings, extensions, MCP servers) |
@@ -93,7 +93,9 @@ dotfiles status                            # managed file count + pending diffs
 dotfiles cd                                # cd to chezmoi source directory
 dotfiles refresh                           # force re-download plugins
 dotfiles add <file>                        # add a new file to chezmoi
+dotfiles update                            # pull latest + apply
 dotfiles doctor                            # health check (tools, config, drift)
+dotfiles bench                             # benchmark shell startup time
 dotfiles encrypt-setup                     # guided age encryption setup
 ```
 
@@ -117,7 +119,7 @@ chezmoi apply --refresh-externals
 
 | File | What to change |
 |------|---------------|
-| `home/dot_Brewfile` | Add/remove Homebrew packages and casks |
+| `home/dot_Brewfile.tmpl` | Add/remove Homebrew packages and casks (layered: base/dev/apps) |
 | `home/dot_config/fish/config.fish.tmpl` | Shell aliases, paths, tool integrations |
 | `home/dot_config/ghostty/config` | Terminal theme, font, keybindings |
 | `home/dot_config/tmux/tmux.conf` | tmux prefix, keybindings, status bar |
@@ -234,7 +236,7 @@ home/                              # chezmoi source -> maps to $HOME
 │   ├── run_onchange_before_*      # Brewfile -> auto brew bundle
 │   ├── run_once_after_*           # one-time: shell, defaults, apps, tools
 │   └── run_onchange_after_*       # VS Code + Zed settings sync
-├── dot_Brewfile                   # all Homebrew packages
+├── dot_Brewfile.tmpl              # Homebrew packages (layered: base/dev/apps)
 ├── dot_gitconfig.tmpl             # git config (name + email templated)
 ├── dot_ssh/config.tmpl            # SSH config (1Password agent, modular config.d/)
 ├── dot_tool-versions              # global language versions (mise)
