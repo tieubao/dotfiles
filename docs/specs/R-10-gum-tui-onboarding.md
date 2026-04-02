@@ -18,8 +18,8 @@ There are 3 distinct ways a user sets up this repo. The gum wizard only applies 
 | Path | Command | Uses install.sh? | Gets gum? |
 |------|---------|-------------------|-----------|
 | **A: git clone** | `git clone ... && ./install.sh` | Yes | Yes |
-| **B: chezmoi direct** | `sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply tieubao` | No | No (native prompts) |
-| **C: brew + chezmoi** | `brew install chezmoi && chezmoi init --apply tieubao` | No | No (native prompts) |
+| **B: chezmoi direct** | `sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply dwarvesf` | No | No (native prompts) |
+| **C: brew + chezmoi** | `brew install chezmoi && chezmoi init --apply dwarvesf` | No | No (native prompts) |
 
 Paths B and C bypass install.sh entirely, so `.chezmoi.toml.tmpl` must remain fully functional with native `promptStringOnce` prompts as the fallback.
 
@@ -138,7 +138,7 @@ fi
 - [ ] `./install.sh --config-only` on existing machine: wizard, deploy configs only
 - [ ] `./install.sh` when toml exists: skips wizard, just applies
 - [ ] `./install.sh --force`: deletes toml, re-runs wizard
-- [ ] `chezmoi init --apply tieubao` (path B): native prompts work, no gum dependency
+- [ ] `chezmoi init --apply dwarvesf` (path B): native prompts work, no gum dependency
 - [ ] CI (no TTY, pre-written toml): no prompts, apply works
 - [ ] Ctrl+C during wizard: clean exit, no partial state
 - [ ] `chezmoi apply` with use_1password=true: no 1Password errors (secrets are examples only)

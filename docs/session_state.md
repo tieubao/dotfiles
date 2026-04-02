@@ -1,7 +1,7 @@
 # Session State
 
 Updated: 2026-04-02
-Project: tieubao/dotfiles
+Project: dwarvesf/dotfiles
 Phase: Stable, expanding
 
 ## POSITION
