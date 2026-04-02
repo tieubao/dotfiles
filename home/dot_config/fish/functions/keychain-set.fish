@@ -1,8 +1,8 @@
 # Store a secret in macOS Keychain
-# Usage: keychain_set SERVICE_NAME secret-value
-function keychain_set --description "Store a secret in macOS Keychain"
+# Usage: keychain-set SERVICE_NAME secret-value
+function keychain-set --description "Store a secret in macOS Keychain"
     if test (count $argv) -lt 2
-        echo "Usage: keychain_set SERVICE_NAME value"
+        echo "Usage: keychain-set SERVICE_NAME value"
         return 1
     end
     set -l service $argv[1]

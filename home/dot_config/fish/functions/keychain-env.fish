@@ -1,8 +1,8 @@
 # Load a macOS Keychain secret into an env var
-# Usage: keychain_env GITHUB_TOKEN "GITHUB_TOKEN"
-function keychain_env --description "Load a macOS Keychain secret into an env var"
+# Usage: keychain-env GITHUB_TOKEN "GITHUB_TOKEN"
+function keychain-env --description "Load a macOS Keychain secret into an env var"
     if test (count $argv) -lt 1
-        echo "Usage: keychain_env VAR_NAME [service-name]"
+        echo "Usage: keychain-env VAR_NAME [service-name]"
         return 1
     end
     set -l var_name $argv[1]
