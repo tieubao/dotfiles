@@ -1,0 +1,54 @@
+name: dotfiles-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 9 * * 1' # weekly Monday 9am UTC
+
+jobs:
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install chezmoi
+        run: brew install chezmoi
+
+      - name: Link source directory
+        run: |
+          mkdir -p ~/.local/share
+          ln -sf "$GITHUB_WORKSPACE/home" ~/.local/share/chezmoi
+
+      - name: Write test config (skip 1Password prompts)
+        run: |
+          mkdir -p ~/.config/chezmoi
+          cat > ~/.config/chezmoi/chezmoi.toml <<'EOF'
+          [data]
+            name = "CI Test"
+            email = "ci@test.com"
+            editor = "vim"
+            use_1password = false
+            op_account = ""
+            op_vault = ""
+          EOF
+
+      - name: Dry run apply
+        run: chezmoi apply --dry-run --verbose
+
+      - name: Validate managed files
+        run: |
+          count=$(chezmoi managed | wc -l | tr -d ' ')
+          echo "Managed files: $count"
+          chezmoi managed | head -50
+          if [ "$count" -eq 0 ]; then
+            echo "ERROR: No managed files found"
+            exit 1
+          fi
+
+      - name: Check templates render
+        run: |
+          chezmoi execute-template '{{ .chezmoi.os }}' | grep darwin
+          chezmoi execute-template '{{ .name }}' | grep "CI Test"
+          chezmoi execute-template '{{ .use_1password }}' | grep false
