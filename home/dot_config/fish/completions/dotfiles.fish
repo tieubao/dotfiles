@@ -9,4 +9,5 @@ complete -c dotfiles -n "__fish_use_subcommand" -a "add" -d "Add file to chezmoi
 complete -c dotfiles -n "__fish_use_subcommand" -a "update" -d "Pull latest + apply"
 complete -c dotfiles -n "__fish_use_subcommand" -a "doctor" -d "Health check"
 complete -c dotfiles -n "__fish_use_subcommand" -a "bench" -d "Benchmark shell startup"
+complete -c dotfiles -n "__fish_use_subcommand" -a "backup" -d "Back up config + age key"
 complete -c dotfiles -n "__fish_use_subcommand" -a "encrypt-setup" -d "Set up age encryption"

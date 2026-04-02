@@ -218,6 +218,60 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 echo "Fast (<200ms)."
             end
 
+        case backup
+            echo "Dotfiles backup"
+            echo "==============="
+            echo ""
+
+            set -l config_path (chezmoi config-path 2>/dev/null)
+            set -l key_path "$HOME/.config/chezmoi/key.txt"
+
+            if test -z "$config_path"; or not test -f "$config_path"
+                echo "[!!] chezmoi config not found"
+                return 1
+            end
+
+            echo "[1/3] chezmoi config: $config_path"
+            if command -q op
+                echo "      Backing up to 1Password..."
+                op document create "$config_path" --title "chezmoi config (dotfiles backup)" --vault=Developer 2>/dev/null
+                and echo "      [ok] Uploaded to 1Password"
+                or echo "      [!!] Upload failed. Are you signed in? (op signin)"
+            else
+                echo "      [--] 1Password CLI not found, skipping"
+            end
+
+            echo ""
+            echo "[2/3] age encryption key: $key_path"
+            if test -f "$key_path"
+                if command -q op
+                    echo "      Backing up to 1Password..."
+                    op document create "$key_path" --title "chezmoi age key (dotfiles backup)" --vault=Developer 2>/dev/null
+                    and echo "      [ok] Uploaded to 1Password"
+                    or echo "      [!!] Upload failed"
+                else
+                    echo "      [--] 1Password CLI not found, skipping"
+                end
+            else
+                echo "      [--] No age key (not set up)"
+            end
+
+            echo ""
+            echo "[3/3] Local fallback: ~/dotfiles-backup/"
+            mkdir -p ~/dotfiles-backup
+            cp "$config_path" ~/dotfiles-backup/chezmoi.toml 2>/dev/null
+            and echo "      [ok] chezmoi.toml copied"
+            if test -f "$key_path"
+                cp "$key_path" ~/dotfiles-backup/key.txt 2>/dev/null
+                chmod 600 ~/dotfiles-backup/key.txt
+                and echo "      [ok] key.txt copied (mode 600)"
+            end
+            echo ""
+            echo "Done. Restore on a new machine:"
+            echo "  mkdir -p ~/.config/chezmoi"
+            echo "  cp ~/dotfiles-backup/chezmoi.toml ~/.config/chezmoi/"
+            echo "  cp ~/dotfiles-backup/key.txt ~/.config/chezmoi/  # if using age"
+
         case ''
             echo "Usage: dotfiles <command>"
             echo ""
@@ -232,6 +286,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "  add <file>      Add a new file to chezmoi"
             echo "  doctor          Run health check on dotfiles setup"
             echo "  bench           Benchmark shell startup time"
+            echo "  backup          Back up chezmoi config + age key"
             echo "  encrypt-setup   Set up age encryption"
         case '*'
             chezmoi $argv

@@ -96,6 +96,7 @@ dotfiles add <file>                        # add a new file to chezmoi
 dotfiles update                            # pull latest + apply
 dotfiles doctor                            # health check (tools, config, drift)
 dotfiles bench                             # benchmark shell startup time
+dotfiles backup                            # back up config + age key to 1Password
 dotfiles encrypt-setup                     # guided age encryption setup
 ```
 
