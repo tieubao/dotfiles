@@ -144,15 +144,15 @@ set -gx OPENAI_API_KEY "{{ onepasswordRead "op://Developer/OpenAI/password" }}"
 
 **With macOS Keychain:**
 ```fish
-keychain_set MY_TOKEN "secret-value"   # store
-keychain_env MY_TOKEN                  # load into current shell
+keychain-set MY_TOKEN "secret-value"   # store
+keychain-env MY_TOKEN                  # load into current shell
 ```
 
 **On-demand loading (no apply needed):**
 ```fish
-op_env GITHUB_TOKEN "op://Vault/GitHub Token/password"   # 1Password
-keychain_env MY_TOKEN                                     # Keychain
-web3_env                                                  # ETH_RPC_URL + Etherscan
+op-env GITHUB_TOKEN "op://Vault/GitHub Token/password"   # 1Password
+keychain-env MY_TOKEN                                     # Keychain
+web3-env                                                  # ETH_RPC_URL + Etherscan
 ```
 
 ### Encrypted files (age)
@@ -243,8 +243,8 @@ home/                              # chezmoi source -> maps to $HOME
     ├── fish/
     │   ├── config.fish.tmpl       # main config (paths, aliases, integrations)
     │   ├── conf.d/secrets.fish.tmpl  # secrets via 1Password / Keychain
-    │   ├── functions/             # dotfiles, dotfiles-drift, cdg, op_env,
-    │   │                          # keychain_env, keychain_set, tx, web3_env,
+    │   ├── functions/             # dotfiles, dotfiles-drift, cdg, op-env,
+    │   │                          # keychain-env, keychain-set, tx, web3-env,
     │   │                          # render-img
     │   └── completions/           # tab completions for custom functions
     ├── ghostty/config             # terminal config

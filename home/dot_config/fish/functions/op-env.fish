@@ -1,8 +1,8 @@
 # Load a 1Password secret into an env var on-demand
-# Usage: op_env GITHUB_TOKEN "op://Developer/GitHub Token/password"
-function op_env --description "Load a 1Password secret into an env var"
+# Usage: op-env GITHUB_TOKEN "op://Developer/GitHub Token/password"
+function op-env --description "Load a 1Password secret into an env var"
     if test (count $argv) -lt 2
-        echo "Usage: op_env VAR_NAME \"op://Vault/Item/Field\""
+        echo "Usage: op-env VAR_NAME \"op://Vault/Item/Field\""
         return 1
     end
     set -l var_name $argv[1]
