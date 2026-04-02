@@ -124,22 +124,27 @@ run_gum_wizard() {
 
     local name email editor headless use_1password op_account op_vault
 
-    # --- Step 1: Identity ---
+    # Helper: run gum input, then immediately redraw to hide gum's residual output
+    gum_input() {
+        local result
+        result=$(gum input "$@")
+        printf '%s' "$result"
+    }
+
+    # --- Step 1: Name ---
     draw_wizard 1
     gum style --foreground 212 --bold "  Identity"
     echo ""
-
-    name=$(gum input --header "  Name:" --placeholder "Full name (for git)" \
+    name=$(gum_input --header "  Name:" --placeholder "Full name (for git)" \
         --value "$(git config user.name 2>/dev/null || true)" \
         --header.foreground 244)
     wiz_name="$name"
 
+    # --- Step 1b: Email ---
     draw_wizard 1
     gum style --foreground 212 --bold "  Identity"
     echo ""
-    gum style --foreground 10 "  ✓ Name: $name"
-
-    email=$(gum input --header "  Email:" --placeholder "you@example.com" \
+    email=$(gum_input --header "  Email:" --placeholder "you@example.com" \
         --value "$(git config user.email 2>/dev/null || true)" \
         --header.foreground 244)
     wiz_email="$email"
@@ -148,7 +153,6 @@ run_gum_wizard() {
     draw_wizard 2
     gum style --foreground 212 --bold "  Editor"
     echo ""
-
     editor=$(gum choose --header "  Pick your default editor:" \
         --cursor.foreground 212 --selected.foreground 10 \
         --header.foreground 244 \
@@ -159,7 +163,6 @@ run_gum_wizard() {
     draw_wizard 3
     gum style --foreground 212 --bold "  Environment"
     echo ""
-
     if gum confirm "  Headless/server? (skip GUI apps, dev tools)"; then
         headless=true
     else
@@ -171,7 +174,6 @@ run_gum_wizard() {
     draw_wizard 4
     gum style --foreground 212 --bold "  Secrets"
     echo ""
-
     op_account=""
     op_vault=""
     if gum confirm "  Use 1Password for secrets?"; then
@@ -181,17 +183,14 @@ run_gum_wizard() {
         draw_wizard 4
         gum style --foreground 212 --bold "  Secrets"
         echo ""
-
-        op_account=$(gum input --header "  1Password account:" --placeholder "my.1password.com" \
+        op_account=$(gum_input --header "  1Password account:" --placeholder "my.1password.com" \
             --value "my.1password.com" --header.foreground 244)
         wiz_account="$op_account"
 
         draw_wizard 4
         gum style --foreground 212 --bold "  Secrets"
         echo ""
-        gum style --foreground 10 "  ✓ Account: $op_account"
-
-        op_vault=$(gum input --header "  1Password vault:" --placeholder "Developer" \
+        op_vault=$(gum_input --header "  1Password vault:" --placeholder "Developer" \
             --value "Developer" --header.foreground 244)
         wiz_vault="$op_vault"
     else
@@ -203,7 +202,6 @@ run_gum_wizard() {
     draw_wizard 4
     gum style --foreground 212 --bold "  All set!"
     echo ""
-
     if ! gum confirm --affirmative "Apply" --negative "Cancel" "  Save this config?"; then
         echo "==> Cancelled."
         exit 0
