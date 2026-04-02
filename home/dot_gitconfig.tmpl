@@ -5,10 +5,10 @@
 [color]
   ui = auto
 [user]
-  name = Han Ngo
+  name = {{ .name }}
   email = {{ .email }}
 [core]
-  editor = vim
+  editor = {{ .editor | replace " --wait" "" }}
   excludesfile = ~/.gitignore
   autocrlf = input
   pager = delta

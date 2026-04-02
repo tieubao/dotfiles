@@ -1,11 +1,21 @@
 # chezmoi config — prompted on `chezmoi init`
 # Secrets are pulled from 1Password + macOS Keychain at `chezmoi apply` time.
 
+{{- $name := promptStringOnce . "name" "Full name (for git)" -}}
 {{- $email := promptStringOnce . "email" "Email address" -}}
-{{- $op_account := promptStringOnce . "op_account" "1Password account (e.g. my.1password.com)" -}}
-{{- $op_vault := promptStringOnce . "op_vault" "1Password vault for dev secrets (e.g. Developer)" -}}
+{{- $editor := promptChoiceOnce . "editor" "Default editor" (list "code --wait" "zed --wait" "nvim" "vim") -}}
+{{- $use_1password := promptBoolOnce . "use_1password" "Use 1Password for secrets" -}}
+{{- $op_account := "" -}}
+{{- $op_vault := "" -}}
+{{- if $use_1password -}}
+{{-   $op_account = promptStringOnce . "op_account" "1Password account (e.g. my.1password.com)" -}}
+{{-   $op_vault = promptStringOnce . "op_vault" "1Password vault for dev secrets (e.g. Developer)" -}}
+{{- end -}}
 
 [data]
+  name = {{ $name | quote }}
   email = {{ $email | quote }}
+  editor = {{ $editor | quote }}
+  use_1password = {{ $use_1password }}
   op_account = {{ $op_account | quote }}
   op_vault = {{ $op_vault | quote }}

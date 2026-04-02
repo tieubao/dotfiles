@@ -3,7 +3,7 @@ if status is-interactive
     eval (/opt/homebrew/bin/brew shellenv)
 
     # Editor
-    set -gx EDITOR "code --wait"
+    set -gx EDITOR "{{ .editor }}"
     set -gx VISUAL $EDITOR
     set -gx HOMEBREW_CASK_OPTS "--appdir=/Applications"
 

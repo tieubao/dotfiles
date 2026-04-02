@@ -40,7 +40,11 @@ Used in: `secrets.fish.tmpl`, `dot_gitconfig.tmpl`, `dot_config/zed/settings.jso
 {{ keyring "service-name" .chezmoi.username }}
 ```
 
-Template variables (`.email`, `.op_vault`, `.op_account`) are prompted once during `chezmoi init` and cached.
+Template variables are prompted once during `chezmoi init` and cached:
+- `.name`, `.email` — git identity
+- `.editor` — chosen editor (`code --wait`, `zed --wait`, `nvim`, `vim`)
+- `.use_1password` — boolean, gates all 1Password sections
+- `.op_account`, `.op_vault` — only prompted if `use_1password` is true
 
 ### Script execution order
 
