@@ -138,7 +138,7 @@ run_gum_wizard() {
 
     local name email editor headless use_1password op_account op_vault
 
-    # --- Step 1: Name ---
+    # --- Step 1: Identity (name + email, no redraw between them) ---
     draw_wizard 1
     gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
     echo ""
@@ -147,11 +147,6 @@ run_gum_wizard() {
         --value "$(git config user.name 2>/dev/null || true)" \
         --cursor.foreground "$WIZ_ACCENT")
     wiz_name="$name"
-
-    # --- Step 1b: Email ---
-    draw_wizard 1
-    gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
-    echo ""
     gum style --foreground "$WIZ_DIM" "  Email:"
     email=$(gum_ask --placeholder "you@example.com" \
         --value "$(git config user.email 2>/dev/null || true)" \
@@ -194,18 +189,10 @@ run_gum_wizard() {
     if gum confirm "  Use 1Password for secrets?"; then
         use_1password=true
         wiz_1pass="enabled"
-
-        draw_wizard 4
-        gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
-        echo ""
         gum style --foreground "$WIZ_DIM" "  1Password account:"
         op_account=$(gum_ask --placeholder "my.1password.com" \
             --value "my.1password.com" --cursor.foreground "$WIZ_ACCENT")
         wiz_account="$op_account"
-
-        draw_wizard 4
-        gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
-        echo ""
         gum style --foreground "$WIZ_DIM" "  1Password vault:"
         op_vault=$(gum_ask --placeholder "Developer" \
             --value "Developer" --cursor.foreground "$WIZ_ACCENT")
