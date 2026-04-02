@@ -58,6 +58,11 @@ if status is-interactive
         direnv hook fish | source
     end
 
+    # 1Password CLI completions (generated once, not fetched from URL)
+    if command -q op; and not test -f $XDG_CONFIG_HOME/fish/completions/op.fish
+        op completion fish > $XDG_CONFIG_HOME/fish/completions/op.fish
+    end
+
     # pnpm
     set -gx PNPM_HOME $HOME/Library/pnpm
     fish_add_path $PNPM_HOME
