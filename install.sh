@@ -512,13 +512,13 @@ if [ "$CHECK_ONLY" -eq 0 ] && [ -f "$HOME/.Brewfile" ] && command -v brew &>/dev
                     done
                     echo ""
                 fi
-                gum style --foreground 214 "  Install: brew bundle --file=~/.Brewfile --no-lock"
+                gum style --foreground 214 "  Install: brew bundle --file=~/.Brewfile"
             else
                 echo "==> $total_missing packages not yet installed ($formulae_count CLI, $casks_count apps)"
                 [ -n "$truly_missing_formulae" ] && echo "  CLI: $truly_missing_formulae" | tr '\n' ', '
                 [ -n "$truly_missing_casks" ] && echo "  Apps: $truly_missing_casks" | tr '\n' ', '
                 echo ""
-                echo "  Install: brew bundle --file=~/.Brewfile --no-lock --no-upgrade"
+                echo "  Install: brew bundle --file=~/.Brewfile --no-upgrade"
             fi
         fi
     fi
