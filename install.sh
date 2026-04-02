@@ -89,11 +89,16 @@ apply_flags() {
 
 # --- Gum wizard ---
 
+# Colors: 75=steel blue, 117=light blue, 251=light gray, 10=green
+WIZ_ACCENT=75
+WIZ_LIGHT=117
+WIZ_DIM=251
+
 # Draw the wizard header + progress bar + completed answers
 draw_wizard() {
     local step=$1 total=4
     clear
-    gum style --border double --padding "1 2" --border-foreground 212 \
+    gum style --border rounded --padding "1 2" --border-foreground "$WIZ_ACCENT" \
         "  dotfiles setup  "
     echo ""
 
@@ -103,18 +108,24 @@ draw_wizard() {
     local bar=""
     for ((i=0; i<filled; i++)); do bar+="█"; done
     for ((i=0; i<empty; i++)); do bar+="░"; done
-    gum style --foreground 212 "  $bar  Step $step/$total"
+    gum style --foreground "$WIZ_ACCENT" "  $bar  Step $step/$total"
     echo ""
 
     # Show completed answers
-    [ -n "${wiz_name+x}" ] && gum style --foreground 10 "  ✓ Name:      $wiz_name"
-    [ -n "${wiz_email+x}" ] && gum style --foreground 10 "  ✓ Email:     $wiz_email"
-    [ -n "${wiz_editor+x}" ] && gum style --foreground 10 "  ✓ Editor:    $wiz_editor"
-    [ -n "${wiz_headless+x}" ] && gum style --foreground 10 "  ✓ Headless:  $wiz_headless"
-    [ -n "${wiz_1pass+x}" ] && gum style --foreground 10 "  ✓ 1Password: $wiz_1pass"
-    [ -n "${wiz_account+x}" ] && gum style --foreground 10 "  ✓ Account:   $wiz_account"
-    [ -n "${wiz_vault+x}" ] && gum style --foreground 10 "  ✓ Vault:     $wiz_vault"
+    [ -n "${wiz_name+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Name:      $wiz_name"
+    [ -n "${wiz_email+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Email:     $wiz_email"
+    [ -n "${wiz_editor+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Editor:    $wiz_editor"
+    [ -n "${wiz_headless+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Headless:  $wiz_headless"
+    [ -n "${wiz_1pass+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ 1Password: $wiz_1pass"
+    [ -n "${wiz_account+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Account:   $wiz_account"
+    [ -n "${wiz_vault+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Vault:     $wiz_vault"
     echo ""
+}
+
+# Erase gum's residual output line (cursor up + clear line)
+erase_gum_residual() {
+    tput cuu1 2>/dev/null  # move cursor up 1 line
+    tput el 2>/dev/null    # clear to end of line
 }
 
 run_gum_wizard() {
@@ -124,44 +135,39 @@ run_gum_wizard() {
 
     local name email editor headless use_1password op_account op_vault
 
-    # Helper: run gum input, then immediately redraw to hide gum's residual output
-    gum_input() {
-        local result
-        result=$(gum input "$@")
-        printf '%s' "$result"
-    }
-
     # --- Step 1: Name ---
     draw_wizard 1
-    gum style --foreground 212 --bold "  Identity"
+    gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
     echo ""
-    name=$(gum_input --header "  Name:" --placeholder "Full name (for git)" \
+    name=$(gum input --header "  Name:" --placeholder "Full name (for git)" \
         --value "$(git config user.name 2>/dev/null || true)" \
-        --header.foreground 244)
+        --header.foreground "$WIZ_DIM" --cursor.foreground "$WIZ_ACCENT")
+    erase_gum_residual
     wiz_name="$name"
 
     # --- Step 1b: Email ---
     draw_wizard 1
-    gum style --foreground 212 --bold "  Identity"
+    gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
     echo ""
-    email=$(gum_input --header "  Email:" --placeholder "you@example.com" \
+    email=$(gum input --header "  Email:" --placeholder "you@example.com" \
         --value "$(git config user.email 2>/dev/null || true)" \
-        --header.foreground 244)
+        --header.foreground "$WIZ_DIM" --cursor.foreground "$WIZ_ACCENT")
+    erase_gum_residual
     wiz_email="$email"
 
     # --- Step 2: Editor ---
     draw_wizard 2
-    gum style --foreground 212 --bold "  Editor"
+    gum style --foreground "$WIZ_LIGHT" --bold "  Editor"
     echo ""
     editor=$(gum choose --header "  Pick your default editor:" \
-        --cursor.foreground 212 --selected.foreground 10 \
-        --header.foreground 244 \
+        --cursor.foreground "$WIZ_ACCENT" --selected.foreground 10 \
+        --header.foreground "$WIZ_DIM" \
         "code --wait" "zed --wait" "nvim" "vim")
     wiz_editor="$editor"
 
     # --- Step 3: Environment ---
     draw_wizard 3
-    gum style --foreground 212 --bold "  Environment"
+    gum style --foreground "$WIZ_LIGHT" --bold "  Environment"
     echo ""
     if gum confirm "  Headless/server? (skip GUI apps, dev tools)"; then
         headless=true
@@ -172,7 +178,7 @@ run_gum_wizard() {
 
     # --- Step 4: Secrets ---
     draw_wizard 4
-    gum style --foreground 212 --bold "  Secrets"
+    gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
     echo ""
     op_account=""
     op_vault=""
@@ -181,17 +187,19 @@ run_gum_wizard() {
         wiz_1pass="enabled"
 
         draw_wizard 4
-        gum style --foreground 212 --bold "  Secrets"
+        gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
         echo ""
-        op_account=$(gum_input --header "  1Password account:" --placeholder "my.1password.com" \
-            --value "my.1password.com" --header.foreground 244)
+        op_account=$(gum input --header "  1Password account:" --placeholder "my.1password.com" \
+            --value "my.1password.com" --header.foreground "$WIZ_DIM" --cursor.foreground "$WIZ_ACCENT")
+        erase_gum_residual
         wiz_account="$op_account"
 
         draw_wizard 4
-        gum style --foreground 212 --bold "  Secrets"
+        gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
         echo ""
-        op_vault=$(gum_input --header "  1Password vault:" --placeholder "Developer" \
-            --value "Developer" --header.foreground 244)
+        op_vault=$(gum input --header "  1Password vault:" --placeholder "Developer" \
+            --value "Developer" --header.foreground "$WIZ_DIM" --cursor.foreground "$WIZ_ACCENT")
+        erase_gum_residual
         wiz_vault="$op_vault"
     else
         use_1password=false
@@ -200,7 +208,7 @@ run_gum_wizard() {
 
     # --- Summary ---
     draw_wizard 4
-    gum style --foreground 212 --bold "  All set!"
+    gum style --foreground "$WIZ_LIGHT" --bold "  All set!"
     echo ""
     if ! gum confirm --affirmative "Apply" --negative "Cancel" "  Save this config?"; then
         echo "==> Cancelled."
@@ -221,7 +229,7 @@ run_gum_wizard() {
 EOF
 
     echo ""
-    gum style --foreground 10 "Config saved."
+    gum style --foreground 10 "  Config saved."
 }
 
 # --- Plain fallback wizard (no gum / no TTY) ---
@@ -341,7 +349,7 @@ verify_deployment() {
     done
     if [ "$warnings" -eq 0 ]; then
         if command -v gum &>/dev/null; then
-            gum style --foreground 10 "All key files verified."
+            gum style --foreground 10 "  All key files verified."
         else
             echo "==> All key files verified."
         fi
@@ -381,7 +389,7 @@ echo ""
 echo "==> Done!"
 echo ""
 if command -v gum &>/dev/null; then
-    gum style --foreground 212 "chezmoi now manages everything."
+    gum style --foreground "$WIZ_ACCENT" "chezmoi now manages everything."
     echo ""
     echo "Daily commands:"
     echo "  dotfiles sync         Apply all changes"
