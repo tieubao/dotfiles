@@ -1,6 +1,6 @@
 # dotfiles
 
-[chezmoi](https://www.chezmoi.io/)-managed dotfiles for macOS. One command to set up a new Mac — shell, terminal, editors, packages, secrets, system preferences, everything.
+[chezmoi](https://www.chezmoi.io/)-managed dotfiles for macOS. One command to set up a new Mac -- shell, terminal, editors, packages, secrets, system preferences, everything.
 
 Fork this repo and make it yours.
 
@@ -25,6 +25,10 @@ cd ~/dotfiles
 ```
 
 `chezmoi init` will prompt for your name, email, editor, and whether you use 1Password. Everything adapts accordingly.
+
+**Flags:**
+- `./install.sh --check` -- dry-run, validates without applying
+- `./install.sh --force` -- teardown and reinit from scratch
 
 ### Alternative: bootstrap without git
 
@@ -52,12 +56,13 @@ chezmoi init --apply tieubao
 3. Prompts for your info (name, email, editor, 1Password vault)
 4. Deploys all config files to `$HOME`
 5. Runs automation scripts:
-   - `brew bundle` — installs ~80 packages + casks
+   - `brew bundle` -- installs ~80 packages + casks
    - Mac App Store apps via `mas`
    - macOS defaults (Dock, Finder, keyboard, trackpad, screenshots)
    - Sets Fish as default shell
    - Installs Foundry (cast), Rust, npm/uv tools
    - VS Code extensions
+6. Verifies key files were deployed
 
 ## What's included
 
@@ -65,16 +70,46 @@ chezmoi init --apply tieubao
 |-------|-------|
 | **Shell** | Fish + plugins (autopair, done, sponge, async-prompt) |
 | **Terminal** | Ghostty (catppuccin-mocha, JetBrains Mono) |
-| **Multiplexer** | tmux (C-a prefix, fzf session picker, project launcher) |
+| **Multiplexer** | tmux (C-a prefix, vim nav, fzf session picker, project launcher) |
 | **Editors** | VS Code + Zed (settings, extensions, MCP servers) |
 | **Git** | .gitconfig (delta diffs, aliases) + .gitignore + commit template |
-| **SSH** | 1Password SSH Agent (optional) |
-| **Secrets** | 1Password (`op://`) + macOS Keychain — never in git |
+| **SSH** | 1Password SSH Agent (optional), modular config.d/ |
+| **Secrets** | 1Password (`op://`) + macOS Keychain -- never in git |
 | **Packages** | Homebrew Brewfile + Mac App Store (`mas`) |
 | **Languages** | mise (Node, Python, Go, Ruby) via `.tool-versions` |
 | **Containers** | OrbStack / Docker config |
 | **macOS** | 30+ `defaults write` (Dock left, fast key repeat, Finder, screenshots) |
 | **Web3/DeFi** | Foundry (`cast`), fish aliases + helper functions |
+
+## Daily usage
+
+The `dotfiles` wrapper provides ergonomic commands:
+
+```fish
+dotfiles edit ~/.config/fish/config.fish   # edit a config
+dotfiles diff                              # preview changes
+dotfiles sync                              # apply everything
+dotfiles status                            # managed file count + pending diffs
+dotfiles cd                                # cd to chezmoi source directory
+dotfiles refresh                           # force re-download plugins
+dotfiles add <file>                        # add a new file to chezmoi
+dotfiles doctor                            # health check (tools, config, drift)
+dotfiles encrypt-setup                     # guided age encryption setup
+```
+
+Adding a Homebrew package:
+```fish
+dotfiles edit ~/.Brewfile     # add the line
+dotfiles sync                 # auto-runs brew bundle
+```
+
+Raw chezmoi commands also work:
+```bash
+chezmoi edit ~/.config/fish/config.fish
+chezmoi diff
+chezmoi apply
+chezmoi apply --refresh-externals
+```
 
 ## Customization
 
@@ -113,91 +148,107 @@ keychain_set MY_TOKEN "secret-value"   # store
 keychain_env MY_TOKEN                  # load into current shell
 ```
 
-**Without any password manager:**
+**On-demand loading (no apply needed):**
 ```fish
-# Just set env vars in a gitignored local file
-# Or use chezmoi's age encryption for files
+op_env GITHUB_TOKEN "op://Vault/GitHub Token/password"   # 1Password
+keychain_env MY_TOKEN                                     # Keychain
+web3_env                                                  # ETH_RPC_URL + Etherscan
 ```
 
 ### Encrypted files (age)
 
 For files too complex for template injection (kubeconfig, VPN configs, certificates):
 
-```bash
-# One-time setup
-brew install age
-age-keygen -o ~/.config/chezmoi/key.txt
-# Copy the public key (age1...) from key.txt output
+```fish
+# Guided setup (generates key, prints next steps)
+dotfiles encrypt-setup
 
-# Edit chezmoi config to enable encryption
-chezmoi edit-config
-# Uncomment the age section and paste your public key as recipient
-
-# Add encrypted files
+# Then add encrypted files
 chezmoi add --encrypt ~/.kube/config
 # Creates home/encrypted_dot_kube/config.age in the repo
+```
 
-# IMPORTANT: Backup key.txt to 1Password as a Secure Note
-# On a new machine, retrieve the key before running chezmoi apply
+Manual setup if you prefer:
+```bash
+brew install age
+age-keygen -o ~/.config/chezmoi/key.txt
+# Copy the public key (age1...) from output
+chezmoi edit-config   # uncomment age section, paste public key
+# Backup key.txt to 1Password as a Secure Note
 ```
 
 ### Removing what you don't need
 
 - **No web3?** Delete web3 aliases from `config.fish.tmpl`, remove `cast_*` functions, remove Foundry from install script
-- **No 1Password?** Answer "no" during `chezmoi init` — all 1Password sections are skipped
+- **No 1Password?** Answer "no" during `chezmoi init` -- all 1Password sections are skipped
 - **No Mac App Store?** Delete `run_once_after_mas-apps.sh.tmpl`
 - **Different editor?** `chezmoi init` prompts for your choice (VS Code, Zed, Neovim, Vim)
 
-## Daily usage
+## Troubleshooting
 
-```bash
-chezmoi edit ~/.config/fish/config.fish  # edit a config
-chezmoi diff                             # preview changes
-chezmoi apply                            # apply everything
-chezmoi apply --refresh-externals        # force re-download plugins
+Run `dotfiles doctor` to diagnose issues:
+
 ```
+$ dotfiles doctor
+Dotfiles health check
+=====================
 
-Adding a Homebrew package:
-```bash
-chezmoi edit ~/.Brewfile     # add the line
-chezmoi apply                # auto-runs brew bundle
+[ok] chezmoi installed
+[ok] chezmoi source linked
+[ok] fish is default shell
+[ok] homebrew installed
+[ok] 1Password CLI: signed in
+[ok] 1Password SSH agent: socket exists
+[ok] ~/.gitconfig exists
+[ok] ~/.config/fish/config.fish exists
+[ok] ~/.ssh/config exists
+[ok] git identity: Your Name <you@email.com>
+[ok] fzf
+[ok] bat
+...
+[ok] no drift detected
+
+All checks passed.
 ```
 
 ## How secrets work
 
 ```
 Git repo (safe to publish)          Your machine (after chezmoi apply)
-──────────────────────────          ────────────────────────────────────
-op://Developer/OpenAI/cred    →     sk-proj-actual-secret-key
-{{ keyring "MY_TOKEN" ... }}  →     actual-token-value
-SSH IdentityAgent path        →     1Password handles keys via Touch ID
+------------------------------      ------------------------------------
+op://Developer/OpenAI/cred    ->    sk-proj-actual-secret-key
+{{ keyring "MY_TOKEN" ... }}  ->    actual-token-value
+SSH IdentityAgent path        ->    1Password handles keys via Touch ID
 ```
 
-On a new Mac: clone → `./install.sh` → `op signin` → `chezmoi apply` → done.
+On a new Mac: clone -> `./install.sh` -> `op signin` -> `chezmoi apply` -> done.
 
 ## Structure
 
 ```
-home/                              # chezmoi source → maps to $HOME
+home/                              # chezmoi source -> maps to $HOME
 ├── .chezmoi.toml.tmpl             # init prompts (name, email, editor, 1Password)
 ├── .chezmoiexternal.toml          # fish plugins auto-downloaded from GitHub
 ├── .chezmoiignore                 # OS-conditional file exclusions
 ├── .chezmoiscripts/               # automation scripts
-│   ├── run_onchange_before_*      # Brewfile → auto brew bundle
+│   ├── run_onchange_before_*      # Brewfile -> auto brew bundle
 │   ├── run_once_after_*           # one-time: shell, defaults, apps, tools
 │   └── run_onchange_after_*       # VS Code + Zed settings sync
 ├── dot_Brewfile                   # all Homebrew packages
 ├── dot_gitconfig.tmpl             # git config (name + email templated)
-├── dot_ssh/config.tmpl            # SSH config (1Password agent)
+├── dot_ssh/config.tmpl            # SSH config (1Password agent, modular config.d/)
 ├── dot_tool-versions              # global language versions (mise)
 ├── dot_docker/config.json         # Docker / OrbStack
 └── dot_config/
     ├── fish/
     │   ├── config.fish.tmpl       # main config (paths, aliases, integrations)
     │   ├── conf.d/secrets.fish.tmpl  # secrets via 1Password / Keychain
-    │   └── functions/             # cdg, op_env, keychain_env, tx, web3_env
+    │   ├── functions/             # dotfiles, dotfiles-drift, cdg, op_env,
+    │   │                          # keychain_env, keychain_set, tx, web3_env,
+    │   │                          # render-img
+    │   └── completions/           # tab completions for custom functions
     ├── ghostty/config             # terminal config
-    ├── tmux/tmux.conf             # tmux + fzf session picker
+    ├── tmux/tmux.conf             # tmux (C-a, vim nav, fzf picker)
     ├── zed/settings.json.tmpl     # Zed editor (MCP servers templated)
     ├── code/                      # VS Code settings + extensions list
     └── git/ignore                 # global git ignore
