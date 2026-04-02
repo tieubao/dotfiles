@@ -1,0 +1,50 @@
+# Ghostty Configuration
+# https://ghostty.org/docs/config
+
+# Font
+font-family = JetBrains Mono
+font-size = 14
+font-thicken = true
+
+# Theme
+theme = catppuccin-mocha
+
+# Window
+window-padding-x = 8
+window-padding-y = 4
+window-decoration = true
+macos-titlebar-style = tabs
+window-save-state = always
+
+# Shell — use fish
+command = /opt/homebrew/bin/fish --login
+
+# Cursor
+cursor-style = block
+cursor-style-blink = false
+
+# Mouse
+mouse-hide-while-typing = true
+
+# Clipboard
+clipboard-read = allow
+clipboard-write = allow
+copy-on-select = clipboard
+
+# Scrollback
+scrollback-limit = 10000
+
+# Keybindings (macOS friendly)
+keybind = super+t=new_tab
+keybind = super+w=close_surface
+keybind = super+shift+enter=new_split:right
+keybind = super+shift+minus=new_split:down
+keybind = super+alt+left=goto_split:left
+keybind = super+alt+right=goto_split:right
+keybind = super+alt+up=goto_split:top
+keybind = super+alt+down=goto_split:bottom
+
+# Quick terminal (visor mode)
+keybind = global:super+grave_accent=toggle_quick_terminal
+quick-terminal-position = top
+quick-terminal-animation-duration = 0.15

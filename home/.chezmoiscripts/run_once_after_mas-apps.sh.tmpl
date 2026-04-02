@@ -1,0 +1,53 @@
+#!/bin/bash
+{{ if ne .chezmoi.os "darwin" }}
+exit 0
+{{ end }}
+
+if ! command -v mas &>/dev/null; then
+    echo "==> Installing mas (Mac App Store CLI)"
+    brew install mas
+fi
+
+echo "==> Installing Mac App Store apps"
+
+# Productivity
+mas install 1532419400  # MeetingBar
+mas install  419330170  # Moom Classic
+mas install 1452453066  # Hidden Bar
+mas install  928871589  # Noizio
+mas install 6745342698  # uBlock Origin Lite
+mas install 6471380298  # StopTheMadness Pro
+mas install 1480933944  # Vimari
+mas install 1573461917  # SponsorBlock
+mas install 1615431236  # Bonjourr Startpage
+mas install 6720708363  # Obsidian Web Clipper
+mas install 6738274497  # Raycast Companion
+
+# Safari + Security
+mas install 1569813296  # 1Password for Safari
+mas install 1440147259  # AdGuard for Safari
+mas install 1432731683  # Adblock Plus
+
+# Communication
+mas install 1480068668  # Messenger
+mas install  803453959  # Slack
+
+# Utilities
+mas install  425955336  # Skitch
+mas install 1351639930  # Gifski
+mas install  442168834  # SiteSucker
+mas install 1543920362  # Displaperture
+mas install 1289197285  # MindNode Classic
+
+# NordVPN
+mas install  905953485  # NordVPN
+
+# Apple
+mas install  409183694  # Keynote
+mas install  409201541  # Pages
+mas install  361304891  # Numbers
+
+# Dev
+mas install  497799835  # Xcode
+
+echo "==> Mac App Store apps done"

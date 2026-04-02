@@ -1,0 +1,6 @@
+# Global tool versions — managed by mise
+# Override per-project with local .tool-versions
+nodejs 22.14.0
+python 3.12.10
+go 1.24.2
+ruby 3.4.3

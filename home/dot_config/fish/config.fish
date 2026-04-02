@@ -1,0 +1,117 @@
+if status is-interactive
+    # Homebrew
+    eval (/opt/homebrew/bin/brew shellenv)
+
+    # Editor
+    set -gx EDITOR "code --wait"
+    set -gx VISUAL $EDITOR
+    set -gx HOMEBREW_CASK_OPTS "--appdir=/Applications"
+
+    # XDG
+    set -gx XDG_CONFIG_HOME $HOME/.config
+    set -gx XDG_DATA_HOME $HOME/.local/share
+    set -gx XDG_CACHE_HOME $HOME/.cache
+
+    # Go
+    set -gx GOPATH $HOME/workspace/go
+    set -gx GOBIN $HOME/workspace/go/bin
+
+    # Path
+    fish_add_path $HOME/.local/bin
+    fish_add_path $GOBIN
+    fish_add_path $HOME/.cargo/bin
+    fish_add_path $HOME/.foundry/bin
+    fish_add_path $HOME/.bun/bin
+    fish_add_path /opt/homebrew/opt/ruby/bin
+    fish_add_path /opt/homebrew/sbin
+    fish_add_path $HOME/.lmstudio/bin
+    fish_add_path $HOME/.opencode/bin
+
+    # 1Password SSH agent
+    if test -e "$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+        set -gx SSH_AUTH_SOCK "$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+    end
+
+    # OrbStack
+    if test -f $HOME/.orbstack/shell/init.fish
+        source $HOME/.orbstack/shell/init.fish
+    end
+
+    # mise (replaces nvm, rbenv, pyenv)
+    if command -q mise
+        mise activate fish | source
+    end
+
+    # zoxide (replaces z)
+    if command -q zoxide
+        zoxide init fish | source
+    end
+
+    # fzf
+    if command -q fzf
+        fzf --fish | source
+        set -gx FZF_DEFAULT_OPTS '--bind alt-j:down,alt-k:up'
+    end
+
+    # direnv
+    if command -q direnv
+        direnv hook fish | source
+    end
+
+    # pnpm
+    set -gx PNPM_HOME $HOME/Library/pnpm
+    fish_add_path $PNPM_HOME
+
+    # ── Git ───────────────────────────────────────────────────────────
+    abbr -a g git
+    abbr -a gs "git status"
+    abbr -a gd "git diff"
+    abbr -a gl "git log --oneline -20"
+    abbr -a gp "git push"
+    abbr -a gc "git commit"
+    abbr -a gco "git checkout"
+    abbr -a gpr "gh pr create"
+
+    # ── Navigation ────────────────────────────────────────────────────
+    abbr -a ll "eza -la --icons --git"
+    abbr -a la "eza -a --icons"
+    abbr -a lt "eza -la --tree --level=2 --icons"
+    abbr -a .. "cd .."
+    abbr -a ... "cd ../.."
+
+    # ── Infra ─────────────────────────────────────────────────────────
+    abbr -a k kubectl
+    abbr -a k9 k9s
+    abbr -a d docker
+    abbr -a dc "docker compose"
+    abbr -a tf terraform
+
+    # ── tmux ──────────────────────────────────────────────────────────
+    abbr -a tx tmux
+    abbr -a tml "tmux list-sessions"
+    abbr -a tma "tmux attach -t"
+    abbr -a tmk "tmux kill-session -t"
+
+    # ── Web3 / DeFi (cast = on-chain CLI swiss knife) ─────────────────
+    abbr -a ca cast
+    abbr -a cb "cast balance"
+    abbr -a ct "cast call"
+    abbr -a cs "cast send"
+    abbr -a ce "cast estimate"
+    abbr -a ctd "cast decode-calldata"
+    abbr -a cabi "cast abi-decode"
+    abbr -a cbl "cast block latest"
+    abbr -a cgp "cast gas-price"
+    abbr -a cbn "cast block-number"
+    abbr -a c4 "cast 4byte"
+
+    # ── Misc ──────────────────────────────────────────────────────────
+    abbr -a cat bat
+    abbr -a top btop
+    abbr -a du dust
+    abbr -a df duf
+    abbr -a ps procs
+
+    # Greeting
+    set -g fish_greeting ""
+end

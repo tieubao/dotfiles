@@ -1,0 +1,29 @@
+# Files to ignore based on OS/environment
+
+# macOS-only (skip on Linux)
+{{- if ne .chezmoi.os "darwin" }}
+.config/ghostty/
+.config/code/
+.config/zed/
+.Brewfile
+.tool-versions
+.docker/
+{{- end }}
+
+# Linux-only (skip on macOS)
+{{- if ne .chezmoi.os "linux" }}
+.config/systemd/
+{{- end }}
+
+# Never manage these
+.DS_Store
+.Trash
+.cache
+
+# Codespaces / CI — skip GUI-dependent configs
+{{- if env "CODESPACES" }}
+.config/ghostty/
+.config/code/
+.config/zed/
+.Brewfile
+{{- end }}

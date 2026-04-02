@@ -1,0 +1,82 @@
+# External files/repos — pulled by chezmoi, cached locally.
+# Refresh: chezmoi apply --refresh-externals
+
+# ── Fish plugins (via git clone, no plugin manager needed) ────────────
+
+# Fish shell autocomplete suggestions (like zsh-autosuggestions)
+[".config/fish/conf.d/fish_async_prompt.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/acomber/fish-async-prompt/main/conf.d/fish_async_prompt.fish"
+    refreshPeriod = "720h"
+
+# Autopair — auto-close brackets, quotes, etc.
+[".config/fish/conf.d/autopair.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/jorgebucaran/autopair.fish/main/conf.d/autopair.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_autopair_backspace.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/jorgebucaran/autopair.fish/main/functions/_autopair_backspace.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_autopair_insert_left.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/jorgebucaran/autopair.fish/main/functions/_autopair_insert_left.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_autopair_insert_right.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/jorgebucaran/autopair.fish/main/functions/_autopair_insert_right.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_autopair_insert_same.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/jorgebucaran/autopair.fish/main/functions/_autopair_insert_same.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_autopair_tab.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/jorgebucaran/autopair.fish/main/functions/_autopair_tab.fish"
+    refreshPeriod = "720h"
+
+# Done — fish notification when long-running commands finish
+[".config/fish/conf.d/done.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/franciscolourenco/done/master/conf.d/done.fish"
+    refreshPeriod = "720h"
+
+# Sponge — clean failed commands from history
+[".config/fish/conf.d/sponge.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/master/conf.d/sponge.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_sponge_on_postexec.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/master/functions/_sponge_on_postexec.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_sponge_on_preexec.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/master/functions/_sponge_on_preexec.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_sponge_remove.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/master/functions/_sponge_remove.fish"
+    refreshPeriod = "720h"
+
+# ── Completions ───────────────────────────────────────────────────────
+
+# Docker completions for fish
+[".config/fish/completions/docker.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/docker/cli/master/contrib/completion/fish/docker.fish"
+    refreshPeriod = "720h"
+
+# 1Password CLI completions
+[".config/fish/completions/op.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/1Password/shell-plugins/main/plugins/op/op.fish"
+    refreshPeriod = "720h"

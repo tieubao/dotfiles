@@ -1,0 +1,13 @@
+{
+    "workbench.colorTheme": "Ocean Dark Extended",
+    "editor.fontFamily": "'iA Writer Duo S', Menlo, Monaco, 'Courier New', monospace",
+    "go.toolsManagement.autoUpdate": true,
+    "explorer.confirmDelete": false,
+    "workbench.startupEditor": "none",
+    "terminal.integrated.fontFamily": "'Source Code Pro'",
+    "git.autofetch": true,
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "explorer.confirmDragAndDrop": false,
+    "makefile.configureOnOpen": true
+}

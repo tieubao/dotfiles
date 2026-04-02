@@ -1,0 +1,64 @@
+#!/bin/bash
+{{ if ne .chezmoi.os "darwin" }}
+# Skip on non-macOS
+exit 0
+{{ end }}
+
+echo "==> Applying macOS defaults"
+
+# ── Dock ──────────────────────────────────────────────────────────────
+defaults write com.apple.dock autohide -bool false
+defaults write com.apple.dock tilesize -int 36
+defaults write com.apple.dock orientation -string "left"
+defaults write com.apple.dock show-recents -bool false
+defaults write com.apple.dock minimize-to-application -bool true
+defaults write com.apple.dock mru-spaces -bool false          # don't rearrange Spaces
+
+# ── Finder ────────────────────────────────────────────────────────────
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+defaults write com.apple.finder ShowPathbar -bool true
+defaults write com.apple.finder ShowStatusBar -bool true
+defaults write com.apple.finder AppleShowAllFiles -bool true   # show hidden files
+defaults write com.apple.finder FXPreferredViewStyle -string "Nlsv"  # list view
+defaults write com.apple.finder _FXShowPosixPathInTitle -bool true
+defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false
+
+# ── Keyboard ──────────────────────────────────────────────────────────
+defaults write NSGlobalDomain KeyRepeat -int 2                 # fastest repeat
+defaults write NSGlobalDomain InitialKeyRepeat -int 15         # shortest delay
+defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false  # key repeat > accents
+defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
+defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false
+defaults write NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false
+defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+
+# ── Trackpad ──────────────────────────────────────────────────────────
+defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true  # tap to click
+defaults write NSGlobalDomain com.apple.swipescrolldirection -bool true  # natural scrolling
+
+# ── Screenshots ───────────────────────────────────────────────────────
+mkdir -p "${HOME}/Screenshots"
+defaults write com.apple.screencapture location -string "${HOME}/Screenshots"
+defaults write com.apple.screencapture type -string "png"
+defaults write com.apple.screencapture disable-shadow -bool true
+
+# ── Mission Control ───────────────────────────────────────────────────
+defaults write com.apple.spaces spans-displays -bool false     # separate spaces per display
+
+# ── Safari ────────────────────────────────────────────────────────────
+defaults write com.apple.Safari ShowFullURLInSmartSearchField -bool true
+defaults write com.apple.Safari IncludeDevelopMenu -bool true
+defaults write com.apple.Safari AutoOpenSafeDownloads -bool false
+
+# ── TextEdit ──────────────────────────────────────────────────────────
+defaults write com.apple.TextEdit RichText -bool false         # plain text by default
+
+# ── Activity Monitor ──────────────────────────────────────────────────
+defaults write com.apple.ActivityMonitor ShowCategory -int 0   # show all processes
+
+# ── Apply ─────────────────────────────────────────────────────────────
+for app in "Dock" "Finder" "SystemUIServer"; do
+    killall "$app" &>/dev/null || true
+done
+
+echo "==> macOS defaults applied (some changes need logout/restart)"

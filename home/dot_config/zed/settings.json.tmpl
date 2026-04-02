@@ -1,0 +1,71 @@
+// Zed settings — managed by chezmoi
+// MCP server API keys are injected from 1Password at `chezmoi apply` time.
+// Edit: chezmoi edit ~/.config/zed/settings.json
+{
+  "context_servers": {
+    "mcp-server-firecrawl": {
+      "source": "extension",
+      "enabled": true,
+      "settings": {
+        "firecrawl_api_key": "{{ onepasswordRead (printf "op://%s/Firecrawl/credential" .op_vault) }}"
+      }
+    },
+    "mcp-server-figma": {
+      "source": "extension",
+      "enabled": true,
+      "settings": {
+        "figma_api_key": "{{ onepasswordRead (printf "op://%s/Figma API/credential" .op_vault) }}"
+      }
+    },
+    "mcp-server-brave-search": {
+      "source": "extension",
+      "enabled": true,
+      "settings": {
+        "brave_api_key": "{{ onepasswordRead (printf "op://%s/Brave Search/credential" .op_vault) }}"
+      }
+    },
+    "mcp-server-github": {
+      "source": "extension",
+      "enabled": true,
+      "settings": {
+        "github_personal_access_token": "{{ onepasswordRead (printf "op://%s/GitHub PAT/credential" .op_vault) }}"
+      }
+    },
+    "postgres-context-server": {
+      "source": "extension",
+      "enabled": true,
+      "settings": {
+        "database_url": "{{ onepasswordRead (printf "op://%s/Postgres Local/credential" .op_vault) }}"
+      }
+    }
+  },
+  "icon_theme": "Catppuccin Frappé",
+  "agent": {
+    "always_allow_tool_actions": true,
+    "default_profile": "write",
+    "default_model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-latest"
+    }
+  },
+  "theme": "One Dark",
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false
+  },
+  "ui_font_size": 14,
+  "buffer_font_size": 14,
+  "format_on_save": "off",
+  "editor.wordWrap": "on",
+  "terminal": {
+    "scrollbar": {
+      "show": "never"
+    },
+    "font_size": 12,
+    "line_height": "standard",
+    "dock": "right",
+    "env": {
+      "EDITOR": "zed --wait"
+    }
+  }
+}

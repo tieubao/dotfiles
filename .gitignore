@@ -1,0 +1,16 @@
+# Secrets — never commit
+*.secret
+*.env
+.env*
+
+# OS
+.DS_Store
+
+# Fish runtime
+fish_variables
+
+# chezmoi state (local only)
+home/.chezmoistate.boltdb
+
+# Claude
+.claude/

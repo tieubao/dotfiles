@@ -1,0 +1,11 @@
+# chezmoi config — prompted on `chezmoi init`
+# Secrets are pulled from 1Password + macOS Keychain at `chezmoi apply` time.
+
+{{- $email := promptStringOnce . "email" "Email address" -}}
+{{- $op_account := promptStringOnce . "op_account" "1Password account (e.g. my.1password.com)" -}}
+{{- $op_vault := promptStringOnce . "op_vault" "1Password vault for dev secrets (e.g. Developer)" -}}
+
+[data]
+  email = {{ $email | quote }}
+  op_account = {{ $op_account | quote }}
+  op_vault = {{ $op_vault | quote }}

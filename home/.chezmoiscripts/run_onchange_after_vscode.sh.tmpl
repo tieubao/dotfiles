@@ -1,0 +1,22 @@
+#!/bin/bash
+{{ if ne .chezmoi.os "darwin" }}
+exit 0
+{{ end }}
+
+# VS Code settings hash: {{ include "dot_config/code/settings.json" | sha256sum }}
+# VS Code extensions hash: {{ include "dot_config/code/extensions.txt" | sha256sum }}
+
+VSCODE_USER="${HOME}/Library/Application Support/Code/User"
+
+if [ -d "/Applications/Visual Studio Code.app" ] || command -v code &>/dev/null; then
+    echo "==> Syncing VS Code settings"
+    mkdir -p "$VSCODE_USER"
+    cp "${HOME}/.config/code/settings.json" "$VSCODE_USER/settings.json"
+
+    echo "==> Installing VS Code extensions"
+    while IFS= read -r ext; do
+        [ -z "$ext" ] && continue
+        code --install-extension "$ext" --force 2>/dev/null || true
+    done < "${HOME}/.config/code/extensions.txt"
+    echo "==> VS Code done"
+fi

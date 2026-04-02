@@ -1,0 +1,131 @@
+# Brewfile — managed by chezmoi
+# Install: brew bundle --file=~/.Brewfile
+# Check:   brew bundle check --file=~/.Brewfile
+
+# ── Taps ──────────────────────────────────────────────────────────────
+tap "homebrew/bundle"
+tap "homebrew/services"
+
+# ── Shell & Terminal ──────────────────────────────────────────────────
+brew "mas"                    # Mac App Store CLI
+brew "fish"
+brew "tmux"
+cask "ghostty"
+
+# ── Core CLI (modern replacements) ───────────────────────────────────
+brew "git"
+brew "gh"                     # GitHub CLI (replaces hub)
+brew "git-delta"              # better git diffs
+brew "git-filter-repo"
+brew "git-sizer"
+brew "jq"
+brew "yq"
+brew "ripgrep"                # rg (replaces ag/grep)
+brew "fd"                     # find replacement
+brew "bat"                    # cat with syntax highlighting
+brew "eza"                    # modern ls
+brew "fzf"                    # fuzzy finder
+brew "zoxide"                 # smart cd (replaces z)
+brew "dust"                   # disk usage (du replacement)
+brew "duf"                    # disk free (df replacement)
+brew "procs"                  # ps replacement
+brew "btop"                   # system monitor (replaces htop)
+brew "choose-rust"            # cut/awk replacement
+brew "direnv"
+brew "tree"
+brew "curl"
+brew "wget"
+brew "httpie"
+brew "watch"
+brew "tldr"
+brew "lnav"                   # log navigator
+
+# ── Editors ───────────────────────────────────────────────────────────
+brew "neovim"
+
+# ── Version Management ────────────────────────────────────────────────
+brew "mise"                   # polyglot version manager (replaces nvm, rbenv, pyenv)
+
+# ── Languages & Runtimes ─────────────────────────────────────────────
+brew "go"
+brew "golangci-lint"          # Go linter (replaces gometalinter)
+brew "node"
+brew "pnpm"
+brew "uv"                     # fast Python package manager (replaces pipx)
+brew "python@3.12"
+brew "rustup"
+brew "elixir"
+
+# ── Containers & Infra ───────────────────────────────────────────────
+cask "orbstack"               # container runtime (replaces Docker Desktop)
+brew "kubernetes-cli"
+brew "k9s"                    # Kubernetes TUI
+brew "helm"
+brew "terraform"
+brew "awscli"
+brew "flyctl"
+brew "caddy"
+brew "nginx"
+brew "cloudflared"
+
+# ── Data & Media ──────────────────────────────────────────────────────
+brew "duckdb"
+brew "sqlite"
+brew "ffmpeg"
+brew "imagemagick"
+brew "optipng"
+brew "qpdf"
+brew "qrencode"
+brew "graphviz"
+brew "yt-dlp"                 # youtube-dl successor
+
+# ── AI Tools ──────────────────────────────────────────────────────────
+brew "aichat"                 # multi-LLM CLI
+# llm via: uv tool install llm
+# opencode via: npm i -g opencode-ai
+
+# ── Security & Secrets ────────────────────────────────────────────────
+cask "1password"
+cask "1password-cli"
+brew "nordvpn"
+
+# ── Build Tools ───────────────────────────────────────────────────────
+brew "cmake"
+brew "protobuf"
+
+# ── Web3 / DeFi ──────────────────────────────────────────────────────
+# Foundry (cast for on-chain queries, anvil for local fork)
+# Install: curl -L https://foundry.paradigm.xyz | bash && foundryup
+brew "libusb"                 # hardware wallet (Ledger) support
+# leo-lang via: cargo install leo-lang (Aleo ZK)
+
+# ── macOS Apps ────────────────────────────────────────────────────────
+cask "visual-studio-code"
+cask "zed"
+cask "arc"
+cask "zen-browser"
+cask "google-chrome"
+cask "microsoft-edge"
+cask "tor-browser"
+cask "discord"
+cask "zoom"
+cask "slack"
+cask "raycast"
+cask "meetingbar"
+cask "monitor-control"        # external display brightness (replaces Lunar)
+cask "devutils"
+cask "gifski"
+cask "qbittorrent"
+cask "lume"                   # macOS VM manager
+
+# ── Fonts ─────────────────────────────────────────────────────────────
+cask "font-jetbrains-mono"
+cask "font-jetbrains-mono-nerd-font"
+cask "font-fira-code-nerd-font"
+cask "font-source-code-pro"
+
+# ── npm Global Tools ─────────────────────────────────────────────────
+# npm i -g ccusage markdownlint-cli2 npm-check-updates opencode-ai
+
+# ── Cargo Tools ──────────────────────────────────────────────────────
+# cargo install obsidian-export
