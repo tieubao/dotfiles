@@ -5,6 +5,7 @@ set -e
 # Idempotent: safe to run multiple times on an already-configured machine.
 # Use --force to teardown and reinit from scratch.
 # Use --check to dry-run without applying changes.
+# Use --config-only to deploy configs without running scripts (brew, mas, defaults).
 #
 # Exit codes:
 #   0 = success
@@ -16,12 +17,14 @@ CHEZMOI_SOURCE="$HOME/.local/share/chezmoi"
 CHEZMOI_CONFIG="$HOME/.config/chezmoi/chezmoi.toml"
 FORCE=0
 CHECK_ONLY=0
+CONFIG_ONLY=0
 
 # Parse flags
 for arg in "$@"; do
     case "$arg" in
         --force) FORCE=1 ;;
         --check) CHECK_ONLY=1 ;;
+        --config-only) CONFIG_ONLY=1 ;;
     esac
 done
 
@@ -71,6 +74,12 @@ ensure_link() {
     fi
 }
 
+apply_flags() {
+    if [ "$CONFIG_ONLY" -eq 1 ]; then
+        echo "--exclude=scripts"
+    fi
+}
+
 run_apply() {
     if [ "$CHECK_ONLY" -eq 1 ]; then
         echo "==> Dry run (--check mode)"
@@ -82,7 +91,12 @@ run_apply() {
         return 0
     fi
 
-    if ! chezmoi apply; then
+    if [ "$CONFIG_ONLY" -eq 1 ]; then
+        echo "==> Config-only mode: deploying files, skipping scripts"
+    fi
+
+    # shellcheck disable=SC2046
+    if ! chezmoi apply $(apply_flags); then
         echo "==> ERROR: chezmoi apply failed"
         exit 2
     fi
@@ -99,9 +113,19 @@ run_init_apply() {
         return 0
     fi
 
-    echo "==> Running chezmoi init + apply (will prompt for config)"
-    if ! chezmoi init --apply; then
+    echo "==> Running chezmoi init (will prompt for config)"
+    if ! chezmoi init; then
         echo "==> ERROR: chezmoi init failed"
+        exit 2
+    fi
+
+    if [ "$CONFIG_ONLY" -eq 1 ]; then
+        echo "==> Config-only mode: deploying files, skipping scripts"
+    fi
+
+    # shellcheck disable=SC2046
+    if ! chezmoi apply $(apply_flags); then
+        echo "==> ERROR: chezmoi apply failed"
         exit 2
     fi
 }
