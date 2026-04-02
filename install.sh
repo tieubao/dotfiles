@@ -92,35 +92,85 @@ run_gum_wizard() {
     # Gum reads env vars as config flags. Shell theming vars like UNDERLINE, BOLD,
     # ITALIC (ANSI escape codes) conflict with gum's boolean flags. Unset them.
     unset UNDERLINE BOLD ITALIC
+
     echo ""
     gum style --border double --padding "1 2" --border-foreground 212 \
         "  dotfiles setup  "
-    echo ""
 
     local name email editor headless use_1password op_account op_vault
 
-    name=$(gum input --prompt "Name: " --placeholder "Full name (for git)" \
-        --value "$(git config user.name 2>/dev/null || true)")
-    email=$(gum input --prompt "Email: " --placeholder "you@example.com" \
-        --value "$(git config user.email 2>/dev/null || true)")
-    editor=$(gum choose --header "Default editor:" "code --wait" "zed --wait" "nvim" "vim")
+    # --- Step 1: Identity ---
+    echo ""
+    gum style --foreground 212 --bold "Step 1/4: Identity"
+    echo ""
 
-    if gum confirm "Headless/server environment? (skip GUI apps, dev tools)"; then
+    name=$(gum input --prompt "> Name:  " --placeholder "Full name (for git)" \
+        --value "$(git config user.name 2>/dev/null || true)" \
+        --prompt.foreground 244)
+    gum style --foreground 10 "  Name:  $name"
+
+    email=$(gum input --prompt "> Email: " --placeholder "you@example.com" \
+        --value "$(git config user.email 2>/dev/null || true)" \
+        --prompt.foreground 244)
+    gum style --foreground 10 "  Email: $email"
+
+    # --- Step 2: Editor ---
+    echo ""
+    gum style --foreground 212 --bold "Step 2/4: Editor"
+    echo ""
+
+    editor=$(gum choose --header "> Pick your default editor:" \
+        --cursor.foreground 212 --selected.foreground 10 \
+        "code --wait" "zed --wait" "nvim" "vim")
+    gum style --foreground 10 "  Editor: $editor"
+
+    # --- Step 3: Environment ---
+    echo ""
+    gum style --foreground 212 --bold "Step 3/4: Environment"
+    echo ""
+
+    if gum confirm --prompt.foreground 244 "  Headless/server? (skip GUI apps, dev tools)"; then
         headless=true
     else
         headless=false
     fi
+    gum style --foreground 10 "  Headless: $headless"
+
+    # --- Step 4: Secrets ---
+    echo ""
+    gum style --foreground 212 --bold "Step 4/4: Secrets"
+    echo ""
 
     op_account=""
     op_vault=""
-    if gum confirm "Use 1Password for secrets?"; then
+    if gum confirm --prompt.foreground 244 "  Use 1Password for secrets?"; then
         use_1password=true
-        op_account=$(gum input --prompt "1Password account: " --placeholder "my.1password.com" \
-            --value "my.1password.com")
-        op_vault=$(gum input --prompt "1Password vault: " --placeholder "Developer" \
-            --value "Developer")
+        gum style --foreground 10 "  1Password: enabled"
+        echo ""
+        op_account=$(gum input --prompt "> Account: " --placeholder "my.1password.com" \
+            --value "my.1password.com" --prompt.foreground 244)
+        gum style --foreground 10 "  Account: $op_account"
+        op_vault=$(gum input --prompt "> Vault:   " --placeholder "Developer" \
+            --value "Developer" --prompt.foreground 244)
+        gum style --foreground 10 "  Vault:   $op_vault"
     else
         use_1password=false
+        gum style --foreground 10 "  1Password: disabled"
+    fi
+
+    # --- Summary ---
+    echo ""
+    gum style --border rounded --padding "1 2" --border-foreground 10 \
+        "  Name:     $name" \
+        "  Email:    $email" \
+        "  Editor:   $editor" \
+        "  Headless: $headless" \
+        "  1Password: $use_1password"
+    echo ""
+
+    if ! gum confirm --affirmative "Apply" --negative "Cancel" "  Save this config?"; then
+        echo "==> Cancelled."
+        exit 0
     fi
 
     # Write chezmoi config
@@ -137,7 +187,7 @@ run_gum_wizard() {
 EOF
 
     echo ""
-    gum style --foreground 10 "Config saved to $CHEZMOI_CONFIG"
+    gum style --foreground 10 "Config saved."
 }
 
 # --- Plain fallback wizard (no gum / no TTY) ---
