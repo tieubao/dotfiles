@@ -1,27 +1,25 @@
 # dotfiles
 
-[chezmoi](https://www.chezmoi.io/)-managed dotfiles for macOS. One command to set up a new Mac -- shell, terminal, editors, packages, secrets, system preferences, everything.
+![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000?logo=apple&logoColor=white)
+![Fish](https://img.shields.io/badge/Fish-Shell-4AAE46?logo=gnubash&logoColor=white)
+![Starship](https://img.shields.io/badge/Starship-Prompt-DD0B78?logo=starship&logoColor=white)
+![Ghostty](https://img.shields.io/badge/Ghostty-Terminal-1a1a2e)
+![chezmoi](https://img.shields.io/badge/chezmoi-Managed-blue)
+![1Password](https://img.shields.io/badge/1Password-Secrets-0572EC?logo=1password&logoColor=white)
+![CI](https://img.shields.io/github/actions/workflow/status/tieubao/dotfiles/test.yml?label=CI&logo=github)
 
-Fork this repo and make it yours.
+One command to set up a new Mac: shell, terminal, editors, packages, secrets, system preferences, everything. Managed by [chezmoi](https://www.chezmoi.io/).
+
+<!-- TODO: Add terminal screenshot at docs/assets/terminal.png -->
+<!-- ![Terminal](docs/assets/terminal.png) -->
+
+**Requirements:** macOS 12+, Apple Silicon (Intel works too). First run takes ~30 minutes (Homebrew downloads).
 
 ## Quick start
 
-**Use as-is:**
 ```bash
 git clone https://github.com/tieubao/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh
-```
-
-**Fork and customize:**
-```bash
-# 1. Fork this repo on GitHub
-# 2. Clone your fork
-git clone https://github.com/YOUR_USERNAME/dotfiles ~/dotfiles
-cd ~/dotfiles
-
-# 3. Edit what you want (see "Customization" below)
-# 4. Run
-./install.sh
 ```
 
 `chezmoi init` will prompt for your name, email, editor, headless mode, and whether you use 1Password. Everything adapts accordingly. On a headless/server machine, GUI apps, dev toolchains, and casks are skipped automatically.
@@ -30,7 +28,8 @@ cd ~/dotfiles
 - `./install.sh --check` -- dry-run, validates without applying
 - `./install.sh --force` -- teardown and reinit from scratch
 
-### Alternative: bootstrap without git
+<details>
+<summary><b>Alternative: bootstrap without git</b></summary>
 
 On a truly fresh Mac, git requires Xcode CLT (10+ minutes to install). These methods skip that:
 
@@ -48,6 +47,24 @@ chezmoi init --apply tieubao
 ```
 
 > **Note:** These methods clone into `~/.local/share/chezmoi/` (chezmoi's default) instead of `~/dotfiles`. The git clone method is better for active development since you control the repo location.
+
+</details>
+
+<details>
+<summary><b>Fork and customize</b></summary>
+
+```bash
+# 1. Fork this repo on GitHub
+# 2. Clone your fork
+git clone https://github.com/YOUR_USERNAME/dotfiles ~/dotfiles
+cd ~/dotfiles
+
+# 3. Edit what you want (see "Customization" below)
+# 4. Run
+./install.sh
+```
+
+</details>
 
 ## What happens on install
 
@@ -75,11 +92,19 @@ chezmoi init --apply tieubao
 | **Git** | .gitconfig (delta diffs, aliases) + .gitignore + commit template |
 | **SSH** | 1Password SSH Agent (optional), modular config.d/ |
 | **Secrets** | 1Password (`op://`) + macOS Keychain -- never in git |
-| **Packages** | Homebrew Brewfile + Mac App Store (`mas`) |
+| **Packages** | Layered Brewfile (base/dev/apps) + Mac App Store (`mas`) |
 | **Languages** | mise (Node, Python, Go, Ruby) via `.tool-versions` |
 | **Containers** | OrbStack / Docker config |
 | **macOS** | 30+ `defaults write` (Dock left, fast key repeat, Finder, screenshots) |
 | **Web3/DeFi** | Foundry (`cast`), fish aliases + helper functions |
+
+## Why this setup
+
+- **Layered Brewfile** -- base tools always install; dev toolchains and GUI apps are conditional. Set `headless=true` for servers.
+- **Zero plaintext secrets** -- 1Password `op://` references in templates, macOS Keychain for the rest. The rendered secrets only exist on your machine, never in git.
+- **13-command CLI** -- `dotfiles sync`, `dotfiles doctor`, `dotfiles bench`, `dotfiles backup`... no need to remember raw chezmoi commands.
+- **CI-tested weekly** -- shellcheck + chezmoi dry-run on macOS. Catches regressions before your next fresh install.
+- **Graceful degradation** -- works with or without 1Password. Skip web3, skip Mac App Store, pick your editor. Everything is opt-in.
 
 ## Daily usage
 
@@ -89,11 +114,8 @@ The `dotfiles` wrapper provides ergonomic commands:
 dotfiles edit ~/.config/fish/config.fish   # edit a config
 dotfiles diff                              # preview changes
 dotfiles sync                              # apply everything
-dotfiles status                            # managed file count + pending diffs
-dotfiles cd                                # cd to chezmoi source directory
-dotfiles refresh                           # force re-download plugins
-dotfiles add <file>                        # add a new file to chezmoi
 dotfiles update                            # pull latest + apply
+dotfiles status                            # managed file count + pending diffs
 dotfiles doctor                            # health check (tools, config, drift)
 dotfiles bench                             # benchmark shell startup time
 dotfiles backup                            # back up config + age key to 1Password
@@ -106,13 +128,17 @@ dotfiles edit ~/.Brewfile     # add the line
 dotfiles sync                 # auto-runs brew bundle
 ```
 
-Raw chezmoi commands also work:
+<details>
+<summary>Raw chezmoi commands</summary>
+
 ```bash
 chezmoi edit ~/.config/fish/config.fish
 chezmoi diff
 chezmoi apply
 chezmoi apply --refresh-externals
 ```
+
+</details>
 
 ## Customization
 
@@ -158,7 +184,8 @@ keychain-env MY_TOKEN                                     # Keychain
 web3-env                                                  # ETH_RPC_URL + Etherscan
 ```
 
-### Encrypted files (age)
+<details>
+<summary><b>Encrypted files (age)</b></summary>
 
 For files too complex for template injection (kubeconfig, VPN configs, certificates):
 
@@ -180,12 +207,17 @@ chezmoi edit-config   # uncomment age section, paste public key
 # Backup key.txt to 1Password as a Secure Note
 ```
 
-### Removing what you don't need
+</details>
+
+<details>
+<summary><b>Removing what you don't need</b></summary>
 
 - **No web3?** Delete web3 aliases from `config.fish.tmpl`, remove `cast_*` functions, remove Foundry from install script
 - **No 1Password?** Answer "no" during `chezmoi init` -- all 1Password sections are skipped
 - **No Mac App Store?** Delete `run_once_after_mas-apps.sh.tmpl`
 - **Different editor?** `chezmoi init` prompts for your choice (VS Code, Zed, Neovim, Vim)
+
+</details>
 
 ## Troubleshooting
 
@@ -214,7 +246,8 @@ Dotfiles health check
 All checks passed.
 ```
 
-## How secrets work
+<details>
+<summary><b>How secrets flow</b></summary>
 
 ```
 Git repo (safe to publish)          Your machine (after chezmoi apply)
@@ -226,7 +259,10 @@ SSH IdentityAgent path        ->    1Password handles keys via Touch ID
 
 On a new Mac: clone -> `./install.sh` -> `op signin` -> `chezmoi apply` -> done.
 
-## Structure
+</details>
+
+<details>
+<summary><b>Repository structure</b></summary>
 
 ```
 home/                              # chezmoi source -> maps to $HOME
@@ -257,6 +293,8 @@ home/                              # chezmoi source -> maps to $HOME
     ├── code/                      # VS Code settings + extensions list
     └── git/ignore                 # global git ignore
 ```
+
+</details>
 
 ## Credits
 
