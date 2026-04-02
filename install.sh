@@ -102,60 +102,48 @@ run_gum_wizard() {
     # --- Step 1: Identity ---
     echo ""
     gum style --foreground 212 --bold "Step 1/4: Identity"
-    echo ""
 
-    name=$(gum input --prompt "> Name:  " --placeholder "Full name (for git)" \
+    name=$(gum input --header "  Name:" --placeholder "Full name (for git)" \
         --value "$(git config user.name 2>/dev/null || true)" \
-        --prompt.foreground 244)
-    gum style --foreground 10 "  Name:  $name"
+        --header.foreground 244)
 
-    email=$(gum input --prompt "> Email: " --placeholder "you@example.com" \
+    email=$(gum input --header "  Email:" --placeholder "you@example.com" \
         --value "$(git config user.email 2>/dev/null || true)" \
-        --prompt.foreground 244)
-    gum style --foreground 10 "  Email: $email"
+        --header.foreground 244)
 
     # --- Step 2: Editor ---
     echo ""
     gum style --foreground 212 --bold "Step 2/4: Editor"
-    echo ""
 
-    editor=$(gum choose --header "> Pick your default editor:" \
+    editor=$(gum choose --header "  Pick your default editor:" \
         --cursor.foreground 212 --selected.foreground 10 \
+        --header.foreground 244 \
         "code --wait" "zed --wait" "nvim" "vim")
-    gum style --foreground 10 "  Editor: $editor"
 
     # --- Step 3: Environment ---
     echo ""
     gum style --foreground 212 --bold "Step 3/4: Environment"
-    echo ""
 
-    if gum confirm --prompt.foreground 244 "  Headless/server? (skip GUI apps, dev tools)"; then
+    if gum confirm "  Headless/server? (skip GUI apps, dev tools)"; then
         headless=true
     else
         headless=false
     fi
-    gum style --foreground 10 "  Headless: $headless"
 
     # --- Step 4: Secrets ---
     echo ""
     gum style --foreground 212 --bold "Step 4/4: Secrets"
-    echo ""
 
     op_account=""
     op_vault=""
-    if gum confirm --prompt.foreground 244 "  Use 1Password for secrets?"; then
+    if gum confirm "  Use 1Password for secrets?"; then
         use_1password=true
-        gum style --foreground 10 "  1Password: enabled"
-        echo ""
-        op_account=$(gum input --prompt "> Account: " --placeholder "my.1password.com" \
-            --value "my.1password.com" --prompt.foreground 244)
-        gum style --foreground 10 "  Account: $op_account"
-        op_vault=$(gum input --prompt "> Vault:   " --placeholder "Developer" \
-            --value "Developer" --prompt.foreground 244)
-        gum style --foreground 10 "  Vault:   $op_vault"
+        op_account=$(gum input --header "  1Password account:" --placeholder "my.1password.com" \
+            --value "my.1password.com" --header.foreground 244)
+        op_vault=$(gum input --header "  1Password vault:" --placeholder "Developer" \
+            --value "Developer" --header.foreground 244)
     else
         use_1password=false
-        gum style --foreground 10 "  1Password: disabled"
     fi
 
     # --- Summary ---
