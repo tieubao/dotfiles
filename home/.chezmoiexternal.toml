@@ -76,7 +76,6 @@
     refreshPeriod = "720h"
 
 # 1Password CLI completions
-[".config/fish/completions/op.fish"]
-    type = "file"
-    url = "https://raw.githubusercontent.com/1Password/shell-plugins/main/plugins/op/op.fish"
-    refreshPeriod = "720h"
+# Removed: upstream URL no longer exists (1Password/shell-plugins dropped the fish file).
+# Use `op completion fish > ~/.config/fish/completions/op.fish` to generate locally,
+# or install via: brew install 1password-cli (includes completions).
