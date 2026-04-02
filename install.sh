@@ -399,6 +399,21 @@ elif command -v chezmoi &>/dev/null; then
     run_apply
 fi
 
+# --- Set fish as default shell (always runs, even with --config-only) ---
+if [ "$CHECK_ONLY" -eq 0 ]; then
+    FISH_PATH="/opt/homebrew/bin/fish"
+    if command -v fish &>/dev/null; then
+        if ! grep -q "$FISH_PATH" /etc/shells 2>/dev/null; then
+            echo "==> Adding fish to /etc/shells (requires sudo)"
+            echo "$FISH_PATH" | sudo tee -a /etc/shells >/dev/null
+        fi
+        if [ "$SHELL" != "$FISH_PATH" ]; then
+            echo "==> Setting fish as default shell"
+            chsh -s "$FISH_PATH" || echo "==> Run manually: chsh -s $FISH_PATH"
+        fi
+    fi
+fi
+
 # --- Post-apply verification ---
 if [ "$CHECK_ONLY" -eq 0 ]; then
     verify_deployment
