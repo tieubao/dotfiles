@@ -13,10 +13,15 @@ if [ -d "/Applications/Visual Studio Code.app" ] || command -v code &>/dev/null;
     mkdir -p "$VSCODE_USER"
     cp "${HOME}/.config/code/settings.json" "$VSCODE_USER/settings.json"
 
-    echo "==> Installing VS Code extensions"
+    echo "==> Checking VS Code extensions"
+    installed=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
     while IFS= read -r ext; do
         [ -z "$ext" ] && continue
-        code --install-extension "$ext" --force 2>/dev/null || true
+        ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+        if ! echo "$installed" | grep -qx "$ext_lower"; then
+            echo "  Installing: $ext"
+            code --install-extension "$ext" 2>/dev/null || true
+        fi
     done < "${HOME}/.config/code/extensions.txt"
     echo "==> VS Code done"
 fi
