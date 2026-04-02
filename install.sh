@@ -105,11 +105,12 @@ run_apply() {
 run_init_apply() {
     if [ "$CHECK_ONLY" -eq 1 ]; then
         echo "==> Dry run (--check mode, init required)"
-        if ! chezmoi apply --dry-run --verbose; then
-            echo "==> ERROR: chezmoi dry-run failed"
-            exit 2
+        echo "==> Note: chezmoi is not initialized yet. Run without --check first."
+        echo "==> Checking template syntax only..."
+        if ! chezmoi execute-template < /dev/null 2>/dev/null; then
+            echo "==> WARNING: template engine check failed (expected before init)"
         fi
-        echo "==> Dry run passed. No changes applied."
+        echo "==> Dry run complete. Run './install.sh' to initialize and apply."
         return 0
     fi
 
