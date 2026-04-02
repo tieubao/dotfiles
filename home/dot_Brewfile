@@ -87,6 +87,7 @@ brew "aichat"                 # multi-LLM CLI
 # opencode via: npm i -g opencode-ai
 
 # ── Security & Secrets ────────────────────────────────────────────────
+brew "age"                    # file encryption (chezmoi encrypted_ files)
 cask "1password"
 cask "1password-cli"
 brew "nordvpn"
