@@ -68,6 +68,10 @@ cd ~/dotfiles
 
 ## What happens on install
 
+<p align="center">
+  <img src="docs/dotfiles_bootstrap_flow.svg" alt="Bootstrap flow" width="680">
+</p>
+
 1. Installs Homebrew (if missing)
 2. Installs chezmoi
 3. Prompts for your info (name, email, editor, headless mode, 1Password vault)
@@ -249,50 +253,20 @@ All checks passed.
 <details>
 <summary><b>How secrets flow</b></summary>
 
-```
-Git repo (safe to publish)          Your machine (after chezmoi apply)
-------------------------------      ------------------------------------
-op://Developer/OpenAI/cred    ->    sk-proj-actual-secret-key
-{{ keyring "MY_TOKEN" ... }}  ->    actual-token-value
-SSH IdentityAgent path        ->    1Password handles keys via Touch ID
-```
+<p align="center">
+  <img src="docs/dotfiles_secrets_flow.svg" alt="Secrets flow" width="680">
+</p>
 
 On a new Mac: clone -> `./install.sh` -> `op signin` -> `chezmoi apply` -> done.
 
 </details>
 
 <details>
-<summary><b>Repository structure</b></summary>
+<summary><b>Architecture</b></summary>
 
-```
-home/                              # chezmoi source -> maps to $HOME
-├── .chezmoi.toml.tmpl             # init prompts (name, email, editor, headless, 1Password)
-├── .chezmoiexternal.toml          # fish plugins auto-downloaded from GitHub
-├── .chezmoiignore                 # OS-conditional file exclusions
-├── .chezmoiscripts/               # automation scripts
-│   ├── run_onchange_before_*      # Brewfile -> auto brew bundle
-│   ├── run_once_after_*           # one-time: shell, defaults, apps, tools
-│   └── run_onchange_after_*       # VS Code + Zed settings sync
-├── dot_Brewfile.tmpl              # Homebrew packages (layered: base/dev/apps)
-├── dot_gitconfig.tmpl             # git config (name + email templated)
-├── dot_ssh/config.tmpl            # SSH config (1Password agent, modular config.d/)
-├── dot_tool-versions              # global language versions (mise)
-├── dot_docker/config.json         # Docker / OrbStack
-└── dot_config/
-    ├── fish/
-    │   ├── config.fish.tmpl       # main config (paths, aliases, integrations)
-    │   ├── conf.d/secrets.fish.tmpl  # secrets via 1Password / Keychain
-    │   ├── functions/             # dotfiles, dotfiles-drift, cdg, op-env,
-    │   │                          # keychain-env, keychain-set, tx, web3-env,
-    │   │                          # render-img
-    │   └── completions/           # tab completions for custom functions
-    ├── starship.toml              # Starship prompt config
-    ├── ghostty/config             # terminal config
-    ├── tmux/tmux.conf             # tmux (C-a, vim nav, fzf picker)
-    ├── zed/settings.json.tmpl     # Zed editor (MCP servers templated)
-    ├── code/                      # VS Code settings + extensions list
-    └── git/ignore                 # global git ignore
-```
+<p align="center">
+  <img src="docs/dotfiles_architecture.svg" alt="Architecture" width="680">
+</p>
 
 </details>
 
