@@ -161,7 +161,11 @@ run_plain_wizard() {
     esac
 
     read -rp "Headless/server environment? (y/N): " headless_input
-    headless=$( [ "$headless_input" = "y" ] || [ "$headless_input" = "Y" ] && echo true || echo false )
+    if [ "$headless_input" = "y" ] || [ "$headless_input" = "Y" ]; then
+        headless=true
+    else
+        headless=false
+    fi
 
     op_account=""
     op_vault=""
@@ -196,15 +200,16 @@ EOF
 run_wizard() {
     if command -v gum &>/dev/null && [ -t 0 ]; then
         run_gum_wizard
+        # Let chezmoi init validate template + fill any gaps the wizard missed
+        chezmoi init
     elif [ -t 0 ]; then
         run_plain_wizard
+        chezmoi init
     else
-        echo "==> Non-interactive mode. Running chezmoi init for prompts."
+        # Non-interactive: chezmoi init reads from existing config or fails
+        echo "==> Non-interactive mode. Running chezmoi init."
         chezmoi init
     fi
-
-    # Let chezmoi init validate template + fill any gaps we missed
-    chezmoi init
 }
 
 # --- Apply ---
@@ -223,9 +228,12 @@ run_apply() {
         echo "==> Config-only mode: deploying files, skipping scripts"
     fi
 
-    if command -v gum &>/dev/null; then
+    if command -v gum &>/dev/null && [ -t 0 ]; then
         # shellcheck disable=SC2046
-        gum spin --spinner dot --title "Applying configs..." -- chezmoi apply $(apply_flags)
+        if ! gum spin --spinner dot --title "Applying configs..." -- chezmoi apply $(apply_flags); then
+            echo "==> ERROR: chezmoi apply failed"
+            exit 2
+        fi
     else
         # shellcheck disable=SC2046
         if ! chezmoi apply $(apply_flags); then
@@ -268,6 +276,11 @@ elif command -v chezmoi &>/dev/null && link_is_correct && chezmoi_initialized; t
 
 elif command -v chezmoi &>/dev/null; then
     ensure_link
+    if [ "$CHECK_ONLY" -eq 1 ]; then
+        echo "==> Dry run (--check mode, not yet initialized)"
+        echo "==> Run without --check first to set up config."
+        exit 0
+    fi
     run_wizard
     run_apply
 fi
