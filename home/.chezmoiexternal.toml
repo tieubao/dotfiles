@@ -4,9 +4,9 @@
 # ── Fish plugins (via git clone, no plugin manager needed) ────────────
 
 # Fish shell autocomplete suggestions (like zsh-autosuggestions)
-[".config/fish/conf.d/fish_async_prompt.fish"]
+[".config/fish/conf.d/__async_prompt.fish"]
     type = "file"
-    url = "https://raw.githubusercontent.com/acomber/fish-async-prompt/main/conf.d/fish_async_prompt.fish"
+    url = "https://raw.githubusercontent.com/acomagu/fish-async-prompt/master/conf.d/__async_prompt.fish"
     refreshPeriod = "720h"
 
 # Autopair — auto-close brackets, quotes, etc.
@@ -49,22 +49,47 @@
 # Sponge — clean failed commands from history
 [".config/fish/conf.d/sponge.fish"]
     type = "file"
-    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/master/conf.d/sponge.fish"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/conf.d/sponge.fish"
     refreshPeriod = "720h"
 
 [".config/fish/functions/_sponge_on_postexec.fish"]
     type = "file"
-    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/master/functions/_sponge_on_postexec.fish"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/functions/_sponge_on_postexec.fish"
     refreshPeriod = "720h"
 
 [".config/fish/functions/_sponge_on_preexec.fish"]
     type = "file"
-    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/master/functions/_sponge_on_preexec.fish"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/functions/_sponge_on_preexec.fish"
     refreshPeriod = "720h"
 
-[".config/fish/functions/_sponge_remove.fish"]
+[".config/fish/functions/_sponge_remove_from_history.fish"]
     type = "file"
-    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/master/functions/_sponge_remove.fish"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/functions/_sponge_remove_from_history.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_sponge_clear_state.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/functions/_sponge_clear_state.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_sponge_on_exit.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/functions/_sponge_on_exit.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/_sponge_on_prompt.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/functions/_sponge_on_prompt.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/sponge_filter_failed.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/functions/sponge_filter_failed.fish"
+    refreshPeriod = "720h"
+
+[".config/fish/functions/sponge_filter_matched.fish"]
+    type = "file"
+    url = "https://raw.githubusercontent.com/meaningful-ooo/sponge/main/functions/sponge_filter_matched.fish"
     refreshPeriod = "720h"
 
 # ── Completions ───────────────────────────────────────────────────────
@@ -76,7 +101,6 @@
     refreshPeriod = "720h"
 
 # 1Password CLI completions
-[".config/fish/completions/op.fish"]
-    type = "file"
-    url = "https://raw.githubusercontent.com/1Password/shell-plugins/main/plugins/op/op.fish"
-    refreshPeriod = "720h"
+# Removed: upstream URL no longer exists (1Password/shell-plugins dropped the fish file).
+# Use `op completion fish > ~/.config/fish/completions/op.fish` to generate locally,
+# or install via: brew install 1password-cli (includes completions).

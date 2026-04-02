@@ -26,6 +26,25 @@ cd ~/dotfiles
 
 `chezmoi init` will prompt for your name, email, editor, and whether you use 1Password. Everything adapts accordingly.
 
+### Alternative: bootstrap without git
+
+On a truly fresh Mac, git requires Xcode CLT (10+ minutes to install). These methods skip that:
+
+**Via chezmoi directly (no git, no Homebrew):**
+```bash
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply tieubao
+```
+
+**Via Homebrew + chezmoi (no git):**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+eval "$(/opt/homebrew/bin/brew shellenv)"
+brew install chezmoi
+chezmoi init --apply tieubao
+```
+
+> **Note:** These methods clone into `~/.local/share/chezmoi/` (chezmoi's default) instead of `~/dotfiles`. The git clone method is better for active development since you control the repo location.
+
 ## What happens on install
 
 1. Installs Homebrew (if missing)
@@ -98,6 +117,28 @@ keychain_env MY_TOKEN                  # load into current shell
 ```fish
 # Just set env vars in a gitignored local file
 # Or use chezmoi's age encryption for files
+```
+
+### Encrypted files (age)
+
+For files too complex for template injection (kubeconfig, VPN configs, certificates):
+
+```bash
+# One-time setup
+brew install age
+age-keygen -o ~/.config/chezmoi/key.txt
+# Copy the public key (age1...) from key.txt output
+
+# Edit chezmoi config to enable encryption
+chezmoi edit-config
+# Uncomment the age section and paste your public key as recipient
+
+# Add encrypted files
+chezmoi add --encrypt ~/.kube/config
+# Creates home/encrypted_dot_kube/config.age in the repo
+
+# IMPORTANT: Backup key.txt to 1Password as a Secure Note
+# On a new machine, retrieve the key before running chezmoi apply
 ```
 
 ### Removing what you don't need

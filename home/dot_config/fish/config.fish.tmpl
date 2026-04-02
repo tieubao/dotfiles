@@ -112,6 +112,17 @@ if status is-interactive
     abbr -a df duf
     abbr -a ps procs
 
+    # ── Drift check (once per day, non-blocking) ───────────────────────
+    set -l drift_check_file $XDG_CACHE_HOME/dotfiles-drift-check
+    set -l today (date +%Y-%m-%d)
+    if not test -f $drift_check_file; or test (cat $drift_check_file) != $today
+        echo $today > $drift_check_file
+        set -l drift_count (chezmoi diff --no-pager 2>/dev/null | grep '^diff' | wc -l | string trim)
+        if test "$drift_count" -gt 0
+            echo "dotfiles: $drift_count file(s) have drifted. Run 'dotfiles-drift' to see details."
+        end
+    end
+
     # Greeting
     set -g fish_greeting ""
 end
