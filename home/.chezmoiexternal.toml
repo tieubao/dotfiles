@@ -100,7 +100,5 @@
     url = "https://raw.githubusercontent.com/docker/cli/master/contrib/completion/fish/docker.fish"
     refreshPeriod = "720h"
 
-# 1Password CLI completions
-# Removed: upstream URL no longer exists (1Password/shell-plugins dropped the fish file).
-# Use `op completion fish > ~/.config/fish/completions/op.fish` to generate locally,
-# or install via: brew install 1password-cli (includes completions).
+# 1Password CLI completions — generated via `op completion fish` in config.fish
+# (upstream 1Password/shell-plugins dropped the static fish file)
