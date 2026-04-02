@@ -9,5 +9,5 @@ if ! command -v brew &>/dev/null; then
 fi
 
 echo "==> Brewfile changed, running brew bundle..."
-brew bundle --file="${HOME}/.Brewfile" --no-lock --no-upgrade 2>&1 | tail -20
+brew bundle --file="${HOME}/.Brewfile" --no-upgrade 2>&1 | tail -20
 echo "==> brew bundle done"

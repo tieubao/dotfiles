@@ -2,12 +2,12 @@
 # https://ghostty.org/docs/config
 
 # Font
-font-family = JetBrains Mono
-font-size = 14
+font-family = SauceCodePro Nerd Font
+font-size = 12
 font-thicken = true
 
-# Theme
-theme = catppuccin-mocha
+# Theme (matches Terminal.app base16-eighties.dark)
+theme = base16-eighties-dark
 
 # Window
 window-padding-x = 8
