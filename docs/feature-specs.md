@@ -1,8 +1,8 @@
-# Feature Specs: tieubao/dotfiles
+# Feature Specs: dwarvesf/dotfiles
 
 Generated: 2026-04-02
 For: Claude Code handoff
-Repo: https://github.com/tieubao/dotfiles
+Repo: https://github.com/dwarvesf/dotfiles
 
 ---
 
@@ -113,7 +113,7 @@ The README requires `git clone` as the first step. On a truly fresh Mac, git req
 Add an alternative one-liner to README:
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply tieubao
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply dwarvesf
 ```
 
 Also add a second method using Homebrew (no git needed, brew installs via curl):
@@ -122,13 +122,13 @@ Also add a second method using Homebrew (no git needed, brew installs via curl):
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 eval "$(/opt/homebrew/bin/brew shellenv)"
 brew install chezmoi
-chezmoi init --apply tieubao
+chezmoi init --apply dwarvesf
 ```
 
 Rules:
 - Keep the `git clone` method as primary (better for development workflow)
 - Add "without git" as a clearly labeled alternative section
-- The `chezmoi init tieubao` approach means chezmoi clones to `~/.local/share/chezmoi/` itself (no symlink trick). Document this difference.
+- The `chezmoi init dwarvesf` approach means chezmoi clones to `~/.local/share/chezmoi/` itself (no symlink trick). Document this difference.
 - Both methods should produce the same end state
 
 ### Files to modify

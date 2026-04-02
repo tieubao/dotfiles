@@ -6,7 +6,7 @@
 ![Ghostty](https://img.shields.io/badge/Ghostty-Terminal-1a1a2e)
 ![chezmoi](https://img.shields.io/badge/chezmoi-Managed-blue)
 ![1Password](https://img.shields.io/badge/1Password-Secrets-0572EC?logo=1password&logoColor=white)
-![CI](https://img.shields.io/github/actions/workflow/status/tieubao/dotfiles/test.yml?label=CI&logo=github)
+![CI](https://img.shields.io/github/actions/workflow/status/dwarvesf/dotfiles/test.yml?label=CI&logo=github)
 
 A modern developer tooling stack for macOS, deployed in one command. Every tool is chosen for speed, ergonomics, and native macOS integration; no legacy defaults, no bloat.
 
@@ -20,7 +20,7 @@ A modern developer tooling stack for macOS, deployed in one command. Every tool 
 ## Quick start
 
 ```bash
-git clone https://github.com/tieubao/dotfiles ~/dotfiles
+git clone https://github.com/dwarvesf/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh
 ```
 
@@ -37,7 +37,7 @@ A styled setup wizard ([gum](https://github.com/charmbracelet/gum)) will prompt 
 Already have brew, fish, and your tools installed? Use `--config-only` to deploy just the config files without re-running brew bundle, mas installs, or macOS defaults:
 
 ```bash
-git clone https://github.com/tieubao/dotfiles ~/dotfiles
+git clone https://github.com/dwarvesf/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh --config-only
 ```
 
@@ -65,7 +65,7 @@ On a truly fresh Mac, git requires Xcode CLT (10+ minutes to install). These met
 
 **Via chezmoi directly (no git, no Homebrew):**
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply tieubao
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply dwarvesf
 ```
 
 **Via Homebrew + chezmoi (no git):**
@@ -73,7 +73,7 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply tieubao
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 eval "$(/opt/homebrew/bin/brew shellenv)"
 brew install chezmoi
-chezmoi init --apply tieubao
+chezmoi init --apply dwarvesf
 ```
 
 > **Note:** These methods clone into `~/.local/share/chezmoi/` (chezmoi's default) instead of `~/dotfiles`. The git clone method is better for active development since you control the repo location.
