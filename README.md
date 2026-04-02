@@ -27,6 +27,34 @@ cd ~/dotfiles && ./install.sh
 **Flags:**
 - `./install.sh --check` -- dry-run, validates without applying
 - `./install.sh --force` -- teardown and reinit from scratch
+- `./install.sh --config-only` -- deploy config files only, skip brew/mas/defaults
+
+<details>
+<summary><b>Adopt on an existing Mac</b></summary>
+
+Already have brew, fish, and your tools installed? Use `--config-only` to deploy just the config files without re-running brew bundle, mas installs, or macOS defaults:
+
+```bash
+git clone https://github.com/tieubao/dotfiles ~/dotfiles
+cd ~/dotfiles && ./install.sh --config-only
+```
+
+This will:
+1. Link chezmoi source to `~/dotfiles/home`
+2. Prompt for your name, email, editor, headless mode, 1Password
+3. Deploy all config files to `$HOME`
+4. **Skip** brew bundle, Mac App Store apps, macOS defaults, toolchain installs
+
+Then switch your shell and reload:
+```bash
+# Set fish as default (if not already)
+grep -q /opt/homebrew/bin/fish /etc/shells || echo /opt/homebrew/bin/fish | sudo tee -a /etc/shells
+chsh -s /opt/homebrew/bin/fish
+
+# Open a new terminal to pick up the configs
+```
+
+</details>
 
 <details>
 <summary><b>Alternative: bootstrap without git</b></summary>
