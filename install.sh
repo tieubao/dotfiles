@@ -89,6 +89,9 @@ apply_flags() {
 
 # --- Gum wizard ---
 run_gum_wizard() {
+    # Gum reads env vars as config flags. Shell theming vars like UNDERLINE, BOLD,
+    # ITALIC (ANSI escape codes) conflict with gum's boolean flags. Unset them.
+    unset UNDERLINE BOLD ITALIC
     echo ""
     gum style --border double --padding "1 2" --border-foreground 212 \
         "  dotfiles setup  "
