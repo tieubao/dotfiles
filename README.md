@@ -22,7 +22,7 @@ git clone https://github.com/tieubao/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh
 ```
 
-`chezmoi init` will prompt for your name, email, editor, headless mode, and whether you use 1Password. Everything adapts accordingly. On a headless/server machine, GUI apps, dev toolchains, and casks are skipped automatically.
+A styled setup wizard ([gum](https://github.com/charmbracelet/gum)) will prompt for your name, email, editor, headless mode, and whether you use 1Password. Everything adapts accordingly. On a headless/server machine, GUI apps, dev toolchains, and casks are skipped automatically.
 
 **Flags:**
 - `./install.sh --check` -- dry-run, validates without applying
@@ -102,7 +102,7 @@ cd ~/dotfiles
 
 1. Installs Homebrew (if missing)
 2. Installs chezmoi
-3. Prompts for your info (name, email, editor, headless mode, 1Password vault)
+3. Runs setup wizard (styled prompts for name, email, editor, headless mode, 1Password)
 4. Deploys all config files to `$HOME`
 5. Runs automation scripts:
    - `brew bundle` -- installs ~80 packages + casks
