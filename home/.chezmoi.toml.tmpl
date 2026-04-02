@@ -10,7 +10,7 @@
 {{- $op_vault := "" -}}
 {{- if $use_1password -}}
 {{-   $op_account = promptStringOnce . "op_account" "1Password account (e.g. my.1password.com)" -}}
-{{-   $op_vault = promptStringOnce . "op_vault" "1Password vault for dev secrets (e.g. Developer)" -}}
+{{-   $op_vault = promptStringOnce . "op_vault" "1Password vault for secrets (e.g. Private)" -}}
 {{- end -}}
 
 # Age encryption — uncomment after running: age-keygen -o ~/.config/chezmoi/key.txt

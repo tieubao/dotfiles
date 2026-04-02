@@ -94,22 +94,36 @@ WIZ_ACCENT=75
 WIZ_LIGHT=117
 WIZ_DIM=251
 
-# Capture gum input result via temp file to avoid stdout residual on screen
-gum_ask() {
-    local tmpfile
-    tmpfile=$(mktemp)
-    gum input "$@" > "$tmpfile"
-    cat "$tmpfile"
-    rm -f "$tmpfile"
+# Styled read prompt (no gum input, avoids duplicate line issue)
+# Sets REPLY variable directly (can't use $() because read needs TTY)
+# Usage: styled_read "Label" "default_value"; myvar="$REPLY"
+styled_read() {
+    local label=$1 default=$2
+    if [ -n "$default" ]; then
+        printf '\033[38;5;%sm  %s \033[38;5;%sm[%s] \033[0m' "$WIZ_DIM" "$label" "$WIZ_DIM" "$default"
+    else
+        printf '\033[38;5;%sm  %s \033[0m' "$WIZ_DIM" "$label"
+    fi
+    if ! read -r REPLY; then
+        echo ""
+        echo "==> Cancelled."
+        exit 0
+    fi
+    if [ -z "$REPLY" ]; then
+        REPLY="$default"
+    fi
 }
 
 # Draw the wizard header + progress bar + completed answers
+# Builds output in a buffer first, then prints all at once to minimize flicker
 draw_wizard() {
     local step=$1 total=4
-    printf '\033[H\033[J'  # ANSI: cursor home + erase display (less flicker than clear/tput)
-    gum style --border rounded --padding "1 2" --border-foreground "$WIZ_ACCENT" \
-        "  dotfiles setup  "
-    echo ""
+    local buf=""
+
+    # Header
+    buf+="$(gum style --border rounded --padding "1 2" --border-foreground "$WIZ_ACCENT" \
+        "  dotfiles setup  ")"
+    buf+=$'\n\n'
 
     # Progress bar
     local filled=$((step * 20 / total))
@@ -117,18 +131,21 @@ draw_wizard() {
     local bar=""
     for ((i=0; i<filled; i++)); do bar+="█"; done
     for ((i=0; i<empty; i++)); do bar+="░"; done
-    gum style --foreground "$WIZ_ACCENT" "  $bar  Step $step/$total"
-    echo ""
+    buf+="$(gum style --foreground "$WIZ_ACCENT" "  $bar  Step $step/$total")"
+    buf+=$'\n\n'
 
     # Show completed answers
-    [ -n "${wiz_name+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Name:      $wiz_name"
-    [ -n "${wiz_email+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Email:     $wiz_email"
-    [ -n "${wiz_editor+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Editor:    $wiz_editor"
-    [ -n "${wiz_headless+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Headless:  $wiz_headless"
-    [ -n "${wiz_1pass+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ 1Password: $wiz_1pass"
-    [ -n "${wiz_account+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Account:   $wiz_account"
-    [ -n "${wiz_vault+x}" ] && gum style --foreground "$WIZ_DIM" "  ✓ Vault:     $wiz_vault"
-    echo ""
+    [ -n "${wiz_name+x}" ] && buf+=$'\033[38;5;'"${WIZ_DIM}"'m  ✓ Name:      '"$wiz_name"$'\033[0m\n'
+    [ -n "${wiz_email+x}" ] && buf+=$'\033[38;5;'"${WIZ_DIM}"'m  ✓ Email:     '"$wiz_email"$'\033[0m\n'
+    [ -n "${wiz_editor+x}" ] && buf+=$'\033[38;5;'"${WIZ_DIM}"'m  ✓ Editor:    '"$wiz_editor"$'\033[0m\n'
+    [ -n "${wiz_headless+x}" ] && buf+=$'\033[38;5;'"${WIZ_DIM}"'m  ✓ Headless:  '"$wiz_headless"$'\033[0m\n'
+    [ -n "${wiz_1pass+x}" ] && buf+=$'\033[38;5;'"${WIZ_DIM}"'m  ✓ 1Password: '"$wiz_1pass"$'\033[0m\n'
+    [ -n "${wiz_account+x}" ] && buf+=$'\033[38;5;'"${WIZ_DIM}"'m  ✓ Account:   '"$wiz_account"$'\033[0m\n'
+    [ -n "${wiz_vault+x}" ] && buf+=$'\033[38;5;'"${WIZ_DIM}"'m  ✓ Vault:     '"$wiz_vault"$'\033[0m\n'
+    buf+=$'\n'
+
+    # Clear screen and print buffer in one shot
+    printf '\033[H\033[J%s' "$buf"
 }
 
 run_gum_wizard() {
@@ -136,22 +153,19 @@ run_gum_wizard() {
     # ITALIC (ANSI escape codes) conflict with gum's boolean flags. Unset them.
     unset UNDERLINE BOLD ITALIC
 
+    # Trap Ctrl+C to exit cleanly from the wizard
+    trap 'echo ""; echo "==> Cancelled."; exit 0' INT
+
     local name email editor headless use_1password op_account op_vault
 
     # --- Step 1: Identity (name + email, no redraw between them) ---
     draw_wizard 1
     gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
     echo ""
-    gum style --foreground "$WIZ_DIM" "  Name:"
-    name=$(gum_ask --placeholder "Full name (for git)" \
-        --value "$(git config user.name 2>/dev/null || true)" \
-        --cursor.foreground "$WIZ_ACCENT")
-    wiz_name="$name"
-    gum style --foreground "$WIZ_DIM" "  Email:"
-    email=$(gum_ask --placeholder "you@example.com" \
-        --value "$(git config user.email 2>/dev/null || true)" \
-        --cursor.foreground "$WIZ_ACCENT")
-    wiz_email="$email"
+    styled_read "Name:" "$(git config user.name 2>/dev/null || true)"
+    name="$REPLY"; wiz_name="$name"
+    styled_read "Email:" "$(git config user.email 2>/dev/null || true)"
+    email="$REPLY"; wiz_email="$email"
 
     # --- Step 2: Editor ---
     draw_wizard 2
@@ -189,14 +203,10 @@ run_gum_wizard() {
     if gum confirm "  Use 1Password for secrets?"; then
         use_1password=true
         wiz_1pass="enabled"
-        gum style --foreground "$WIZ_DIM" "  1Password account:"
-        op_account=$(gum_ask --placeholder "my.1password.com" \
-            --value "my.1password.com" --cursor.foreground "$WIZ_ACCENT")
-        wiz_account="$op_account"
-        gum style --foreground "$WIZ_DIM" "  1Password vault:"
-        op_vault=$(gum_ask --placeholder "Developer" \
-            --value "Developer" --cursor.foreground "$WIZ_ACCENT")
-        wiz_vault="$op_vault"
+        styled_read "Account:" "my.1password.com"
+        op_account="$REPLY"; wiz_account="$op_account"
+        styled_read "Vault:" "Private"
+        op_vault="$REPLY"; wiz_vault="$op_vault"
     else
         use_1password=false
         wiz_1pass="disabled"
@@ -210,6 +220,9 @@ run_gum_wizard() {
         echo "==> Cancelled."
         exit 0
     fi
+
+    # Restore default signal handling
+    trap - INT
 
     # Write chezmoi config
     mkdir -p "$(dirname "$CHEZMOI_CONFIG")"
@@ -265,8 +278,8 @@ run_plain_wizard() {
         use_1password=true
         read -rp "1Password account [my.1password.com]: " op_account
         op_account="${op_account:-my.1password.com}"
-        read -rp "1Password vault [Developer]: " op_vault
-        op_vault="${op_vault:-Developer}"
+        read -rp "1Password vault [Private]: " op_vault
+        op_vault="${op_vault:-Private}"
     else
         use_1password=false
     fi
@@ -409,38 +422,144 @@ if [ "$CHECK_ONLY" -eq 0 ]; then
     verify_deployment
 fi
 
-# --- Brew package check (show missing packages from Brewfile) ---
+# --- Brew package check (smart: skips packages available outside brew) ---
+check_formula_installed() {
+    # Check if a formula's command exists in PATH (even if not from brew)
+    local pkg=$1
+    # Some formulae have different command names
+    case "$pkg" in
+        git-delta) command -v delta &>/dev/null ;;
+        git-filter-repo) command -v git-filter-repo &>/dev/null ;;
+        git-sizer) command -v git-sizer &>/dev/null ;;
+        kubernetes-cli) command -v kubectl &>/dev/null ;;
+        python@*) command -v python3 &>/dev/null ;;
+        choose-rust) command -v choose &>/dev/null ;;
+        1password-cli) command -v op &>/dev/null ;;
+        *) command -v "$pkg" &>/dev/null ;;
+    esac
+}
+
+check_cask_installed() {
+    # Check if a cask's .app exists in /Applications (even if not from brew)
+    local cask=$1
+    case "$cask" in
+        1password) [ -d "/Applications/1Password.app" ] ;;
+        visual-studio-code) [ -d "/Applications/Visual Studio Code.app" ] ;;
+        google-chrome) [ -d "/Applications/Google Chrome.app" ] ;;
+        microsoft-edge) [ -d "/Applications/Microsoft Edge.app" ] ;;
+        tor-browser) [ -d "/Applications/Tor Browser.app" ] ;;
+        zen-browser) [ -d "/Applications/Zen.app" ] || [ -d "/Applications/Zen Browser.app" ] ;;
+        monitor-control) [ -d "/Applications/MonitorControl.app" ] ;;
+        font-*) true ;;  # Skip font checks, hard to verify
+        *)
+            # Convert kebab-case to title case for app lookup
+            local app_name
+            app_name=$(echo "$cask" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1')
+            [ -d "/Applications/$app_name.app" ]
+            ;;
+    esac
+}
+
 if [ "$CHECK_ONLY" -eq 0 ] && [ -f "$HOME/.Brewfile" ] && command -v brew &>/dev/null; then
-    missing=$(brew bundle check --file="$HOME/.Brewfile" --no-upgrade --verbose 2>&1 | grep "needs to be installed" || true)
-    if [ -n "$missing" ]; then
-        echo ""
-        echo "==> Missing Homebrew packages (from Brewfile):"
-        while IFS= read -r line; do echo "   $line"; done <<< "$missing"
-        echo ""
-        echo "   Install with: brew bundle --file=~/.Brewfile --no-lock --no-upgrade"
+    missing_raw=$(brew bundle check --file="$HOME/.Brewfile" --no-upgrade --verbose 2>&1 | grep "needs to be installed" || true)
+    if [ -n "$missing_raw" ]; then
+        # Filter out packages that are actually installed (just not via brew)
+        truly_missing_formulae=""
+        truly_missing_casks=""
+
+        while IFS= read -r line; do
+            pkg=$(echo "$line" | sed 's/→ Formula //' | sed 's/ needs to be .*//')
+            if ! check_formula_installed "$pkg"; then
+                truly_missing_formulae+="$pkg"$'\n'
+            fi
+        done <<< "$(echo "$missing_raw" | grep "^→ Formula" || true)"
+
+        while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            cask=$(echo "$line" | sed 's/→ Cask //' | sed 's/ needs to be .*//')
+            if ! check_cask_installed "$cask"; then
+                truly_missing_casks+="$cask"$'\n'
+            fi
+        done <<< "$(echo "$missing_raw" | grep "^→ Cask" || true)"
+
+        # Trim trailing newlines
+        truly_missing_formulae=$(echo "$truly_missing_formulae" | sed '/^$/d')
+        truly_missing_casks=$(echo "$truly_missing_casks" | sed '/^$/d')
+
+        formulae_count=0
+        casks_count=0
+        [ -n "$truly_missing_formulae" ] && formulae_count=$(echo "$truly_missing_formulae" | wc -l | tr -d ' ')
+        [ -n "$truly_missing_casks" ] && casks_count=$(echo "$truly_missing_casks" | wc -l | tr -d ' ')
+        total_missing=$((formulae_count + casks_count))
+
+        if [ "$total_missing" -gt 0 ]; then
+            echo ""
+            if command -v gum &>/dev/null; then
+                gum style --border rounded --padding "1 2" --border-foreground 214 \
+                    "  $total_missing packages not yet installed"
+                echo ""
+                if [ -n "$truly_missing_formulae" ]; then
+                    gum style --foreground "$WIZ_LIGHT" "  CLI tools ($formulae_count):"
+                    echo "$truly_missing_formulae" | tr '\n' ',' | sed 's/,/, /g' | sed 's/, $//' | fmt -w 56 | while IFS= read -r fline; do
+                        printf '\033[38;5;%sm    %s\033[0m\n' "$WIZ_DIM" "$fline"
+                    done
+                    echo ""
+                fi
+                if [ -n "$truly_missing_casks" ]; then
+                    gum style --foreground "$WIZ_LIGHT" "  Apps ($casks_count):"
+                    echo "$truly_missing_casks" | tr '\n' ',' | sed 's/,/, /g' | sed 's/, $//' | fmt -w 56 | while IFS= read -r cline; do
+                        printf '\033[38;5;%sm    %s\033[0m\n' "$WIZ_DIM" "$cline"
+                    done
+                    echo ""
+                fi
+                gum style --foreground 214 "  Install: brew bundle --file=~/.Brewfile --no-lock"
+            else
+                echo "==> $total_missing packages not yet installed ($formulae_count CLI, $casks_count apps)"
+                [ -n "$truly_missing_formulae" ] && echo "  CLI: $truly_missing_formulae" | tr '\n' ', '
+                [ -n "$truly_missing_casks" ] && echo "  Apps: $truly_missing_casks" | tr '\n' ', '
+                echo ""
+                echo "  Install: brew bundle --file=~/.Brewfile --no-lock --no-upgrade"
+            fi
+        fi
     fi
 fi
 
-echo ""
-echo "==> Done!"
+# --- Final summary ---
 echo ""
 if command -v gum &>/dev/null; then
-    gum style --foreground "$WIZ_ACCENT" "chezmoi now manages everything."
+    gum style --border double --padding "1 2" --border-foreground 10 \
+        "  Setup complete  "
+    echo ""
+
+    gum style --foreground "$WIZ_LIGHT" --bold "  Daily commands"
+    echo ""
+    printf '\033[38;5;%sm    dotfiles sync          \033[38;5;%sm%s\033[0m\n' "$WIZ_ACCENT" "$WIZ_DIM" "Apply all changes"
+    printf '\033[38;5;%sm    dotfiles edit <file>   \033[38;5;%sm%s\033[0m\n' "$WIZ_ACCENT" "$WIZ_DIM" "Edit a managed file"
+    printf '\033[38;5;%sm    dotfiles doctor        \033[38;5;%sm%s\033[0m\n' "$WIZ_ACCENT" "$WIZ_DIM" "Health check"
+    printf '\033[38;5;%sm    dotfiles update        \033[38;5;%sm%s\033[0m\n' "$WIZ_ACCENT" "$WIZ_DIM" "Pull latest + apply"
+    printf '\033[38;5;%sm    dotfiles bench         \033[38;5;%sm%s\033[0m\n' "$WIZ_ACCENT" "$WIZ_DIM" "Shell startup benchmark"
+    printf '\033[38;5;%sm    dotfiles backup        \033[38;5;%sm%s\033[0m\n' "$WIZ_ACCENT" "$WIZ_DIM" "Back up config to 1Password"
+    echo ""
+
+    gum style --foreground "$WIZ_LIGHT" --bold "  Next steps"
+    echo ""
+    printf '\033[38;5;10m    1.\033[38;5;%sm Open a new terminal (or: exec fish)\033[0m\n' "$WIZ_DIM"
+    printf '\033[38;5;10m    2.\033[38;5;%sm Sign into 1Password:  \033[38;5;%smop signin\033[0m\n' "$WIZ_DIM" "$WIZ_ACCENT"
+    printf '\033[38;5;10m    3.\033[38;5;%sm Enable SSH agent: 1Password > Settings > Developer\033[0m\n' "$WIZ_DIM"
+    printf '\033[38;5;10m    4.\033[38;5;%sm Run: \033[38;5;%smdotfiles doctor\033[0m\n' "$WIZ_DIM" "$WIZ_ACCENT"
+    echo ""
+else
+    echo "==> Done!"
     echo ""
     echo "Daily commands:"
     echo "  dotfiles sync         Apply all changes"
     echo "  dotfiles edit <file>  Edit a managed file"
     echo "  dotfiles doctor       Health check"
     echo "  dotfiles update       Pull latest + apply"
-else
-    echo "chezmoi now manages everything. Future changes:"
-    echo "  chezmoi edit ~/.config/fish/config.fish   # edit a config"
-    echo "  chezmoi apply                             # apply all changes"
-    echo "  chezmoi diff                              # preview changes"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Open a new terminal (or: exec fish)"
+    echo "  2. Sign into 1Password:  op signin"
+    echo "  3. Enable 1Password SSH agent: 1Password > Settings > Developer > SSH Agent"
+    echo "  4. Run: dotfiles doctor"
 fi
-echo ""
-echo "Next steps:"
-echo "  1. Open a new terminal (or: exec fish)"
-echo "  2. Sign into 1Password:  op signin"
-echo "  3. Enable 1Password SSH agent: 1Password > Settings > Developer > SSH Agent"
-echo "  4. Run: dotfiles doctor"
