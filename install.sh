@@ -94,12 +94,19 @@ WIZ_ACCENT=75
 WIZ_LIGHT=117
 WIZ_DIM=251
 
+# Capture gum input result via temp file to avoid stdout residual on screen
+gum_ask() {
+    local tmpfile
+    tmpfile=$(mktemp)
+    gum input "$@" > "$tmpfile"
+    cat "$tmpfile"
+    rm -f "$tmpfile"
+}
+
 # Draw the wizard header + progress bar + completed answers
-# Uses cursor-home + clear-below instead of clear to reduce flicker
 draw_wizard() {
     local step=$1 total=4
-    tput cup 0 0 2>/dev/null  # cursor to top-left
-    tput ed 2>/dev/null       # clear from cursor to end of screen
+    printf '\033[H\033[J'  # ANSI: cursor home + erase display (less flicker than clear/tput)
     gum style --border rounded --padding "1 2" --border-foreground "$WIZ_ACCENT" \
         "  dotfiles setup  "
     echo ""
@@ -136,7 +143,7 @@ run_gum_wizard() {
     gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
     echo ""
     gum style --foreground "$WIZ_DIM" "  Name:"
-    name=$(gum input --placeholder "Full name (for git)" \
+    name=$(gum_ask --placeholder "Full name (for git)" \
         --value "$(git config user.name 2>/dev/null || true)" \
         --cursor.foreground "$WIZ_ACCENT")
     wiz_name="$name"
@@ -146,7 +153,7 @@ run_gum_wizard() {
     gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
     echo ""
     gum style --foreground "$WIZ_DIM" "  Email:"
-    email=$(gum input --placeholder "you@example.com" \
+    email=$(gum_ask --placeholder "you@example.com" \
         --value "$(git config user.email 2>/dev/null || true)" \
         --cursor.foreground "$WIZ_ACCENT")
     wiz_email="$email"
@@ -192,7 +199,7 @@ run_gum_wizard() {
         gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
         echo ""
         gum style --foreground "$WIZ_DIM" "  1Password account:"
-        op_account=$(gum input --placeholder "my.1password.com" \
+        op_account=$(gum_ask --placeholder "my.1password.com" \
             --value "my.1password.com" --cursor.foreground "$WIZ_ACCENT")
         wiz_account="$op_account"
 
@@ -200,7 +207,7 @@ run_gum_wizard() {
         gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
         echo ""
         gum style --foreground "$WIZ_DIM" "  1Password vault:"
-        op_vault=$(gum input --placeholder "Developer" \
+        op_vault=$(gum_ask --placeholder "Developer" \
             --value "Developer" --cursor.foreground "$WIZ_ACCENT")
         wiz_vault="$op_vault"
     else
@@ -417,7 +424,7 @@ fi
 
 # --- Brew package check (show missing packages from Brewfile) ---
 if [ "$CHECK_ONLY" -eq 0 ] && [ -f "$HOME/.Brewfile" ] && command -v brew &>/dev/null; then
-    missing=$(brew bundle check --file="$HOME/.Brewfile" --no-upgrade 2>&1 | grep "needs to be installed" || true)
+    missing=$(brew bundle check --file="$HOME/.Brewfile" --no-upgrade --verbose 2>&1 | grep "needs to be installed" || true)
     if [ -n "$missing" ]; then
         echo ""
         echo "==> Missing Homebrew packages (from Brewfile):"
