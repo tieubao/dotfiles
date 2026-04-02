@@ -95,9 +95,11 @@ WIZ_LIGHT=117
 WIZ_DIM=251
 
 # Draw the wizard header + progress bar + completed answers
+# Uses cursor-home + clear-below instead of clear to reduce flicker
 draw_wizard() {
     local step=$1 total=4
-    clear
+    tput cup 0 0 2>/dev/null  # cursor to top-left
+    tput ed 2>/dev/null       # clear from cursor to end of screen
     gum style --border rounded --padding "1 2" --border-foreground "$WIZ_ACCENT" \
         "  dotfiles setup  "
     echo ""
@@ -122,12 +124,6 @@ draw_wizard() {
     echo ""
 }
 
-# Erase gum's residual output lines (header + input value)
-erase_gum_residual() {
-    tput cuu1 2>/dev/null; tput el 2>/dev/null  # input value line
-    tput cuu1 2>/dev/null; tput el 2>/dev/null  # header line
-}
-
 run_gum_wizard() {
     # Gum reads env vars as config flags. Shell theming vars like UNDERLINE, BOLD,
     # ITALIC (ANSI escape codes) conflict with gum's boolean flags. Unset them.
@@ -139,29 +135,29 @@ run_gum_wizard() {
     draw_wizard 1
     gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
     echo ""
-    name=$(gum input --header "  Name:" --placeholder "Full name (for git)" \
+    gum style --foreground "$WIZ_DIM" "  Name:"
+    name=$(gum input --placeholder "Full name (for git)" \
         --value "$(git config user.name 2>/dev/null || true)" \
-        --header.foreground "$WIZ_DIM" --cursor.foreground "$WIZ_ACCENT")
-    erase_gum_residual
+        --cursor.foreground "$WIZ_ACCENT")
     wiz_name="$name"
 
     # --- Step 1b: Email ---
     draw_wizard 1
     gum style --foreground "$WIZ_LIGHT" --bold "  Identity"
     echo ""
-    email=$(gum input --header "  Email:" --placeholder "you@example.com" \
+    gum style --foreground "$WIZ_DIM" "  Email:"
+    email=$(gum input --placeholder "you@example.com" \
         --value "$(git config user.email 2>/dev/null || true)" \
-        --header.foreground "$WIZ_DIM" --cursor.foreground "$WIZ_ACCENT")
-    erase_gum_residual
+        --cursor.foreground "$WIZ_ACCENT")
     wiz_email="$email"
 
     # --- Step 2: Editor ---
     draw_wizard 2
     gum style --foreground "$WIZ_LIGHT" --bold "  Editor"
     echo ""
-    editor=$(gum choose --header "  Pick your default editor:" \
+    gum style --foreground "$WIZ_DIM" "  Pick your default editor:"
+    editor=$(gum choose \
         --cursor.foreground "$WIZ_ACCENT" --selected.foreground 10 \
-        --header.foreground "$WIZ_DIM" \
         "code --wait" "zed --wait" "nvim" "vim")
     wiz_editor="$editor"
 
@@ -195,17 +191,17 @@ run_gum_wizard() {
         draw_wizard 4
         gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
         echo ""
-        op_account=$(gum input --header "  1Password account:" --placeholder "my.1password.com" \
-            --value "my.1password.com" --header.foreground "$WIZ_DIM" --cursor.foreground "$WIZ_ACCENT")
-        erase_gum_residual
+        gum style --foreground "$WIZ_DIM" "  1Password account:"
+        op_account=$(gum input --placeholder "my.1password.com" \
+            --value "my.1password.com" --cursor.foreground "$WIZ_ACCENT")
         wiz_account="$op_account"
 
         draw_wizard 4
         gum style --foreground "$WIZ_LIGHT" --bold "  Secrets"
         echo ""
-        op_vault=$(gum input --header "  1Password vault:" --placeholder "Developer" \
-            --value "Developer" --header.foreground "$WIZ_DIM" --cursor.foreground "$WIZ_ACCENT")
-        erase_gum_residual
+        gum style --foreground "$WIZ_DIM" "  1Password vault:"
+        op_vault=$(gum input --placeholder "Developer" \
+            --value "Developer" --cursor.foreground "$WIZ_ACCENT")
         wiz_vault="$op_vault"
     else
         use_1password=false
@@ -417,6 +413,18 @@ fi
 # --- Post-apply verification ---
 if [ "$CHECK_ONLY" -eq 0 ]; then
     verify_deployment
+fi
+
+# --- Brew package check (show missing packages from Brewfile) ---
+if [ "$CHECK_ONLY" -eq 0 ] && [ -f "$HOME/.Brewfile" ] && command -v brew &>/dev/null; then
+    missing=$(brew bundle check --file="$HOME/.Brewfile" --no-upgrade 2>&1 | grep "needs to be installed" || true)
+    if [ -n "$missing" ]; then
+        echo ""
+        echo "==> Missing Homebrew packages (from Brewfile):"
+        while IFS= read -r line; do echo "   $line"; done <<< "$missing"
+        echo ""
+        echo "   Install with: brew bundle --file=~/.Brewfile --no-lock --no-upgrade"
+    fi
 fi
 
 echo ""
