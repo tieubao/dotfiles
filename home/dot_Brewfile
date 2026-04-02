@@ -73,6 +73,8 @@ brew "duckdb"
 brew "sqlite"
 brew "ffmpeg"
 brew "imagemagick"
+brew "chafa"                  # terminal image renderer (kitty protocol)
+brew "librsvg"                # SVG to PNG (rsvg-convert)
 brew "optipng"
 brew "qpdf"
 brew "qrencode"
