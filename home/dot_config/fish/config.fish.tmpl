@@ -58,6 +58,11 @@ if status is-interactive
         direnv hook fish | source
     end
 
+    # starship prompt
+    if command -q starship
+        starship init fish | source
+    end
+
     # 1Password CLI completions (generated once, not fetched from URL)
     if command -q op; and not test -f $XDG_CONFIG_HOME/fish/completions/op.fish
         op completion fish > $XDG_CONFIG_HOME/fish/completions/op.fish

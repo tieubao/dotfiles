@@ -48,6 +48,7 @@ jobs:
             name = "CI Test"
             email = "ci@test.com"
             editor = "vim"
+            headless = true
             use_1password = false
             op_account = ""
             op_vault = ""

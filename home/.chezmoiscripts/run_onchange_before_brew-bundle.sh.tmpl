@@ -1,5 +1,5 @@
 #!/bin/bash
-# Brewfile hash: {{ include "dot_Brewfile" | sha256sum }}
+# Brewfile hash: {{ include "dot_Brewfile.tmpl" | sha256sum }}
 # Re-runs only when Brewfile content changes.
 
 if ! command -v brew &>/dev/null; then
