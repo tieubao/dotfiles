@@ -129,18 +129,61 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             end
             return $issues
 
+        case encrypt-setup
+            set -l key_path "$HOME/.config/chezmoi/key.txt"
+
+            if test -f $key_path
+                echo "Age key already exists at $key_path"
+                echo "Public key:"
+                grep "public key:" $key_path | string replace "# public key: " ""
+                return 0
+            end
+
+            echo "Setting up age encryption for chezmoi..."
+            echo ""
+
+            if not command -q age-keygen
+                echo "Installing age..."
+                brew install age
+            end
+
+            mkdir -p (dirname $key_path)
+            age-keygen -o $key_path 2>&1
+            chmod 600 $key_path
+
+            set -l pubkey (grep "public key:" $key_path | string replace "# public key: " "")
+            echo ""
+            echo "Public key: $pubkey"
+            echo ""
+            echo "Next steps:"
+            echo "  1. Edit chezmoi config:"
+            echo "     chezmoi edit-config"
+            echo ""
+            echo "  2. Add these lines:"
+            echo "     encryption = \"age\""
+            echo "     [age]"
+            echo "     identity = \"$key_path\""
+            echo "     recipient = \"$pubkey\""
+            echo ""
+            echo "  3. Back up the key to 1Password:"
+            echo "     op document create $key_path --title 'chezmoi age key' --vault=Developer"
+            echo ""
+            echo "  4. Add encrypted files:"
+            echo "     chezmoi add --encrypt ~/.kube/config"
+
         case ''
             echo "Usage: dotfiles <command>"
             echo ""
             echo "Commands:"
-            echo "  edit <file>   Edit a managed file"
-            echo "  diff          Show pending changes"
-            echo "  sync          Apply all changes"
-            echo "  status        Show managed file count + pending diffs"
-            echo "  cd            cd to chezmoi source directory"
-            echo "  refresh       Re-download external files (fish plugins)"
-            echo "  add <file>    Add a new file to chezmoi"
-            echo "  doctor        Run health check on dotfiles setup"
+            echo "  edit <file>     Edit a managed file"
+            echo "  diff            Show pending changes"
+            echo "  sync            Apply all changes"
+            echo "  status          Show managed file count + pending diffs"
+            echo "  cd              cd to chezmoi source directory"
+            echo "  refresh         Re-download external files (fish plugins)"
+            echo "  add <file>      Add a new file to chezmoi"
+            echo "  doctor          Run health check on dotfiles setup"
+            echo "  encrypt-setup   Set up age encryption"
         case '*'
             chezmoi $argv
     end
