@@ -169,7 +169,10 @@ run_gum_wizard() {
     draw_wizard 3
     gum style --foreground "$WIZ_LIGHT" --bold "  Environment"
     echo ""
-    if gum confirm "  Headless/server? (skip GUI apps, dev tools)"; then
+    gum style --foreground "$WIZ_DIM" "  Server/CI mode: only install base CLI tools."
+    gum style --foreground "$WIZ_DIM" "  Say No for a full setup with dev tools and GUI apps."
+    echo ""
+    if gum confirm --default=no "  Headless/server environment?"; then
         headless=true
     else
         headless=false
@@ -182,6 +185,9 @@ run_gum_wizard() {
     echo ""
     op_account=""
     op_vault=""
+    gum style --foreground "$WIZ_DIM" "  Inject API keys and tokens from 1Password at apply time."
+    gum style --foreground "$WIZ_DIM" "  Say No if you don't use 1Password (you can enable later)."
+    echo ""
     if gum confirm "  Use 1Password for secrets?"; then
         use_1password=true
         wiz_1pass="enabled"
