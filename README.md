@@ -53,7 +53,7 @@ chezmoi init --apply tieubao
 
 1. Installs Homebrew (if missing)
 2. Installs chezmoi
-3. Prompts for your info (name, email, editor, 1Password vault)
+3. Prompts for your info (name, email, editor, headless mode, 1Password vault)
 4. Deploys all config files to `$HOME`
 5. Runs automation scripts:
    - `brew bundle` -- installs ~80 packages + casks
@@ -230,7 +230,7 @@ On a new Mac: clone -> `./install.sh` -> `op signin` -> `chezmoi apply` -> done.
 
 ```
 home/                              # chezmoi source -> maps to $HOME
-├── .chezmoi.toml.tmpl             # init prompts (name, email, editor, 1Password)
+├── .chezmoi.toml.tmpl             # init prompts (name, email, editor, headless, 1Password)
 ├── .chezmoiexternal.toml          # fish plugins auto-downloaded from GitHub
 ├── .chezmoiignore                 # OS-conditional file exclusions
 ├── .chezmoiscripts/               # automation scripts
@@ -250,6 +250,7 @@ home/                              # chezmoi source -> maps to $HOME
     │   │                          # keychain-env, keychain-set, tx, web3-env,
     │   │                          # render-img
     │   └── completions/           # tab completions for custom functions
+    ├── starship.toml              # Starship prompt config
     ├── ghostty/config             # terminal config
     ├── tmux/tmux.conf             # tmux (C-a, vim nav, fzf picker)
     ├── zed/settings.json.tmpl     # Zed editor (MCP servers templated)
