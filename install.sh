@@ -88,72 +88,120 @@ apply_flags() {
 }
 
 # --- Gum wizard ---
+
+# Draw the wizard header + progress bar + completed answers
+draw_wizard() {
+    local step=$1 total=4
+    clear
+    gum style --border double --padding "1 2" --border-foreground 212 \
+        "  dotfiles setup  "
+    echo ""
+
+    # Progress bar
+    local filled=$((step * 20 / total))
+    local empty=$((20 - filled))
+    local bar=""
+    for ((i=0; i<filled; i++)); do bar+="█"; done
+    for ((i=0; i<empty; i++)); do bar+="░"; done
+    gum style --foreground 212 "  $bar  Step $step/$total"
+    echo ""
+
+    # Show completed answers
+    [ -n "${wiz_name+x}" ] && gum style --foreground 10 "  ✓ Name:      $wiz_name"
+    [ -n "${wiz_email+x}" ] && gum style --foreground 10 "  ✓ Email:     $wiz_email"
+    [ -n "${wiz_editor+x}" ] && gum style --foreground 10 "  ✓ Editor:    $wiz_editor"
+    [ -n "${wiz_headless+x}" ] && gum style --foreground 10 "  ✓ Headless:  $wiz_headless"
+    [ -n "${wiz_1pass+x}" ] && gum style --foreground 10 "  ✓ 1Password: $wiz_1pass"
+    [ -n "${wiz_account+x}" ] && gum style --foreground 10 "  ✓ Account:   $wiz_account"
+    [ -n "${wiz_vault+x}" ] && gum style --foreground 10 "  ✓ Vault:     $wiz_vault"
+    echo ""
+}
+
 run_gum_wizard() {
     # Gum reads env vars as config flags. Shell theming vars like UNDERLINE, BOLD,
     # ITALIC (ANSI escape codes) conflict with gum's boolean flags. Unset them.
     unset UNDERLINE BOLD ITALIC
 
-    echo ""
-    gum style --border double --padding "1 2" --border-foreground 212 \
-        "  dotfiles setup  "
-
     local name email editor headless use_1password op_account op_vault
 
     # --- Step 1: Identity ---
+    draw_wizard 1
+    gum style --foreground 212 --bold "  Identity"
     echo ""
-    gum style --foreground 212 --bold "Step 1/4: Identity"
 
     name=$(gum input --header "  Name:" --placeholder "Full name (for git)" \
         --value "$(git config user.name 2>/dev/null || true)" \
         --header.foreground 244)
+    wiz_name="$name"
+
+    draw_wizard 1
+    gum style --foreground 212 --bold "  Identity"
+    echo ""
+    gum style --foreground 10 "  ✓ Name: $name"
 
     email=$(gum input --header "  Email:" --placeholder "you@example.com" \
         --value "$(git config user.email 2>/dev/null || true)" \
         --header.foreground 244)
+    wiz_email="$email"
 
     # --- Step 2: Editor ---
+    draw_wizard 2
+    gum style --foreground 212 --bold "  Editor"
     echo ""
-    gum style --foreground 212 --bold "Step 2/4: Editor"
 
     editor=$(gum choose --header "  Pick your default editor:" \
         --cursor.foreground 212 --selected.foreground 10 \
         --header.foreground 244 \
         "code --wait" "zed --wait" "nvim" "vim")
+    wiz_editor="$editor"
 
     # --- Step 3: Environment ---
+    draw_wizard 3
+    gum style --foreground 212 --bold "  Environment"
     echo ""
-    gum style --foreground 212 --bold "Step 3/4: Environment"
 
     if gum confirm "  Headless/server? (skip GUI apps, dev tools)"; then
         headless=true
     else
         headless=false
     fi
+    wiz_headless="$headless"
 
     # --- Step 4: Secrets ---
+    draw_wizard 4
+    gum style --foreground 212 --bold "  Secrets"
     echo ""
-    gum style --foreground 212 --bold "Step 4/4: Secrets"
 
     op_account=""
     op_vault=""
     if gum confirm "  Use 1Password for secrets?"; then
         use_1password=true
+        wiz_1pass="enabled"
+
+        draw_wizard 4
+        gum style --foreground 212 --bold "  Secrets"
+        echo ""
+
         op_account=$(gum input --header "  1Password account:" --placeholder "my.1password.com" \
             --value "my.1password.com" --header.foreground 244)
+        wiz_account="$op_account"
+
+        draw_wizard 4
+        gum style --foreground 212 --bold "  Secrets"
+        echo ""
+        gum style --foreground 10 "  ✓ Account: $op_account"
+
         op_vault=$(gum input --header "  1Password vault:" --placeholder "Developer" \
             --value "Developer" --header.foreground 244)
+        wiz_vault="$op_vault"
     else
         use_1password=false
+        wiz_1pass="disabled"
     fi
 
     # --- Summary ---
-    echo ""
-    gum style --border rounded --padding "1 2" --border-foreground 10 \
-        "  Name:     $name" \
-        "  Email:    $email" \
-        "  Editor:   $editor" \
-        "  Headless: $headless" \
-        "  1Password: $use_1password"
+    draw_wizard 4
+    gum style --foreground 212 --bold "  All set!"
     echo ""
 
     if ! gum confirm --affirmative "Apply" --negative "Cancel" "  Save this config?"; then
