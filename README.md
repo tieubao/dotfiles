@@ -8,7 +8,9 @@
 ![1Password](https://img.shields.io/badge/1Password-Secrets-0572EC?logo=1password&logoColor=white)
 ![CI](https://img.shields.io/github/actions/workflow/status/tieubao/dotfiles/test.yml?label=CI&logo=github)
 
-One command to set up a new Mac: shell, terminal, editors, packages, secrets, system preferences, everything. Managed by [chezmoi](https://www.chezmoi.io/).
+A modern developer tooling stack for macOS, deployed in one command. Every tool is chosen for speed, ergonomics, and native macOS integration; no legacy defaults, no bloat.
+
+**The stack:** [Fish](https://fishshell.com/) replaces Zsh (faster startup, better defaults). [Starship](https://starship.rs/) replaces Oh My Zsh themes (cross-shell, instant). [Ghostty](https://ghostty.org/) replaces iTerm2 (GPU-rendered, native). [delta](https://github.com/dandavison/delta) replaces diff (syntax-highlighted). [eza](https://eza.rocks/), [bat](https://github.com/sharkdp/bat), [fd](https://github.com/sharkdp/fd), [ripgrep](https://github.com/BurntSushi/ripgrep), [zoxide](https://github.com/ajeetdsouza/zoxide), [fzf](https://github.com/junegunn/fzf) replace ls, cat, find, grep, cd, Ctrl+R. [1Password](https://1password.com/) handles secrets via `op://` templates; nothing is ever stored in git. All managed by [chezmoi](https://www.chezmoi.io/) with a [gum](https://github.com/charmbracelet/gum)-powered setup wizard.
 
 <!-- TODO: Add terminal screenshot at docs/assets/terminal.png -->
 <!-- ![Terminal](docs/assets/terminal.png) -->
