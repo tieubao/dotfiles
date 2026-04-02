@@ -12,6 +12,13 @@
 {{-   $op_vault = promptStringOnce . "op_vault" "1Password vault for dev secrets (e.g. Developer)" -}}
 {{- end -}}
 
+# Age encryption — uncomment after running: age-keygen -o ~/.config/chezmoi/key.txt
+# Then set recipient to the public key from key.txt and run: chezmoi init
+# encryption = "age"
+# [age]
+# identity = "~/.config/chezmoi/key.txt"
+# recipient = "age1..."
+
 [data]
   name = {{ $name | quote }}
   email = {{ $email | quote }}

@@ -12,5 +12,8 @@ fish_variables
 # chezmoi state (local only)
 home/.chezmoistate.boltdb
 
+# age encryption key (machine-specific, backup in 1Password)
+key.txt
+
 # Claude
 .claude/
