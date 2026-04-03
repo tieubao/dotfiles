@@ -1,4 +1,12 @@
-# R-08: Add tmux configuration
+---
+id: S-20
+title: Tmux config
+type: refinement
+status: done
+old_id: R-08
+---
+
+# Tmux config
 
 **Priority:** Low
 **Status:** Not needed (tmux.conf already exists in repo)

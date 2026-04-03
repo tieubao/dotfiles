@@ -1,4 +1,12 @@
-# R-06: Make VS Code extension sync less aggressive
+---
+id: S-18
+title: VS Code extension sync
+type: refinement
+status: done
+old_id: R-06
+---
+
+# VS Code extension sync
 
 **Priority:** Low
 **Status:** Done

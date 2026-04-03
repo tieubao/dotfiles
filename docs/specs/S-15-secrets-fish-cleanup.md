@@ -1,4 +1,12 @@
-# R-03: Clean up secrets.fish.tmpl (dead code)
+---
+id: S-15
+title: Secrets fish cleanup
+type: refinement
+status: done
+old_id: R-03
+---
+
+# Secrets fish cleanup
 
 **Priority:** Medium
 **Status:** Done

@@ -1,4 +1,12 @@
-# R-11: Error message system
+---
+id: S-23
+title: Error message system
+type: refinement
+status: done
+old_id: R-11
+---
+
+# Error message system
 
 ## Problem
 
