@@ -39,7 +39,7 @@ info() {
     if [ "$_HAS_GUM" = 1 ]; then
         _gum log --level info "$*"
     else
-        printf '\033[38;5;%sm  ✓\033[0m %s\n' "$CLR_OK" "$*"
+        printf '\033[38;5;%sm  ✓\033[0m %s\n' "$CLR_INFO" "$*"
     fi
 }
 
