@@ -46,6 +46,17 @@ echo "Managed files: $MANAGED"
 test "$MANAGED" -gt 10
 ```
 
+### 6. Docs consistency
+Check that key docs reflect the current state:
+- `docs/tasks.md` — completed items should be marked `[x]`, planned items `[ ]`
+- `CLAUDE.md` — should document any new infra (agents, commands, hooks, managed config)
+- `README.md` — "What's included" table should cover all major tool categories
+
+### 7. CI coverage
+Check that `.github/workflows/test.yml` lints all `.sh` files that exist:
+- Every `.sh` file under `home/` should be covered by a shellcheck step
+- New script directories (like `home/dot_claude/`) should be included
+
 ## Report format
 
 ```

@@ -80,6 +80,13 @@ The ignore file is itself a Go template. macOS-only configs (Ghostty, Zed, Brewf
 - **Template guards** — every `.tmpl` file validates required variables with `hasKey`/`fail` at the top. Missing variables produce `Fix: chezmoi init` instead of cryptic Go template errors.
 - **Apply summary** — `run_after_zz-summary.sh` prints a gum-styled status box at the end of every apply with OK/warning/failure counts, details, and actionable next steps.
 
+## Claude Code project config
+
+- **`.claude/settings.json`** — project-level permissions (allow lint/verify, deny destructive) + PostToolUse hook that auto-runs shellcheck on `.sh` and `fish -n` on `.fish` after every edit.
+- **`.claude/agents/verify-dotfiles.md`** — QA subagent. Runs 5 checks: shellcheck, fish syntax, chezmoi dry-run, file existence, managed file count. Use proactively after implementing any feature.
+- **`.claude/commands/implement-feature.md`** — Slash command: `/implement-feature S-24` reads the spec, implements, verifies via subagent, fixes, commits.
+- **`home/dot_claude/`** — chezmoi-managed Claude Code user config (settings.json, keybindings.json, statusline script). Deployed to `~/.claude/` on apply. Skipped on headless/Codespaces.
+
 ## Verification rules
 
 After implementing any feature from `docs/specs/S-*.md`:
