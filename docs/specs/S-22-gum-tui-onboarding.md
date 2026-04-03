@@ -1,4 +1,12 @@
-# R-10: Gum TUI onboarding wizard
+---
+id: S-22
+title: Gum TUI onboarding
+type: refinement
+status: done
+old_id: R-10
+---
+
+# Gum TUI onboarding
 
 ## Problem
 

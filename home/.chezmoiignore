@@ -26,4 +26,10 @@
 .config/code/
 .config/zed/
 .Brewfile
+.claude/
+{{- end }}
+
+# Headless — skip Claude Code config
+{{- if .headless }}
+.claude/
 {{- end }}
