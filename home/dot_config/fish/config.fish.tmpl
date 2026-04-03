@@ -1,3 +1,7 @@
+{{- $e := printf "%c" 27 -}}
+{{- if not (hasKey . "editor") -}}
+{{-   fail (printf "\n\n%s[38;5;204m  ✗ Missing config variable: editor%s[0m\n    Run: %s[38;5;78mchezmoi init%s[0m\n" $e $e $e $e) -}}
+{{- end -}}
 if status is-interactive
     # Homebrew
     eval (/opt/homebrew/bin/brew shellenv)

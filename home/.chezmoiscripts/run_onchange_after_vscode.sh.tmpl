@@ -3,25 +3,49 @@
 exit 0
 {{ end }}
 
+set -eo pipefail
+
 # VS Code settings hash: {{ include "dot_config/code/settings.json" | sha256sum }}
 # VS Code extensions hash: {{ include "dot_config/code/extensions.txt" | sha256sum }}
+
+LIB="$HOME/.config/dotfiles/lib.sh"
+# shellcheck source=/dev/null
+[ -f "$LIB" ] && source "$LIB" || { echo "dotfiles lib not found"; exit 1; }
 
 VSCODE_USER="${HOME}/Library/Application Support/Code/User"
 
 if [ -d "/Applications/Visual Studio Code.app" ] || command -v code &>/dev/null; then
-    echo "==> Syncing VS Code settings"
+    section "Syncing VS Code settings"
     mkdir -p "$VSCODE_USER"
     cp "${HOME}/.config/code/settings.json" "$VSCODE_USER/settings.json"
 
-    echo "==> Checking VS Code extensions"
+    section "Checking VS Code extensions"
     installed=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    failed=0
     while IFS= read -r ext; do
         [ -z "$ext" ] && continue
         ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
         if ! echo "$installed" | grep -qx "$ext_lower"; then
-            echo "  Installing: $ext"
-            code --install-extension "$ext" 2>/dev/null || true
+            if code --install-extension "$ext" 2>/dev/null; then
+                info "Installed: $ext"
+            else
+                warn "VS Code: failed to install $ext" \
+                     "Extension may have been renamed or removed." \
+                     "code --install-extension $ext"
+                failed=$((failed + 1))
+            fi
         fi
     done < "${HOME}/.config/code/extensions.txt"
-    echo "==> VS Code done"
+
+    if [ "$failed" -gt 0 ]; then
+        warn "VS Code: $failed extension(s) failed to install" \
+             "Review warnings above for details." \
+             "code --install-extension <name> to retry individually"
+    fi
+
+    script_ok "vscode"
+else
+    warn "VS Code not found" \
+         "Skipping settings sync and extension install." \
+         "brew install --cask visual-studio-code"
 fi

@@ -25,6 +25,7 @@ Updated: 2026-04-02
 - [x] T-07: `dotfiles update` subcommand (git pull --ff-only + chezmoi apply)
 - [x] T-08: `dotfiles bench` subcommand (10-run startup benchmark with rating)
 - [x] T-10: `dotfiles backup` subcommand (1Password upload + local fallback)
+- [x] R-11: Error message system (gum-styled output, template guards, apply summary)
 
 ## Backlog (no immediate plans)
 
