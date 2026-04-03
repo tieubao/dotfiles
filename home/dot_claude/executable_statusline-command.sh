@@ -37,8 +37,8 @@ if git -C "$real_cwd" rev-parse --git-dir > /dev/null 2>&1; then
     echo "$porcelain" | grep -q '^?? '       && flags="${flags}?"
     echo "$porcelain" | grep -q '^ M\|^M '   && flags="${flags}!"
     echo "$porcelain" | grep -q '^A \|^M '    && flags="${flags}+"
-    ahead=$(git -C "$real_cwd" rev-list @{u}..HEAD 2>/dev/null | wc -l | tr -d ' ')
-    behind=$(git -C "$real_cwd" rev-list HEAD..@{u} 2>/dev/null | wc -l | tr -d ' ')
+    ahead=$(git -C "$real_cwd" rev-list '@{u}..HEAD' 2>/dev/null | wc -l | tr -d ' ')
+    behind=$(git -C "$real_cwd" rev-list 'HEAD..@{u}' 2>/dev/null | wc -l | tr -d ' ')
     [ "$ahead" -gt 0 ] 2>/dev/null  && flags="${flags}⇡"
     [ "$behind" -gt 0 ] 2>/dev/null && flags="${flags}⇣"
     if [ -n "$flags" ]; then
