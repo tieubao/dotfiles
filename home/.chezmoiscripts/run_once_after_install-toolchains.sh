@@ -6,7 +6,7 @@ set -eo pipefail
 
 LIB="$HOME/.config/dotfiles/lib.sh"
 # shellcheck source=/dev/null
-[ -f "$LIB" ] && source "$LIB" || { echo "dotfiles lib not found"; exit 1; }
+if [ -f "$LIB" ]; then source "$LIB"; else echo "dotfiles lib not found"; exit 1; fi
 
 section "Installing toolchains"
 
@@ -29,7 +29,7 @@ if ! command -v cast &>/dev/null; then
         "${HOME}/.foundry/bin/foundryup" 2>/dev/null || \
             warn "Foundry: foundryup failed" \
                  "Foundry was downloaded but setup failed." \
-                 "~/.foundry/bin/foundryup"
+                 "\$HOME/.foundry/bin/foundryup"
     else
         warn "Foundry: download failed" \
              "Network error or foundry.paradigm.xyz is down." \
