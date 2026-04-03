@@ -59,8 +59,10 @@ if _has_gum; then
     DETAILS=""
     if [ -f "$LOG" ]; then
         while IFS= read -r line; do
-            msg=$(echo "$line" | sed 's/^[^ ]* \(WARN\|FAIL\): //')
-            msg=$(echo "$msg" | sed 's/ | Fix:.*$//')
+            msg=${line#* }          # strip timestamp
+            msg=${msg#WARN: }      # strip WARN prefix
+            msg=${msg#FAIL: }      # strip FAIL prefix
+            msg=${msg% | Fix:*}    # strip fix suffix
             L=$(_gum style --faint "    $msg")
             [ -n "$DETAILS" ] && DETAILS=$(_gum join --vertical "$DETAILS" "$L") || DETAILS="$L"
         done < <(grep -E "^[^ ]* (WARN|FAIL):" "$LOG" 2>/dev/null)
@@ -76,14 +78,12 @@ if _has_gum; then
     step_num=1
     if [ -f "$LOG" ]; then
         while IFS= read -r line; do
-            fix=$(echo "$line" | sed -n 's/.*| Fix: //p')
-            if [ -n "$fix" ]; then
-                L=$(_gum join \
-                    "$(_gum style --foreground 78 "    $step_num.")" \
-                    "$(_gum style --faint " $fix")")
-                [ -n "$STEPS" ] && STEPS=$(_gum join --vertical "$STEPS" "$L") || STEPS="$L"
-                step_num=$((step_num + 1))
-            fi
+            fix=${line#*| Fix: }
+            L=$(_gum join \
+                "$(_gum style --foreground 78 "    $step_num.")" \
+                "$(_gum style --faint " $fix")")
+            [ -n "$STEPS" ] && STEPS=$(_gum join --vertical "$STEPS" "$L") || STEPS="$L"
+            step_num=$((step_num + 1))
         done < <(grep -E "^[^ ]* (WARN|FAIL):.*\| Fix:" "$LOG" 2>/dev/null)
     fi
 
@@ -119,23 +119,24 @@ else
                 printf '\033[1m  Details:\033[0m\n'
                 has_details=1
             fi
-            msg=$(echo "$line" | sed 's/^[^ ]* \(WARN\|FAIL\): //' | sed 's/ | Fix:.*$//')
+            msg=${line#* }          # strip timestamp
+            msg=${msg#WARN: }      # strip WARN prefix
+            msg=${msg#FAIL: }      # strip FAIL prefix
+            msg=${msg% | Fix:*}    # strip fix suffix
             printf '\033[38;5;245m    %s\033[0m\n' "$msg"
         done < <(grep -E "^[^ ]* (WARN|FAIL):" "$LOG" 2>/dev/null)
 
         step_num=1
         has_steps=0
         while IFS= read -r line; do
-            fix=$(echo "$line" | sed -n 's/.*| Fix: //p')
-            if [ -n "$fix" ]; then
-                if [ "$has_steps" -eq 0 ]; then
-                    echo ""
-                    printf '\033[1m  Next steps:\033[0m\n'
-                    has_steps=1
-                fi
-                printf '\033[38;5;78m    %s.\033[0m \033[38;5;245m%s\033[0m\n' "$step_num" "$fix"
-                step_num=$((step_num + 1))
+            fix=${line#*| Fix: }
+            if [ "$has_steps" -eq 0 ]; then
+                echo ""
+                printf '\033[1m  Next steps:\033[0m\n'
+                has_steps=1
             fi
+            printf '\033[38;5;78m    %s.\033[0m \033[38;5;245m%s\033[0m\n' "$step_num" "$fix"
+            step_num=$((step_num + 1))
         done < <(grep -E "^[^ ]* (WARN|FAIL):.*\| Fix:" "$LOG" 2>/dev/null)
     fi
 
