@@ -2,7 +2,7 @@
 id: S-30
 title: Verification loop
 type: infra
-status: planned
+status: done
 old_id: F-16
 ---
 

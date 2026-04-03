@@ -15,5 +15,10 @@ home/.chezmoistate.boltdb
 # age encryption key (machine-specific, backup in 1Password)
 key.txt
 
-# Claude
-.claude/
+# Claude — ignore local state, track shared config
+.claude/*
+!.claude/settings.json
+!.claude/agents
+!.claude/agents/*
+!.claude/commands
+!.claude/commands/*

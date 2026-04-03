@@ -36,9 +36,9 @@ Updated: 2026-04-04
 - [ ] S-25: Starship config polish — review modules, check Nerd Font rendering
 - [ ] S-26: Brewfile cleanup — audit stale entries, verify casks, deduplicate
 - [ ] S-27: Gum UI helper library (lib/ui.sh) — styled boxes, step progress, validation
-- [ ] S-28: README tool showcase icons — skillicons.dev + shields.io badges
+- [x] S-28: README tool showcase icons — skillicons.dev + shields.io badges
 - [ ] S-29: VHS terminal demo — animated GIF of install wizard
-- [ ] S-30: Verification loop — CLAUDE.md rules, subagent, hooks, slash command
+- [x] S-30: Verification loop — CLAUDE.md rules, subagent, hooks, slash command
 
 ## Backlog (no immediate plans)
 

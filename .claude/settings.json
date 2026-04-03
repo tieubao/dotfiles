@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(shellcheck *)",
+      "Bash(fish -n *)",
+      "Bash(chezmoi apply --dry-run *)",
+      "Bash(chezmoi execute-template *)",
+      "Bash(chezmoi managed *)",
+      "Bash(chezmoi diff *)",
+      "Bash(chezmoi source-path *)"
+    ],
+    "deny": [
+      "Bash(chezmoi apply)",
+      "Bash(brew install *)",
+      "Bash(brew uninstall *)",
+      "Bash(sudo *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'INPUT=$(cat); FILE=$(echo \"$INPUT\" | jq -r \".tool_input.file_path // empty\" 2>/dev/null); if [[ -z \"$FILE\" ]]; then exit 0; fi; EXT=\"${FILE##*.}\"; case \"$EXT\" in sh) shellcheck --severity=warning \"$FILE\" 2>&1 | head -10 ;; fish) fish -n \"$FILE\" 2>&1 ;; esac'"
+          }
+        ]
+      }
+    ]
+  }
+}
