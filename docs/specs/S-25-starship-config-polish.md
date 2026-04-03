@@ -2,7 +2,7 @@
 id: S-25
 title: Starship config polish
 type: refinement
-status: planned
+status: done
 old_id: R-13
 ---
 

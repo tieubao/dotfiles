@@ -33,7 +33,7 @@ Updated: 2026-04-04
 ## Next up
 
 - [ ] S-24: Ghostty config sync — convert to template, review settings, add doctor check
-- [ ] S-25: Starship config polish — review modules, check Nerd Font rendering
+- [x] S-25: Starship config polish — review modules, check Nerd Font rendering
 - [ ] S-26: Brewfile cleanup — audit stale entries, verify casks, deduplicate
 - [ ] S-27: Gum UI helper library (lib/ui.sh) — styled boxes, step progress, validation
 - [x] S-28: README tool showcase icons — skillicons.dev + shields.io badges
