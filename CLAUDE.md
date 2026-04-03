@@ -43,6 +43,7 @@ Used in: `secrets.fish.tmpl`, `dot_gitconfig.tmpl`, `dot_config/zed/settings.jso
 Template variables are prompted once during `chezmoi init` and cached:
 - `.name`, `.email` — git identity
 - `.editor` — chosen editor (`code --wait`, `zed --wait`, `nvim`, `vim`)
+- `.headless` — boolean, skips GUI apps and dev tools on servers
 - `.use_1password` — boolean, gates all 1Password sections
 - `.op_account`, `.op_vault` — only prompted if `use_1password` is true
 
@@ -50,10 +51,13 @@ Template variables are prompted once during `chezmoi init` and cached:
 
 Scripts in `.chezmoiscripts/` run during `chezmoi apply`:
 
-1. `run_onchange_before_brew-bundle.sh` — triggers when `dot_Brewfile` content changes (sha256 hash in comment)
-2. Files are deployed
-3. `run_once_after_*` — one-time setup (fish shell, macOS defaults, mas apps, Foundry, Rust, npm tools)
-4. `run_onchange_after_*` — triggers when VS Code settings/extensions or Zed config changes
+1. `run_before_aa-init.sh` — resets apply log file (`~/.cache/dotfiles-apply.log`)
+2. `run_before_ab-1password-check.sh` — validates 1Password CLI setup (if enabled)
+3. `run_onchange_before_brew-bundle.sh` — triggers when `dot_Brewfile` content changes (sha256 hash in comment)
+4. Files are deployed (including `~/.config/dotfiles/lib.sh`)
+5. `run_once_after_*` — one-time setup (fish shell, macOS defaults, mas apps, toolchains)
+6. `run_onchange_after_*` — triggers when VS Code settings/extensions or Zed config changes
+7. `run_after_zz-summary.sh` — prints styled apply summary with warnings/errors/next steps
 
 `run_once_` scripts track execution in chezmoi's state DB and won't re-run unless the script content changes. `run_onchange_` scripts re-run when the hash comment inside them changes (chezmoi evaluates the template, hashes the output).
 
@@ -72,3 +76,6 @@ The ignore file is itself a Go template. macOS-only configs (Ghostty, Zed, Brewf
 - **VS Code settings** live in `dot_config/code/` (not the Library path). The `run_onchange_after_vscode.sh` script copies them to `~/Library/Application Support/Code/User/` at apply time.
 - **Brewfile changes auto-apply** — editing `dot_Brewfile` and running `chezmoi apply` triggers `brew bundle` automatically.
 - **Fish functions** in `home/dot_config/fish/functions/` are auto-loaded by fish (one function per file, filename = function name).
+- **Error message library** (`~/.config/dotfiles/lib.sh`) is sourced by all `run_*_after_*` scripts. Uses `gum log`/`gum style` for styled output with ANSI fallback. Functions: `info`, `warn "what" "why" "fix"`, `err`, `die`, `require_cmd`, `section`, `script_ok`. All warnings/errors log to `~/.cache/dotfiles-apply.log`.
+- **Template guards** — every `.tmpl` file validates required variables with `hasKey`/`fail` at the top. Missing variables produce `Fix: chezmoi init` instead of cryptic Go template errors.
+- **Apply summary** — `run_after_zz-summary.sh` prints a gum-styled status box at the end of every apply with OK/warning/failure counts, details, and actionable next steps.

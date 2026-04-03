@@ -1,3 +1,10 @@
+{{- $e := printf "%c" 27 -}}
+{{- if not (hasKey . "use_1password") -}}
+{{-   fail (printf "\n\n%s[38;5;204m  ✗ Missing config variable: use_1password%s[0m\n    Run: %s[38;5;78mchezmoi init%s[0m\n" $e $e $e $e) -}}
+{{- end -}}
+{{- if not (hasKey . "editor") -}}
+{{-   fail (printf "\n\n%s[38;5;204m  ✗ Missing config variable: editor%s[0m\n    Run: %s[38;5;78mchezmoi init%s[0m\n" $e $e $e $e) -}}
+{{- end -}}
 // Zed settings — managed by chezmoi
 // Edit: chezmoi edit ~/.config/zed/settings.json
 {

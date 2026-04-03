@@ -4,61 +4,76 @@
 exit 0
 {{ end }}
 
-echo "==> Applying macOS defaults"
+set -eo pipefail
+
+LIB="$HOME/.config/dotfiles/lib.sh"
+# shellcheck source=/dev/null
+[ -f "$LIB" ] && source "$LIB" || { echo "dotfiles lib not found"; exit 1; }
+
+section "Applying macOS defaults"
+
+safe_defaults() {
+    if ! defaults write "$@" 2>/dev/null; then
+        local domain="$1" key="$2"
+        warn "defaults write $domain $key failed" \
+             "May require a newer macOS version." \
+             "defaults write $*"
+    fi
+}
 
 # ── Dock ──────────────────────────────────────────────────────────────
-defaults write com.apple.dock autohide -bool false
-defaults write com.apple.dock tilesize -int 36
-defaults write com.apple.dock orientation -string "left"
-defaults write com.apple.dock show-recents -bool false
-defaults write com.apple.dock minimize-to-application -bool true
-defaults write com.apple.dock mru-spaces -bool false          # don't rearrange Spaces
+safe_defaults com.apple.dock autohide -bool false
+safe_defaults com.apple.dock tilesize -int 36
+safe_defaults com.apple.dock orientation -string "left"
+safe_defaults com.apple.dock show-recents -bool false
+safe_defaults com.apple.dock minimize-to-application -bool true
+safe_defaults com.apple.dock mru-spaces -bool false
 
 # ── Finder ────────────────────────────────────────────────────────────
-defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-defaults write com.apple.finder ShowPathbar -bool true
-defaults write com.apple.finder ShowStatusBar -bool true
-defaults write com.apple.finder AppleShowAllFiles -bool true   # show hidden files
-defaults write com.apple.finder FXPreferredViewStyle -string "Nlsv"  # list view
-defaults write com.apple.finder _FXShowPosixPathInTitle -bool true
-defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false
+safe_defaults NSGlobalDomain AppleShowAllExtensions -bool true
+safe_defaults com.apple.finder ShowPathbar -bool true
+safe_defaults com.apple.finder ShowStatusBar -bool true
+safe_defaults com.apple.finder AppleShowAllFiles -bool true
+safe_defaults com.apple.finder FXPreferredViewStyle -string "Nlsv"
+safe_defaults com.apple.finder _FXShowPosixPathInTitle -bool true
+safe_defaults com.apple.finder FXEnableExtensionChangeWarning -bool false
 
 # ── Keyboard ──────────────────────────────────────────────────────────
-defaults write NSGlobalDomain KeyRepeat -int 2                 # fastest repeat
-defaults write NSGlobalDomain InitialKeyRepeat -int 15         # shortest delay
-defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false  # key repeat > accents
-defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
-defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false
-defaults write NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false
-defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+safe_defaults NSGlobalDomain KeyRepeat -int 2
+safe_defaults NSGlobalDomain InitialKeyRepeat -int 15
+safe_defaults NSGlobalDomain ApplePressAndHoldEnabled -bool false
+safe_defaults NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
+safe_defaults NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false
+safe_defaults NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false
+safe_defaults NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
 
 # ── Trackpad ──────────────────────────────────────────────────────────
-defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true  # tap to click
-defaults write NSGlobalDomain com.apple.swipescrolldirection -bool true  # natural scrolling
+safe_defaults com.apple.AppleMultitouchTrackpad Clicking -bool true
+safe_defaults NSGlobalDomain com.apple.swipescrolldirection -bool true
 
 # ── Screenshots ───────────────────────────────────────────────────────
 mkdir -p "${HOME}/Screenshots"
-defaults write com.apple.screencapture location -string "${HOME}/Screenshots"
-defaults write com.apple.screencapture type -string "png"
-defaults write com.apple.screencapture disable-shadow -bool true
+safe_defaults com.apple.screencapture location -string "${HOME}/Screenshots"
+safe_defaults com.apple.screencapture type -string "png"
+safe_defaults com.apple.screencapture disable-shadow -bool true
 
 # ── Mission Control ───────────────────────────────────────────────────
-defaults write com.apple.spaces spans-displays -bool false     # separate spaces per display
+safe_defaults com.apple.spaces spans-displays -bool false
 
 # ── Safari ────────────────────────────────────────────────────────────
-defaults write com.apple.Safari ShowFullURLInSmartSearchField -bool true
-defaults write com.apple.Safari IncludeDevelopMenu -bool true
-defaults write com.apple.Safari AutoOpenSafeDownloads -bool false
+safe_defaults com.apple.Safari ShowFullURLInSmartSearchField -bool true
+safe_defaults com.apple.Safari IncludeDevelopMenu -bool true
+safe_defaults com.apple.Safari AutoOpenSafeDownloads -bool false
 
 # ── TextEdit ──────────────────────────────────────────────────────────
-defaults write com.apple.TextEdit RichText -bool false         # plain text by default
+safe_defaults com.apple.TextEdit RichText -bool false
 
 # ── Activity Monitor ──────────────────────────────────────────────────
-defaults write com.apple.ActivityMonitor ShowCategory -int 0   # show all processes
+safe_defaults com.apple.ActivityMonitor ShowCategory -int 0
 
 # ── Apply ─────────────────────────────────────────────────────────────
 for app in "Dock" "Finder" "SystemUIServer"; do
     killall "$app" &>/dev/null || true
 done
 
-echo "==> macOS defaults applied (some changes need logout/restart)"
+script_ok "macos-defaults"

@@ -27,6 +27,9 @@ jobs:
             shellcheck "$f"
           done
 
+      - name: Lint lib.sh
+        run: shellcheck home/dot_config/dotfiles/lib.sh
+
   test-macos:
     runs-on: macos-latest
     steps:
@@ -60,6 +63,14 @@ jobs:
       - name: Apply files only (skip scripts)
         run: chezmoi apply --exclude=scripts
 
+      - name: Verify lib.sh deployed
+        run: |
+          if [ ! -f ~/.config/dotfiles/lib.sh ]; then
+            echo "FAIL: lib.sh not deployed"
+            exit 1
+          fi
+          echo "OK: lib.sh"
+
       - name: Verify key files deployed
         run: |
           for f in ~/.gitconfig ~/.config/fish/config.fish ~/.ssh/config; do
@@ -85,3 +96,25 @@ jobs:
           chezmoi execute-template '{{ .chezmoi.os }}' | grep darwin
           chezmoi execute-template '{{ .name }}' | grep "CI Test"
           chezmoi execute-template '{{ .use_1password }}' | grep false
+
+      - name: Test template guard catches missing variable
+        run: |
+          mkdir -p /tmp/guard-test
+          cat > /tmp/guard-test/chezmoi.toml <<'EOF'
+          [data]
+            name = "Test"
+            email = "test@test.com"
+            editor = "vim"
+            use_1password = false
+            op_account = ""
+            op_vault = ""
+          EOF
+          if chezmoi execute-template \
+            --config /tmp/guard-test/chezmoi.toml \
+            '{{- if not (hasKey . "headless") }}GUARD_TRIGGERED{{ end -}}' 2>&1 \
+            | grep -q "GUARD_TRIGGERED"; then
+            echo "OK: template guard catches missing variable"
+          else
+            echo "FAIL: template guard did not trigger"
+            exit 1
+          fi
