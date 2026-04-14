@@ -32,6 +32,11 @@ Every sync is logged in `docs/sync-log.md`. Claude reads it at the
 start of each session for context ("last sync was 2 weeks ago, you
 added ollama").
 
+The `/dotfiles-sync` command is installed to `~/.claude/commands/`
+during `chezmoi apply`, so it works from any directory in Claude Code,
+not just the dotfiles repo. If it's missing, run `chezmoi apply` to
+deploy it.
+
 The manual commands in the sections below are fallbacks for when you're
 offline, SSH'd into a server, or want a quick one-off edit. You don't
 need to learn them to use this repo day-to-day.

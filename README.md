@@ -43,12 +43,12 @@ The pattern is general and works with any dotfiles manager and any LLM agent. Th
 ## How it works
 
 <p align="center">
-  <img src="docs/dotfiles_chezmoi_model.svg" alt="chezmoi model: source to target" width="680">
+  <img src="docs/dotfiles_llm_sync_workflow.svg" alt="LLM sync workflow: machine drifts, Claude syncs" width="680">
 </p>
 
 [chezmoi](https://www.chezmoi.io/) is the backbone. It separates the source (repo) from the target ($HOME), renders templates with injected secrets, and provides drift detection via `chezmoi status`. This two-layer model is what makes LLM-maintained sync possible: the LLM can safely scan, diff, and re-add without touching secrets in git.
 
-The `/dotfiles-sync` slash command (at [.claude/commands/dotfiles-sync.md](.claude/commands/dotfiles-sync.md)) teaches Claude what to scan:
+The `/dotfiles-sync` command is installed to `~/.claude/commands/` during setup, so it's available in Claude Code from any directory. The command prompt (at [.claude/commands/dotfiles-sync.md](.claude/commands/dotfiles-sync.md)) teaches Claude what to scan:
 
 | Dimension | What it detects |
 |-----------|----------------|

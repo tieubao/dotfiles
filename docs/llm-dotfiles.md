@@ -7,6 +7,10 @@ implementation. Copy it into your own LLM agent (Claude Code, Codex,
 OpenCode, etc.) and adapt it to your stack. Your agent will figure out
 the specifics.
 
+<p align="center">
+  <img src="dotfiles_llm_sync_workflow.svg" alt="LLM sync workflow" width="680">
+</p>
+
 ## The core idea
 
 Most dotfiles repos assume you'll manually keep the repo in sync with
@@ -218,11 +222,16 @@ You need two things:
 
 ### Step 1: Create the sync command
 
-In Claude Code, create a slash command file:
+Create a slash command file in two places:
 
 ```
-.claude/commands/dotfiles-sync.md
+~/dotfiles/.claude/commands/dotfiles-sync.md   # project-level (works in repo dir)
+~/.claude/commands/dotfiles-sync.md            # user-level (works from any dir)
 ```
+
+If you use chezmoi, add it to your source tree at
+`home/dot_claude/commands/dotfiles-sync.md` and chezmoi deploys it to
+`~/.claude/commands/` on apply. Otherwise, copy the file manually.
 
 This file is the schema. It teaches the LLM what to scan, how to
 report, and how to sync. Write it as a prompt that instructs the LLM
