@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A chezmoi-managed dotfiles repo for macOS (Apple Silicon). The `home/` directory is the chezmoi source state — it maps to `$HOME` on the target machine. The `install.sh` script bootstraps a fresh Mac from zero.
 
+User-facing customization flows (how to change Brewfile, secrets, editors, etc.) live in [`docs/guide.md`](docs/guide.md). When a user asks "how do I change X", point them there rather than reinventing.
+
 ## Key commands
 
 ```bash
@@ -33,7 +35,12 @@ chezmoi uses filename prefixes to encode target attributes:
 ```
 {{ onepasswordRead (printf "op://%s/ItemName/credential" .op_vault) }}
 ```
-Used in: `secrets.fish.tmpl`, `dot_gitconfig.tmpl`, `dot_config/zed/settings.json.tmpl`
+Used directly in: `dot_gitconfig.tmpl`, `dot_config/zed/settings.json.tmpl`.
+
+For auto-loaded shell env vars, prefer the data-driven workflow: register
+entries in `.chezmoidata/secrets.toml` via `dotfiles secret add VAR op://...`
+and let `secrets.fish.tmpl` iterate. Do not hand-edit the template to add
+new env vars — use `dotfiles secret add` / `dotfiles secret rm` / `dotfiles secret list`.
 
 **macOS Keychain** — via `keyring` template function or runtime fish functions:
 ```

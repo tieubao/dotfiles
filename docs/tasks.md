@@ -1,6 +1,6 @@
 # Task Backlog: dwarvesf/dotfiles
 
-Updated: 2026-04-04
+Updated: 2026-04-14
 
 <!-- Old ID → New ID mapping: F-XX/R-XX/T-XX → S-XX. See docs/specs/S-*.md -->
 
@@ -29,6 +29,8 @@ Updated: 2026-04-04
 - [x] S-21: Consolidate toolchain scripts into install-toolchains.sh
 - [x] S-22: Gum TUI onboarding
 - [x] S-23: Error message system (gum-styled output, template guards, apply summary)
+- [x] Data-driven secret registry (secrets.toml, add-secret, rm-secret, list-secrets)
+- [x] Auto-commit workflow (dfe auto-commits, dfs reverse drift sync, ADR-006)
 
 ## Next up
 
@@ -39,6 +41,8 @@ Updated: 2026-04-04
 - [x] S-28: README tool showcase icons — skillicons.dev + shields.io badges
 - [ ] S-29: VHS terminal demo — animated GIF of install wizard
 - [x] S-30: Verification loop — CLAUDE.md rules, subagent, hooks, slash command
+- [x] S-31: User guide — comprehensive manual replacing customization.md
+- [ ] S-32: Claude-assisted dotfiles sync — LLM scans drift, reports, syncs on approval
 
 ## Backlog (no immediate plans)
 
