@@ -17,8 +17,8 @@ function ghostty-theme --description "Preview or set Ghostty theme"
             echo "  $i) $themes[$i]"
         end
         echo ""
-        echo "Usage: ghostty-theme <number>  — switch theme (live reload)"
-        echo "       ghostty-theme reset     — restore base16-eighties-dark"
+        echo "Usage: ghostty-theme <number>   - switch theme (live reload)"
+        echo "       ghostty-theme reset      - restore base16-eighties-dark"
         return
     end
 
@@ -36,5 +36,5 @@ function ghostty-theme --description "Preview or set Ghostty theme"
 
     sed -i '' "s/^theme = .*/theme = $themes[$idx]/" $config
     echo "Switched to: $themes[$idx]"
-    echo "(Ghostty live-reloads — check your terminal)"
+    echo "(Ghostty live-reloads  - check your terminal)"
 end

@@ -16,13 +16,13 @@ When `chezmoi apply` fails, users get cryptic, unactionable errors:
 chezmoi: .Brewfile: template: dot_Brewfile.tmpl:54:10: executing "dot_Brewfile.tmpl" at <.headless>: map has no entry for key "headless"
 ```
 
-Users have no idea this means "run `chezmoi init`". Other failures are worse — brew bundle truncates output to 20 lines, `mas install` and `code --install-extension` fail silently with `|| true`, and there's no summary of what happened after apply finishes.
+Users have no idea this means "run `chezmoi init`". Other failures are worse  - brew bundle truncates output to 20 lines, `mas install` and `code --install-extension` fail silently with `|| true`, and there's no summary of what happened after apply finishes.
 
 ### Error handling audit
 
 | Script / Template | Current handling | Impact |
 |---|---|---|
-| `.tmpl` files (7 files) | None — Go template crash | Blocks entire apply |
+| `.tmpl` files (7 files) | None  - Go template crash | Blocks entire apply |
 | `brew-bundle.sh` | Output truncated to 20 lines | Hides root cause |
 | `macos-defaults.sh` | `|| true` on killall | Acceptable |
 | `mas-apps.sh` | No error handling | 20+ silent failures |
@@ -40,7 +40,7 @@ We use [gum](https://github.com/charmbracelet/gum) by Charm as the primary rende
 **Why gum over raw ANSI:**
 - `gum log` gives leveled messages with colored badges, timestamps, and structured fields out of the box
 - `gum style` gives a CSS-like box model (border, padding, margin, alignment) for summary rendering
-- `gum join` composes blocks horizontally/vertically — no manual column math
+- `gum join` composes blocks horizontally/vertically  - no manual column math
 - `gum format -t emoji` renders emoji shortcodes for cross-terminal consistency
 - Declarative and readable vs opaque escape sequences
 
@@ -55,8 +55,8 @@ Uses Charm's default level colors (from `charmbracelet/log`) for consistency wit
 | Warning | yellow | `192` | `WARN` |
 | Error | red | `204` | `ERRO` |
 | Fatal | magenta | `134` | `FATA` |
-| Accent | blue | `75` | — (section headers) |
-| Dim | gray | `245` | — (helper text) |
+| Accent | blue | `75` |  - (section headers) |
+| Dim | gray | `245` |  - (helper text) |
 
 ### Message anatomy
 
@@ -77,16 +77,16 @@ INFO  Fish shell set as default
 **Rendered with gum:**
 
 ```bash
-# info — one-liner
+# info  - one-liner
 gum log --level info "Fish shell set as default"
 
-# warn — with structured context and indented detail
+# warn  - with structured context and indented detail
 gum log --level warn "brew: monitor-control not found"
 gum style --faint --foreground 245 --padding "0 0 0 8" \
   "Cask removed from Homebrew." \
   "Fix: remove from ~/.Brewfile"
 
-# error — same structure
+# error  - same structure
 gum log --level error "Homebrew not found"
 gum style --faint --foreground 245 --padding "0 0 0 8" \
   "Cannot install packages without brew." \
@@ -96,7 +96,7 @@ gum style --faint --foreground 245 --padding "0 0 0 8" \
 gum log --level error --structured "brew bundle failed" exit_code 1 log "/tmp/brew-xxx.log"
 ```
 
-**Section headers** — bold accent, matching `install.sh` `==>` pattern:
+**Section headers**  - bold accent, matching `install.sh` `==>` pattern:
 
 ```bash
 gum style --bold --foreground 75 "==> Brewfile changed, running brew bundle..."
@@ -111,14 +111,14 @@ Rendered with `gum style --border` + `gum join` for a polished box at the end of
 ```
 ╭────────────────────────────────────────────╮
 │                                            │
-│   ✓ dotfiles apply complete — all OK       │
+│   ✓ dotfiles apply complete  - all OK       │
 │                                            │
 ╰────────────────────────────────────────────╯
 ```
 
 ```bash
 gum style --border rounded --border-foreground 78 --padding "1 2" --margin "1 0" \
-  "$(gum style --foreground 78 --bold '✓ dotfiles apply complete — all OK')"
+  "$(gum style --foreground 78 --bold '✓ dotfiles apply complete  - all OK')"
 ```
 
 **With warnings:**
@@ -207,7 +207,7 @@ Summary script reads this file. Log is reset at the start of each apply.
 Provides: `info`, `warn`, `err`, `die`, `require_cmd`, `section`, `script_ok`
 
 ```bash
-# ~/.config/dotfiles/lib.sh — sourced by chezmoi after-scripts
+# ~/.config/dotfiles/lib.sh  - sourced by chezmoi after-scripts
 # gum-first output with ANSI fallback
 
 DOTFILES_LOG="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-apply.log"
@@ -263,7 +263,7 @@ err() {
     echo "$(date +%Y-%m-%dT%H:%M:%S) FAIL: $1${3:+ | Fix: $3}" >> "$DOTFILES_LOG"
 }
 
-# die "what" "why" "fix command" — prints error then exits
+# die "what" "why" "fix command"  - prints error then exits
 die() { err "$@"; exit 1; }
 
 # require_cmd "cmd" "why needed" "install command"
@@ -274,7 +274,7 @@ require_cmd() {
         "${3:-brew install $1}"
 }
 
-# script_ok "name" — call at end of each script
+# script_ok "name"  - call at end of each script
 script_ok() {
     local name="${1:-$(basename "$0" | sed 's/^run_[a-z_]*_//' | sed 's/\.sh.*//')}"
     info "$name complete"
@@ -282,7 +282,7 @@ script_ok() {
 }
 ```
 
-**Note:** `before` scripts run prior to file deployment — they can't source the library. They detect gum inline:
+**Note:** `before` scripts run prior to file deployment  - they can't source the library. They detect gum inline:
 
 ```bash
 _has_gum() { command -v gum &>/dev/null; }
@@ -317,7 +317,7 @@ All scripts get `set -eo pipefail` and use the library for structured messages.
 
 **Per-script message catalog:**
 
-#### brew-bundle (before script — inline gum)
+#### brew-bundle (before script  - inline gum)
 
 ```bash
 # success
@@ -330,7 +330,7 @@ gum style --faint --foreground 245 --padding "0 0 0 8" \
   "$(gum format -t template 'Fix: {{ Color "78" "" "brew bundle --file=~/.Brewfile --verbose" }}')"
 ```
 
-#### 1password-check (before script — inline gum)
+#### 1password-check (before script  - inline gum)
 
 ```bash
 # op not installed
@@ -394,7 +394,7 @@ warn "npm: failed to install $pkg" \
 
 ### Component 4: Apply lifecycle scripts
 
-**`run_onchange_before_aa-init.sh.tmpl`** — resets log at start of apply:
+**`run_onchange_before_aa-init.sh.tmpl`**  - resets log at start of apply:
 
 ```bash
 #!/bin/bash
@@ -403,7 +403,7 @@ mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}"
 : > "${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-apply.log"
 ```
 
-**`run_after_zz-summary.sh`** — reads log, renders summary box:
+**`run_after_zz-summary.sh`**  - reads log, renders summary box:
 
 1. Count OK / WARN / FAIL lines in log
 2. Pick border color: `78` (green) if all OK, `192` (yellow) if warnings, `204` (red) if failures
@@ -415,7 +415,7 @@ mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}"
 
 ### Component 5: 1Password pre-check
 
-**`run_onchange_before_ab-1password-check.sh.tmpl`** — runs early, warns if 1Password setup incomplete. Non-fatal — brew-bundle installs `op` if it's in the Brewfile. Uses inline gum (before-script, no library yet).
+**`run_onchange_before_ab-1password-check.sh.tmpl`**  - runs early, warns if 1Password setup incomplete. Non-fatal  - brew-bundle installs `op` if it's in the Brewfile. Uses inline gum (before-script, no library yet).
 
 ### Component 6: Brewfile cleanup
 
@@ -455,12 +455,12 @@ While we're here:
 
 | # | Test | Steps | Expected |
 |---|------|-------|----------|
-| 1 | Template guard — missing var | Remove `headless` from `~/.config/chezmoi/chezmoi.toml`, run `chezmoi apply` | `✗ Missing config variable: headless` ... `Fix: chezmoi init` |
-| 2 | Template guard — all vars present | Normal `chezmoi apply` | No guard errors, templates render clean |
+| 1 | Template guard  - missing var | Remove `headless` from `~/.config/chezmoi/chezmoi.toml`, run `chezmoi apply` | `✗ Missing config variable: headless` ... `Fix: chezmoi init` |
+| 2 | Template guard  - all vars present | Normal `chezmoi apply` | No guard errors, templates render clean |
 | 3 | gum log rendering | Run any after-script | `gum log` styled messages with colored level badges (INFO cyan, WARN yellow, ERROR red) |
-| 4 | Summary — all OK | Normal apply with no issues | Green-bordered gum box: `✓ dotfiles apply complete — all OK` |
-| 5 | Summary — with warnings | Force a warning (e.g. remove a brew formula) | Yellow-bordered box with warnings section + "Next steps" with fix commands |
-| 6 | Summary — with failures | Force an error (e.g. break a script) | Red-bordered box with failures section + "Next steps" |
+| 4 | Summary  - all OK | Normal apply with no issues | Green-bordered gum box: `✓ dotfiles apply complete  - all OK` |
+| 5 | Summary  - with warnings | Force a warning (e.g. remove a brew formula) | Yellow-bordered box with warnings section + "Next steps" with fix commands |
+| 6 | Summary  - with failures | Force an error (e.g. break a script) | Red-bordered box with failures section + "Next steps" |
 | 7 | ANSI fallback | Hide gum: `PATH=/usr/bin:/bin chezmoi apply` | Clean plain-text output, no broken escape codes, no `gum: command not found` |
 | 8 | Log file | After any apply | `~/.cache/dotfiles-apply.log` has timestamped OK/WARN/FAIL entries |
 | 9 | Log reset | Run apply twice | Log only contains entries from the latest run |
@@ -523,7 +523,7 @@ The existing CI already runs `chezmoi apply --dry-run` and `chezmoi apply --excl
 | `CLAUDE.md` | Add section on error message system: lib.sh location, how scripts source it, template guard pattern, log file path |
 | `CLAUDE.md` | Update "Script execution order" to include `aa-init`, `ab-1password-check`, and `zz-summary` |
 | `CLAUDE.md` | Add `.headless` to template variables list (currently missing) |
-| `README.md` | No changes needed — error system is internal, not user-facing setup docs |
+| `README.md` | No changes needed  - error system is internal, not user-facing setup docs |
 | `docs/tasks.md` | Add `R-11: Error message system` to completed list after implementation |
 | `.github/workflows/test.yml` | Add shellcheck for new files + template guard regression test (see CI section above) |
 
@@ -535,26 +535,26 @@ Add under "Important conventions":
 - **Error message library** (`~/.config/dotfiles/lib.sh`) is sourced by all `run_*_after_*` scripts.
   Uses `gum log`/`gum style` for styled output with ANSI fallback. Functions: `info`, `warn "what" "why" "fix"`,
   `err`, `die`, `require_cmd`, `section`, `script_ok`. All warnings/errors log to `~/.cache/dotfiles-apply.log`.
-- **Template guards** — every `.tmpl` file validates required variables with `hasKey`/`fail` at the top.
+- **Template guards**  - every `.tmpl` file validates required variables with `hasKey`/`fail` at the top.
   Missing variables produce `Fix: chezmoi init` instead of cryptic Go template errors.
-- **Apply summary** — `run_after_zz-summary.sh` prints a gum-styled status box at the end of every apply.
+- **Apply summary**  - `run_after_zz-summary.sh` prints a gum-styled status box at the end of every apply.
 ```
 
 Update "Script execution order":
 
 ```markdown
-1. `run_onchange_before_aa-init.sh` — resets apply log file
-2. `run_onchange_before_ab-1password-check.sh` — validates 1Password setup (if enabled)
-3. `run_onchange_before_brew-bundle.sh` — triggers when `dot_Brewfile` content changes
+1. `run_onchange_before_aa-init.sh`  - resets apply log file
+2. `run_onchange_before_ab-1password-check.sh`  - validates 1Password setup (if enabled)
+3. `run_onchange_before_brew-bundle.sh`  - triggers when `dot_Brewfile` content changes
 4. Files are deployed (including `~/.config/dotfiles/lib.sh`)
-5. `run_once_after_*` — one-time setup (fish shell, macOS defaults, mas apps, toolchains)
-6. `run_onchange_after_*` — triggers when VS Code/Zed config changes
-7. `run_after_zz-summary.sh` — prints apply summary with warnings/errors/next steps
+5. `run_once_after_*`  - one-time setup (fish shell, macOS defaults, mas apps, toolchains)
+6. `run_onchange_after_*`  - triggers when VS Code/Zed config changes
+7. `run_after_zz-summary.sh`  - prints apply summary with warnings/errors/next steps
 ```
 
 ## Implementation order
 
-1. Create `lib.sh` (foundation — everything depends on this)
+1. Create `lib.sh` (foundation  - everything depends on this)
 2. Add template guards to all 6 `.tmpl` files (independent, can be done in parallel)
 3. Create lifecycle scripts: `aa-init`, `ab-1password-check`, `zz-summary`
 4. Update existing scripts to source lib and use structured messages

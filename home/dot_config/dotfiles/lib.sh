@@ -1,5 +1,5 @@
 #!/bin/bash
-# ~/.config/dotfiles/lib.sh — sourced by chezmoi after-scripts
+# ~/.config/dotfiles/lib.sh  - sourced by chezmoi after-scripts
 # gum-first styled output with ANSI fallback
 #
 # Usage:
@@ -77,7 +77,7 @@ err() {
     echo "$(date +%Y-%m-%dT%H:%M:%S) FAIL: $1${3:+ | Fix: $3}" >> "$DOTFILES_LOG"
 }
 
-# die "what" ["why"] ["fix command"] — prints error then exits
+# die "what" ["why"] ["fix command"]  - prints error then exits
 die() { err "$@"; exit 1; }
 
 # require_cmd "cmd" ["why needed"] ["install command"]
@@ -88,7 +88,7 @@ require_cmd() {
         "${3:-brew install $1}"
 }
 
-# script_ok ["name"] — call at end of each script to log success
+# script_ok ["name"]  - call at end of each script to log success
 script_ok() {
     local name="${1:-$(basename "$0" | sed 's/^run_[a-z_]*_//' | sed 's/\.sh.*//')}"
     info "$name complete"

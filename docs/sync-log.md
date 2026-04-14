@@ -15,7 +15,7 @@ VS Code extensions:
   - add 5: docker.docker, dwarvesf.md-ar-ext, ms-vsliveshare.vsliveshare, ocamllabs.ocaml-platform, openai.openai-chatgpt-adhoc
 
 Fish functions:
-  - removed 5 orphaned standalone functions from machine (add-secret, dfe, dfs, list-secrets, rm-secret) — consolidated into dotfiles subcommands
+  - removed 5 orphaned standalone functions from machine (add-secret, dfe, dfs, list-secrets, rm-secret)  - consolidated into dotfiles subcommands
 
 Brew/casks: deferred to next sync
 

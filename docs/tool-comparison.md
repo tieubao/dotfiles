@@ -15,7 +15,7 @@ A full audit of installed software against modern alternatives.
 | gitup | Not actively developed | **Keep if you use it** |
 | hub | Deprecated since 2020 | **Replace with gh** |
 | youtube-dl | Dead since 2021, yt-dlp already installed | **Remove** |
-| pipx | Redundant — `uv tool install` replaces it | **Remove** |
+| pipx | Redundant  - `uv tool install` replaces it | **Remove** |
 | rbenv | Single-language manager | **Replace with mise** |
 | yarn | Redundant with pnpm unless projects require it | **Remove if possible** |
 | subversion | Legacy, unless you have SVN repos | **Remove** |
@@ -70,8 +70,8 @@ A full audit of installed software against modern alternatives.
 | Extension | Verdict | Action |
 |---|---|---|
 | AdGuard for Safari | Best-maintained Safari content blocker | **Keep** |
-| Adblock Plus | Weaker blocking, "acceptable ads" default | **Remove — redundant with AdGuard** |
-| uBlock Origin Lite | Heavily limited by Apple's APIs in Safari | **Remove — redundant with AdGuard** |
+| Adblock Plus | Weaker blocking, "acceptable ads" default | **Remove  - redundant with AdGuard** |
+| uBlock Origin Lite | Heavily limited by Apple's APIs in Safari | **Remove  - redundant with AdGuard** |
 | 1Password for Safari | Essential for 1Password users | **Keep** |
 | StopTheMadness Pro | Unique functionality, nothing else does this | **Keep** |
 | Vimari | Best vim navigation for Safari | **Keep** |

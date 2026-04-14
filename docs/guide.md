@@ -62,7 +62,7 @@ your home directory. This is a one-way flow: source to target.
 </p>
 
 **Why two layers?** The source can live in a public git repo because it
-never contains real secrets — only `op://` references. The target has
+never contains real secrets  - only `op://` references. The target has
 your actual API keys, but it's never committed.
 
 Here's the full bootstrap flow when you first install:
@@ -143,11 +143,11 @@ You just ran `install.sh`. Here's what's on your machine now.
 Your default shell is now [Fish](https://fishshell.com/). It differs
 from bash/zsh in a few ways:
 
-- **Autosuggestions** — type a few characters, Fish suggests from history
+- **Autosuggestions**  - type a few characters, Fish suggests from history
   in gray. Press `→` to accept.
-- **Tab completion** — press `Tab` for rich completions with descriptions.
-- **No `.bashrc`** — config lives at `~/.config/fish/config.fish`.
-- **Abbreviations, not aliases** — type `gs` then space, it expands to
+- **Tab completion**  - press `Tab` for rich completions with descriptions.
+- **No `.bashrc`**  - config lives at `~/.config/fish/config.fish`.
+- **Abbreviations, not aliases**  - type `gs` then space, it expands to
   `git status`. Your abbreviations:
 
 | Category | Abbreviations |
@@ -219,7 +219,7 @@ Pass `--no-commit` to skip the auto-commit.
 
 ### Adding a Homebrew package
 
-Don't run `brew install` directly — that installs locally but doesn't
+Don't run `brew install` directly  - that installs locally but doesn't
 update the Brewfile, so your next machine won't have it.
 
 ```fish
@@ -365,7 +365,7 @@ list is committed, so your next machine gets it too.
 ### Walkthrough: switch Ghostty theme
 
 **Goal:** preview and switch terminal themes.
-No file editing needed — use the built-in helper:
+No file editing needed  - use the built-in helper:
 
 ```fish
 ghostty-theme        # lists available themes with numbers
@@ -437,7 +437,7 @@ chezmoi apply ~/.config/fish/conf.d/secrets.fish
 exec fish
 ```
 
-No repo change needed — the `op://` reference hasn't changed.
+No repo change needed  - the `op://` reference hasn't changed.
 
 ### Removing a secret
 
@@ -516,14 +516,14 @@ provides hostname, OS, and arch. Example in a `.tmpl` file:
 {{ end }}
 ```
 
-The `headless` flag is the most common override — it gates entire
+The `headless` flag is the most common override  - it gates entire
 sections of the Brewfile and script execution.
 
 ---
 
 ## 8. Troubleshooting
 
-Start with `dotfiles doctor` — it catches most issues.
+Start with `dotfiles doctor`  - it catches most issues.
 
 ### "I edited the wrong file"
 
@@ -536,9 +536,9 @@ Your change works now but will be lost on the next `chezmoi apply`.
 
 Same root cause: the deployed file differs from the source. Options:
 
-1. `dotfiles drift` — pull the deployed version back into source
-2. `chezmoi merge <path>` — three-way merge
-3. `chezmoi apply --force` — overwrite deployed with source (destructive)
+1. `dotfiles drift`  - pull the deployed version back into source
+2. `chezmoi merge <path>`  - three-way merge
+3. `chezmoi apply --force`  - overwrite deployed with source (destructive)
 
 ### "1Password errors"
 
@@ -712,13 +712,13 @@ After uninstall, your Mac reverts to Zsh with default configs. Any
 
 During `chezmoi apply`, scripts run in this order:
 
-1. `run_before_aa-init.sh` — resets the apply log
-2. `run_before_ab-1password-check.sh` — validates 1Password CLI
-3. `run_onchange_before_brew-bundle.sh` — `brew bundle` (triggers on Brewfile change)
-4. **File deployment** — templates rendered, files copied
-5. `run_once_after_*` — one-time setup (Fish shell, macOS defaults, MAS apps, toolchains)
-6. `run_onchange_after_*` — VS Code extensions, Zed config (triggers on content change)
-7. `run_after_zz-summary.sh` — styled apply summary with OK/warning/error counts
+1. `run_before_aa-init.sh`  - resets the apply log
+2. `run_before_ab-1password-check.sh`  - validates 1Password CLI
+3. `run_onchange_before_brew-bundle.sh`  - `brew bundle` (triggers on Brewfile change)
+4. **File deployment**  - templates rendered, files copied
+5. `run_once_after_*`  - one-time setup (Fish shell, macOS defaults, MAS apps, toolchains)
+6. `run_onchange_after_*`  - VS Code extensions, Zed config (triggers on content change)
+7. `run_after_zz-summary.sh`  - styled apply summary with OK/warning/error counts
 
 `run_once_` scripts won't re-run unless their content changes.
 `run_onchange_` scripts re-run when the template output changes.

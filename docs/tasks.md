@@ -34,15 +34,15 @@ Updated: 2026-04-14
 
 ## Next up
 
-- [ ] S-24: Ghostty config sync — convert to template, review settings, add doctor check
-- [x] S-25: Starship config polish — review modules, check Nerd Font rendering
-- [ ] S-26: Brewfile cleanup — audit stale entries, verify casks, deduplicate
-- [ ] S-27: Gum UI helper library (lib/ui.sh) — styled boxes, step progress, validation
-- [x] S-28: README tool showcase icons — skillicons.dev + shields.io badges
-- [ ] S-29: VHS terminal demo — animated GIF of install wizard
-- [x] S-30: Verification loop — CLAUDE.md rules, subagent, hooks, slash command
-- [x] S-31: User guide — comprehensive manual replacing customization.md
-- [ ] S-32: Claude-assisted dotfiles sync — LLM scans drift, reports, syncs on approval
+- [ ] S-24: Ghostty config sync  - convert to template, review settings, add doctor check
+- [x] S-25: Starship config polish  - review modules, check Nerd Font rendering
+- [ ] S-26: Brewfile cleanup  - audit stale entries, verify casks, deduplicate
+- [ ] S-27: Gum UI helper library (lib/ui.sh)  - styled boxes, step progress, validation
+- [x] S-28: README tool showcase icons  - skillicons.dev + shields.io badges
+- [ ] S-29: VHS terminal demo  - animated GIF of install wizard
+- [x] S-30: Verification loop  - CLAUDE.md rules, subagent, hooks, slash command
+- [x] S-31: User guide  - comprehensive manual replacing customization.md
+- [ ] S-32: Claude-assisted dotfiles sync  - LLM scans drift, reports, syncs on approval
 
 ## Backlog (no immediate plans)
 
