@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code statusLine — Catppuccin Mocha palette
+# Claude Code statusLine  - Catppuccin Mocha palette
 input=$(cat)
 
 # Catppuccin Mocha colors

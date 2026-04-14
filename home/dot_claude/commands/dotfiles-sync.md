@@ -71,7 +71,7 @@ Use this format:
 Dotfiles sync report (YYYY-MM-DD)
 
 Config drift (N files):
-  - path — what changed (brief description of the diff)
+  - path  - what changed (brief description of the diff)
 
 New packages (N brew, N casks):
   Brew: pkg1, pkg2, ...

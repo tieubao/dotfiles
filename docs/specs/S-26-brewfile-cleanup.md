@@ -14,8 +14,8 @@ old_id: R-14
 
 ### Spec
 
-- Verify `font-sauce-code-pro-nerd-font` vs `font-source-code-pro` — possible duplicate or misname
-- Check commented-out entries (AI tools, Web3 tools) — remove or uncomment
+- Verify `font-sauce-code-pro-nerd-font` vs `font-source-code-pro`  - possible duplicate or misname
+- Check commented-out entries (AI tools, Web3 tools)  - remove or uncomment
 - Verify all casks still exist in Homebrew (`brew info <name>`)
 - Check for packages installed by both brew and another manager (e.g. `mise` vs brew for language runtimes)
 - Remove any packages no longer used day-to-day

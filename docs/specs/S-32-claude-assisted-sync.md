@@ -25,24 +25,24 @@ syncs the changes back into the chezmoi source, commits, and pushes.
 
 This is the same pattern as the LLM Wiki: the human curates and
 decides, the LLM does the bookkeeping. The tedious part of dotfiles
-management is not choosing your tools — it's keeping the repo in sync
+management is not choosing your tools  - it's keeping the repo in sync
 with your choices. Claude handles that.
 
 ## Architecture
 
 Three layers, mirroring the LLM Wiki:
 
-**Machine state** (the "raw sources") — what's actually installed and
+**Machine state** (the "raw sources")  - what's actually installed and
 configured on your Mac right now. Brew packages, cask apps, config
 files, secrets, shell functions. This is the source of truth. You
 change it freely by installing tools, editing configs, whatever.
 
-**The repo** (the "wiki") — the chezmoi source at `~/dotfiles/home/`.
+**The repo** (the "wiki")  - the chezmoi source at `~/dotfiles/home/`.
 This is the persistent artifact that Claude maintains. It should reflect
 your machine state, but it often lags behind. Claude's job is to close
 the gap.
 
-**The schema** (the "CLAUDE.md") — instructions that tell Claude how to
+**The schema** (the "CLAUDE.md")  - instructions that tell Claude how to
 scan, what to detect, how to report, and how to sync. Lives in
 `.claude/commands/dotfiles-sync.md` as a slash command, plus detection
 logic in the CLAUDE.md project instructions.
@@ -70,7 +70,7 @@ Note: `chezmoi status` covers most config drift (any file chezmoi
 already manages). The "new files" checks cover the gap: files that
 exist on the machine but chezmoi doesn't know about yet.
 
-macOS defaults (`defaults write`) are not detectable — those are
+macOS defaults (`defaults write`) are not detectable  - those are
 fire-and-forget commands with no clean diff mechanism.
 
 Each scan produces a structured finding. Claude collects all findings
@@ -84,7 +84,7 @@ Claude presents findings grouped by category, not as raw diffs. Example:
 Dotfiles sync report (2026-04-14)
 
 Config drift (1 file):
-  - Zed settings.json — modified outside chezmoi
+  - Zed settings.json  - modified outside chezmoi
     (MCP server config changed, 2 new servers added)
 
 New packages (25 brew, 10 casks):
@@ -268,7 +268,7 @@ what to sync, what to drop, what to keep.
 Spotlight." Claude figures out which line to delete from the Brewfile.
 
 **One sync session covers everything.** Brew packages, casks, configs,
-extensions, secrets — all in one pass. No separate workflows for
+extensions, secrets  - all in one pass. No separate workflows for
 different types of drift.
 
 **The repo is the persistent artifact.** Like the LLM Wiki, the repo

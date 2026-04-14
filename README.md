@@ -18,7 +18,7 @@ This repo works differently. You change things on your machine. Periodically, yo
 
 ```
 You:    /dotfiles-sync
-Claude: [scans machine — packages, configs, extensions, secrets]
+Claude: [scans machine  - packages, configs, extensions, secrets]
 
 Claude: Dotfiles sync report
           Config drift: Zed settings (2 new MCP servers)
