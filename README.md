@@ -8,14 +8,59 @@
 ![1Password](https://img.shields.io/badge/1Password-Secrets-0572EC?logo=1password&logoColor=white)
 ![CI](https://img.shields.io/github/actions/workflow/status/dwarvesf/dotfiles/test.yml?label=CI&logo=github)
 
-A modern developer tooling stack for macOS, deployed in one command. Every tool is chosen for speed, ergonomics, and native macOS integration; no legacy defaults, no bloat.
+A dotfiles repo maintained by an LLM. You operate your Mac freely; Claude detects what drifted and syncs it back to the repo on your approval. **You never manually keep this repo in sync.**
 
-**The stack:** [Fish](https://fishshell.com/) replaces Zsh (faster startup, better defaults). [Starship](https://starship.rs/) replaces Oh My Zsh themes (cross-shell, instant). [Ghostty](https://ghostty.org/) replaces iTerm2 (GPU-rendered, native). [delta](https://github.com/dandavison/delta) replaces diff (syntax-highlighted). [eza](https://eza.rocks/), [bat](https://github.com/sharkdp/bat), [fd](https://github.com/sharkdp/fd), [ripgrep](https://github.com/BurntSushi/ripgrep), [zoxide](https://github.com/ajeetdsouza/zoxide), [fzf](https://github.com/junegunn/fzf) replace ls, cat, find, grep, cd, Ctrl+R. [1Password](https://1password.com/) handles secrets via `op://` templates; nothing is ever stored in git. All managed by [chezmoi](https://www.chezmoi.io/) with a [gum](https://github.com/charmbracelet/gum)-powered setup wizard.
+## The idea
 
-<!-- TODO: Add terminal screenshot at docs/assets/terminal.png -->
-<!-- ![Terminal](docs/assets/terminal.png) -->
+Most dotfiles repos expect you to edit the source, apply, commit, push. In practice, nobody does this consistently. You `brew install` while debugging, tweak a config directly, add an API key, and move on. After a few weeks, the repo is stale.
 
-**Requirements:** macOS 12+, Apple Silicon (Intel works too). First run takes ~30 minutes (Homebrew downloads).
+This repo works differently. You change things on your machine. Periodically, you ask Claude to catch up:
+
+```
+You:    /dotfiles-sync
+Claude: [scans machine — packages, configs, extensions, secrets]
+
+Claude: Dotfiles sync report
+          Config drift: Zed settings (2 new MCP servers)
+          New packages: ollama, rclone, pandoc
+          Stale: raycast, slack (not installed)
+          VS Code: 5 new extensions
+        What should I do?
+
+You:    sync everything, drop raycast and slack
+
+Claude: [edits Brewfile, re-adds configs, updates extensions,
+         logs to sync-log.md, commits]
+        Done. Push?
+
+You:    push
+```
+
+Two sentences from you. The LLM handled 6 file edits, a commit message, and a push.
+
+The pattern is general and works with any dotfiles manager and any LLM agent. The full write-up, including setup instructions, is in **[docs/llm-dotfiles.md](docs/llm-dotfiles.md)**.
+
+## How it works
+
+<p align="center">
+  <img src="docs/dotfiles_chezmoi_model.svg" alt="chezmoi model: source to target" width="680">
+</p>
+
+[chezmoi](https://www.chezmoi.io/) is the backbone. It separates the source (repo) from the target ($HOME), renders templates with injected secrets, and provides drift detection via `chezmoi status`. This two-layer model is what makes LLM-maintained sync possible: the LLM can safely scan, diff, and re-add without touching secrets in git.
+
+The `/dotfiles-sync` slash command (at [.claude/commands/dotfiles-sync.md](.claude/commands/dotfiles-sync.md)) teaches Claude what to scan:
+
+| Dimension | What it detects |
+|-----------|----------------|
+| Config drift | Files changed on machine but not in repo |
+| Brew packages | Installed but not in Brewfile (and vice versa) |
+| Cask apps | GUI apps installed but not tracked |
+| VS Code extensions | New or removed extensions |
+| Fish functions | Functions created outside chezmoi |
+| SSH configs | New host configs in config.d/ |
+| Secrets | Hardcoded keys that should be in 1Password |
+
+Every sync is logged in [docs/sync-log.md](docs/sync-log.md) so future syncs have context.
 
 ## Quick start
 
@@ -24,286 +69,70 @@ git clone https://github.com/dwarvesf/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh
 ```
 
-A styled setup wizard ([gum](https://github.com/charmbracelet/gum)) will prompt for your name, email, editor, headless mode, and whether you use 1Password. Everything adapts accordingly. On a headless/server machine, GUI apps, dev toolchains, and casks are skipped automatically.
+A [gum](https://github.com/charmbracelet/gum)-powered wizard prompts for your name, email, editor, headless mode, and 1Password. First run takes ~30 minutes (Homebrew downloads). After that, just use `/dotfiles-sync` to keep things current.
 
-**Flags:**
-- `./install.sh --check` -- dry-run, validates without applying
-- `./install.sh --force` -- teardown and reinit from scratch
-- `./install.sh --config-only` -- deploy config files only, skip brew/mas/defaults
+**Requirements:** macOS 12+, Apple Silicon (Intel works too).
 
 <details>
-<summary><b>Adopt on an existing Mac</b></summary>
+<summary><b>Other install methods</b></summary>
 
-Already have brew, fish, and your tools installed? Use `--config-only` to deploy just the config files without re-running brew bundle, mas installs, or macOS defaults:
-
+**Existing Mac** (configs only, skip brew/mas/defaults):
 ```bash
-git clone https://github.com/dwarvesf/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh --config-only
 ```
 
-This will:
-1. Link chezmoi source to `~/dotfiles/home`
-2. Prompt for your name, email, editor, headless mode, 1Password
-3. Deploy all config files to `$HOME`
-4. **Skip** brew bundle, Mac App Store apps, macOS defaults, toolchain installs
-
-Then switch your shell and reload:
-```bash
-# Set fish as default (if not already)
-grep -q /opt/homebrew/bin/fish /etc/shells || echo /opt/homebrew/bin/fish | sudo tee -a /etc/shells
-chsh -s /opt/homebrew/bin/fish
-
-# Open a new terminal to pick up the configs
-```
-
-</details>
-
-<details>
-<summary><b>Alternative: bootstrap without git</b></summary>
-
-On a truly fresh Mac, git requires Xcode CLT (10+ minutes to install). These methods skip that:
-
-**Via chezmoi directly (no git, no Homebrew):**
+**Without git** (fresh Mac, no Xcode CLT):
 ```bash
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply dwarvesf
 ```
 
-**Via Homebrew + chezmoi (no git):**
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-eval "$(/opt/homebrew/bin/brew shellenv)"
-brew install chezmoi
-chezmoi init --apply dwarvesf
-```
-
-> **Note:** These methods clone into `~/.local/share/chezmoi/` (chezmoi's default) instead of `~/dotfiles`. The git clone method is better for active development since you control the repo location.
+**Flags:** `--check` (dry-run), `--force` (reinit from scratch)
 
 </details>
 
-<details>
-<summary><b>Fork and customize</b></summary>
-
-```bash
-# 1. Fork this repo on GitHub
-# 2. Clone your fork
-git clone https://github.com/YOUR_USERNAME/dotfiles ~/dotfiles
-cd ~/dotfiles
-
-# 3. Edit what you want (see "Customization" below)
-# 4. Run
-./install.sh
-```
-
-</details>
-
-## What happens on install
-
-<p align="center">
-  <img src="docs/dotfiles_bootstrap_flow.svg" alt="Bootstrap flow" width="680">
-</p>
-
-1. Installs Homebrew (if missing)
-2. Installs chezmoi
-3. Runs setup wizard (styled prompts for name, email, editor, headless mode, 1Password)
-4. Deploys all config files to `$HOME`
-5. Runs automation scripts:
-   - `brew bundle` -- installs ~80 packages + casks
-   - Mac App Store apps via `mas`
-   - macOS defaults (Dock, Finder, keyboard, trackpad, screenshots)
-   - Sets Fish as default shell
-   - Installs Foundry (cast), Rust, npm/uv tools
-   - VS Code extensions
-6. Verifies key files were deployed
-
-## What's included
+## The stack
 
 | Layer | Tools |
 |-------|-------|
 | **Shell** | Fish + Starship prompt + plugins (autopair, done, sponge, async-prompt) |
-| **Terminal** | Ghostty (catppuccin-mocha, JetBrains Mono) |
-| **Multiplexer** | tmux (C-a prefix, vim nav, fzf session picker, project launcher) |
-| **Editors** | VS Code + Zed (settings, extensions, MCP servers) |
-| **Git** | .gitconfig (delta diffs, aliases) + .gitignore + commit template |
-| **SSH** | 1Password SSH Agent (optional), modular config.d/ |
-| **Secrets** | 1Password (`op://`) + data-driven registry (`secrets.toml`) -- never in git |
-| **Packages** | Layered Brewfile (base/dev/apps) + Mac App Store (`mas`) |
-| **Languages** | mise (Node, Python, Go, Ruby) via `.tool-versions` |
-| **Containers** | OrbStack / Docker config |
-| **macOS** | 30+ `defaults write` (Dock left, fast key repeat, Finder, screenshots) |
-| **Web3/DeFi** | Foundry (`cast`), fish aliases + helper functions |
-| **Claude Code** | Settings, hooks, statusline, verify-dotfiles subagent, `/implement-feature` command |
+| **Terminal** | Ghostty (GPU-rendered, catppuccin-mocha, JetBrains Mono) |
+| **Multiplexer** | tmux (C-a prefix, vim nav, fzf session picker) |
+| **Editors** | VS Code + Zed (settings, extensions, MCP servers with 1P secrets) |
+| **Git** | delta diffs, aliases, commit template |
+| **SSH** | 1Password SSH Agent, modular config.d/ |
+| **Secrets** | 1Password `op://` templates + data-driven registry |
+| **Packages** | Layered Brewfile (base/dev/apps) + Mac App Store |
+| **Languages** | mise (Node, Python, Go, Ruby) |
+| **macOS** | 30+ `defaults write` (Dock, Finder, keyboard, screenshots) |
 
-## Why this setup
+Every tool is chosen for speed, ergonomics, and native macOS integration. No legacy defaults, no bloat.
 
-- **Layered Brewfile** -- base tools always install; dev toolchains and GUI apps are conditional. Set `headless=true` for servers.
-- **Zero plaintext secrets** -- 1Password `op://` references in templates, macOS Keychain for the rest. The rendered secrets only exist on your machine, never in git.
-- **Claude-assisted sync** -- run `/dotfiles-sync` in Claude Code to detect all drift (brew, casks, configs, extensions, secrets), review in plain language, and sync with one approval. Manual commands (`dotfiles edit`, `dotfiles drift`) work offline.
-- **15-command CLI** -- `dotfiles edit`, `dotfiles drift`, `dotfiles secret`, `dotfiles sync`, `dotfiles doctor`, `dotfiles bench`... no need to remember raw chezmoi commands ([ADR-006](docs/decisions/006-auto-commit-workflow.md)).
-- **CI-tested weekly** -- shellcheck + chezmoi dry-run on macOS. Catches regressions before your next fresh install.
-- **Graceful degradation** -- works with or without 1Password. Skip web3, skip Mac App Store, pick your editor. Everything is opt-in.
+## Offline fallback
 
-## Daily usage
-
-**Core principle:** every setting change should be both applied to your machine and committed to the repo in one step. The helpers below enforce this by default.
-
-<p align="center">
-  <img src="docs/dotfiles_chezmoi_model.svg" alt="chezmoi model: source to target" width="680">
-</p>
-
-### Editing configs
+When you're not in a Claude session (SSH, airplane, quick edit), the `dotfiles` CLI works standalone:
 
 ```fish
-dotfiles edit ~/.config/fish/config.fish   # edit source → apply → auto-commit
-dotfiles edit ~/.Brewfile                  # edit Brewfile → apply (runs brew bundle) → commit
-dotfiles edit ~/.config/ghostty/config     # edit → apply (live reload) → commit
+dotfiles edit ~/.config/fish/config.fish   # edit + apply + auto-commit
+dotfiles drift                              # detect and re-absorb drift
+dotfiles doctor                             # health check
 ```
 
-`dotfiles edit` opens the chezmoi source file in your editor, applies on save, and commits the change. Pass `--no-commit` to skip the commit.
+Full command reference, walkthroughs, secrets management, multi-machine setup, and troubleshooting are in the **[user guide](docs/guide.md)**.
 
-<p align="center">
-  <img src="docs/dotfiles_dfe_workflow.svg" alt="dfe workflow: edit, apply, commit" width="680">
-</p>
+## Security
 
-### Syncing drift
+This repo is safe to make public. Actual secrets (API keys, tokens, passwords) are never committed; only `op://` references to 1Password items appear in the source. Real values are resolved at `chezmoi apply` time and only exist on your machine.
 
-If you edited a deployed file directly (or an app rewrote its config), `dotfiles drift` detects the drift and pulls it back into the source:
+The `op://` references do reveal 1Password vault and item names (e.g. `op://Private/OpenAI/credential`). This is intentional: it makes the repo forkable. If you fork, replace the item names with your own. The vault structure tells someone what services you use, not how to access them.
 
-```fish
-dotfiles drift                              # detect drift → prompt → re-add → commit
-dotfiles drift --no-commit                  # re-absorb without committing
-```
+## Docs
 
-<p align="center">
-  <img src="docs/dotfiles_dfs_workflow.svg" alt="dotfiles drift workflow: detect drift and sync" width="680">
-</p>
-
-### The `dotfiles` wrapper
-
-For everything else, the `dotfiles` CLI provides ergonomic subcommands:
-
-```fish
-dotfiles diff                              # preview changes
-dotfiles sync                              # apply everything
-dotfiles update                            # pull latest + apply
-dotfiles status                            # managed file count + pending diffs
-dotfiles doctor                            # health check (tools, config, drift)
-dotfiles bench                             # benchmark shell startup time
-dotfiles backup                            # back up config + age key to 1Password
-dotfiles encrypt-setup                     # guided age encryption setup
-```
-
-<details>
-<summary>Raw chezmoi commands</summary>
-
-```bash
-chezmoi edit ~/.config/fish/config.fish
-chezmoi diff
-chezmoi apply
-chezmoi apply --refresh-externals
-```
-
-</details>
-
-## Customization
-
-Use `dotfiles edit` to edit any config (edit → apply → commit in one step):
-
-```fish
-dotfiles edit ~/.Brewfile                  # add Homebrew packages
-dotfiles edit ~/.config/fish/config.fish   # shell config
-dotfiles edit ~/.config/ghostty/config     # terminal settings
-```
-
-Add secrets via 1Password:
-
-```fish
-dotfiles secret add OPENAI_API_KEY "op://Private/OpenAI/credential"
-```
-
-The full user guide covers walkthroughs, the secrets workflow, multi-machine
-setup, troubleshooting, and architecture: **[docs/guide.md](docs/guide.md)**.
-
-<details>
-<summary><b>Encrypted files (age)</b></summary>
-
-For files too complex for template injection (kubeconfig, VPN configs, certificates):
-
-```fish
-# Guided setup (generates key, prints next steps)
-dotfiles encrypt-setup
-
-# Then add encrypted files
-chezmoi add --encrypt ~/.kube/config
-# Creates home/encrypted_dot_kube/config.age in the repo
-```
-
-Manual setup if you prefer:
-```bash
-brew install age
-age-keygen -o ~/.config/chezmoi/key.txt
-# Copy the public key (age1...) from output
-chezmoi edit-config   # uncomment age section, paste public key
-# Backup key.txt to 1Password as a Secure Note
-```
-
-</details>
-
-<details>
-<summary><b>Removing what you don't need</b></summary>
-
-- **No web3?** Delete web3 aliases from `config.fish.tmpl`, remove `cast_*` functions, remove Foundry from install script
-- **No 1Password?** Answer "no" during `chezmoi init` -- all 1Password sections are skipped
-- **No Mac App Store?** Delete `run_once_after_mas-apps.sh.tmpl`
-- **Different editor?** `chezmoi init` prompts for your choice (VS Code, Zed, Neovim, Vim)
-
-</details>
-
-## Troubleshooting
-
-Run `dotfiles doctor` to diagnose issues:
-
-```
-$ dotfiles doctor
-Dotfiles health check
-=====================
-
-[ok] chezmoi installed
-[ok] chezmoi source linked
-[ok] fish is default shell
-[ok] homebrew installed
-[ok] 1Password CLI: signed in
-[ok] 1Password SSH agent: socket exists
-[ok] ~/.gitconfig exists
-[ok] ~/.config/fish/config.fish exists
-[ok] ~/.ssh/config exists
-[ok] git identity: Your Name <you@email.com>
-[ok] fzf
-[ok] bat
-...
-[ok] no drift detected
-
-All checks passed.
-```
-
-<details>
-<summary><b>How secrets flow</b></summary>
-
-<p align="center">
-  <img src="docs/dotfiles_secrets_flow.svg" alt="Secrets flow" width="680">
-</p>
-
-On a new Mac: clone -> `./install.sh` -> `op signin` -> `chezmoi apply` -> done.
-
-</details>
-
-<details>
-<summary><b>Architecture</b></summary>
-
-<p align="center">
-  <img src="docs/dotfiles_architecture.svg" alt="Architecture" width="680">
-</p>
-
-</details>
+| Document | What it covers |
+|----------|---------------|
+| **[docs/llm-dotfiles.md](docs/llm-dotfiles.md)** | The LLM-maintained dotfiles pattern. Shareable, stack-agnostic. Includes setup instructions. |
+| **[docs/guide.md](docs/guide.md)** | Full user guide. chezmoi details, manual commands, customization, secrets, multi-machine, troubleshooting. |
+| **[docs/decisions/](docs/decisions/)** | Architecture decision records (why chezmoi, Fish, Ghostty, 1Password, auto-commit). |
+| **[docs/sync-log.md](docs/sync-log.md)** | Sync history. Append-only log of every Claude-assisted sync. |
 
 ## Credits
 

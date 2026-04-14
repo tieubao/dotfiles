@@ -1,12 +1,44 @@
 # User guide
 
 Everything you need to use and customize this dotfiles setup. The
-[README](../README.md) covers quick start and what's included; this guide
-covers how it all works and how to make it yours.
+[README](../README.md) covers the pitch and quick start; this guide
+covers how it all works and how to make it yours. For the general
+LLM-maintained dotfiles pattern, see [llm-dotfiles.md](llm-dotfiles.md).
 
 ---
 
-## 1. How this works
+## 1. The LLM workflow
+
+The primary way to maintain this repo is to ask Claude.
+
+Run `/dotfiles-sync` in Claude Code (or just say "catch up with my
+dotfiles"). Claude scans your machine across 10 dimensions: config
+drift, brew packages, casks, VS Code extensions, fish functions, SSH
+configs, secrets, and more. It reports what changed in plain language
+and waits for your instructions.
+
+```
+You:    /dotfiles-sync
+Claude: Config drift: Zed settings (2 new MCP servers)
+        New packages: ollama, rclone, pandoc
+        Stale: raycast, slack (not installed)
+        What should I do?
+You:    sync everything, drop raycast and slack
+Claude: Done. 1 commit. Push?
+You:    push
+```
+
+Every sync is logged in `docs/sync-log.md`. Claude reads it at the
+start of each session for context ("last sync was 2 weeks ago, you
+added ollama").
+
+The manual commands in the sections below are fallbacks for when you're
+offline, SSH'd into a server, or want a quick one-off edit. You don't
+need to learn them to use this repo day-to-day.
+
+---
+
+## 2. How chezmoi works
 
 ### The two layers
 
@@ -63,7 +95,41 @@ Naming: `dot_` becomes `.`, `.tmpl` means "render this template",
 
 ---
 
-## 2. Your first 30 minutes
+### What happens on install
+
+<p align="center">
+  <img src="dotfiles_bootstrap_flow.svg" alt="Bootstrap flow" width="680">
+</p>
+
+1. Installs Homebrew (if missing)
+2. Installs chezmoi + runs setup wizard (name, email, editor, headless, 1Password)
+3. Deploys all config files to `$HOME`
+4. Runs `brew bundle` (~80 packages + casks)
+5. Mac App Store apps via `mas`
+6. macOS defaults (Dock, Finder, keyboard, trackpad, screenshots)
+7. Sets Fish as default shell
+8. Installs toolchains (Foundry, Rust, npm/uv), VS Code extensions
+9. Verifies key files were deployed
+
+**Install flags:**
+- `./install.sh --check` -- dry-run, validates without applying
+- `./install.sh --force` -- teardown and reinit from scratch
+- `./install.sh --config-only` -- deploy config files only, skip brew/mas/defaults
+
+**Adopt on an existing Mac:**
+```bash
+cd ~/dotfiles && ./install.sh --config-only
+```
+Then set Fish as default: `chsh -s /opt/homebrew/bin/fish`
+
+**Bootstrap without git** (fresh Mac, no Xcode CLT):
+```bash
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply dwarvesf
+```
+
+---
+
+## 3. Your first 30 minutes
 
 You just ran `install.sh`. Here's what's on your machine now.
 
@@ -129,18 +195,7 @@ key config files exist, git identity set, CLI tools present, no drift.
 
 ---
 
-## 3. Daily workflows
-
-### Primary workflow: Claude-assisted sync
-
-The easiest way to keep your dotfiles in sync is to ask Claude. Run
-`/dotfiles-sync` in Claude Code (or just say "catch up with my dotfiles").
-Claude scans your machine for drift across brew packages, casks, config
-files, VS Code extensions, fish functions, and secrets. It reports what
-changed in plain language and waits for your instructions before syncing.
-
-This is the recommended workflow for batch changes. The manual commands
-below are for quick edits or when you're not in a Claude session.
+## 4. Manual commands (offline fallback)
 
 ### Editing any config
 
@@ -200,7 +255,7 @@ For everything beyond editing, use the `dotfiles` wrapper:
 | `dotfiles secret <cmd>` | | | Manage 1Password secrets (add/rm/list) |
 | `dotfiles diff` | `d` | | Show pending changes |
 | `dotfiles sync` | `s` | `ds` | Apply all changes |
-| `dotfiles update` | `u` | `du` | Pull latest + apply |
+| `dotfiles update` | `u` | `dfu` | Pull latest + apply |
 | `dotfiles status` | `st` | | Managed file count + pending diffs |
 | `dotfiles cd` | | | Go to chezmoi source directory |
 | `dotfiles refresh` | `r` | | Re-download fish plugins |
@@ -214,7 +269,7 @@ All subcommands have tab completions. Abbreviations expand on space (e.g. type `
 
 ---
 
-## 4. Customization cookbook
+## 5. Customization cookbook
 
 ### Quick-change table
 
@@ -340,7 +395,7 @@ The change is auto-committed.
 
 ---
 
-## 5. Secrets management
+## 6. Secrets management
 
 ### The three tiers
 
@@ -405,7 +460,7 @@ never leaves your machine.
 
 ---
 
-## 6. Multi-machine setup
+## 7. Multi-machine setup
 
 ### Deploying to a second Mac
 
@@ -461,7 +516,7 @@ sections of the Brewfile and script execution.
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 Start with `dotfiles doctor` — it catches most issues.
 
@@ -543,7 +598,7 @@ cd ~/dotfiles && ./install.sh --force
 
 ---
 
-## 8. Architecture reference
+## 9. Architecture reference
 
 <p align="center">
   <img src="dotfiles_architecture.svg" alt="Architecture overview" width="680">
@@ -606,7 +661,7 @@ Architectural choices are documented as ADRs in `docs/decisions/`:
 | Edit any config | `dotfiles edit <path>` | `de` |
 | Detect and fix drift | `dotfiles drift` | `dd` |
 | Apply all changes | `dotfiles sync` | `ds` |
-| Pull latest + apply | `dotfiles update` | `du` |
+| Pull latest + apply | `dotfiles update` | `dfu` |
 | See what would change | `dotfiles diff` | |
 | Check health | `dotfiles doctor` | |
 | Add a Homebrew package | `dotfiles edit ~/.Brewfile` | |

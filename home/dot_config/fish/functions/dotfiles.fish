@@ -371,8 +371,9 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "     identity = \"$key_path\""
             echo "     recipient = \"$pubkey\""
             echo ""
+            set -l vault (chezmoi data 2>/dev/null | grep op_vault | awk '{print $NF}' | tr -d '"'); or set vault Private
             echo "  3. Back up the key to 1Password:"
-            echo "     op document create $key_path --title 'chezmoi age key' --vault=Developer"
+            echo "     op document create $key_path --title 'chezmoi age key' --vault=$vault"
             echo ""
             echo "  4. Add encrypted files:"
             echo "     chezmoi add --encrypt ~/.kube/config"
@@ -430,6 +431,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
 
             set -l config_path (chezmoi config-path 2>/dev/null)
             set -l key_path "$HOME/.config/chezmoi/key.txt"
+            set -l vault (chezmoi data 2>/dev/null | grep op_vault | awk '{print $NF}' | tr -d '"'); or set vault Private
 
             if test -z "$config_path"; or not test -f "$config_path"
                 echo "[!!] chezmoi config not found"
@@ -439,7 +441,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "[1/3] chezmoi config: $config_path"
             if command -q op
                 echo "      Backing up to 1Password..."
-                op document create "$config_path" --title "chezmoi config (dotfiles backup)" --vault=Developer 2>/dev/null
+                op document create "$config_path" --title "chezmoi config (dotfiles backup)" --vault="$vault" 2>/dev/null
                 and echo "      [ok] Uploaded to 1Password"
                 or echo "      [!!] Upload failed. Are you signed in? (op signin)"
             else
@@ -451,7 +453,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             if test -f "$key_path"
                 if command -q op
                     echo "      Backing up to 1Password..."
-                    op document create "$key_path" --title "chezmoi age key (dotfiles backup)" --vault=Developer 2>/dev/null
+                    op document create "$key_path" --title "chezmoi age key (dotfiles backup)" --vault="$vault" 2>/dev/null
                     and echo "      [ok] Uploaded to 1Password"
                     or echo "      [!!] Upload failed"
                 else
