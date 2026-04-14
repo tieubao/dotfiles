@@ -42,7 +42,9 @@ Updated: 2026-04-14
 - [ ] S-29: VHS terminal demo  - animated GIF of install wizard
 - [x] S-30: Verification loop  - CLAUDE.md rules, subagent, hooks, slash command
 - [x] S-31: User guide  - comprehensive manual replacing customization.md
-- [ ] S-32: Claude-assisted dotfiles sync  - LLM scans drift, reports, syncs on approval
+- [x] S-32: Claude-assisted dotfiles sync  - LLM scans drift, reports, syncs on approval
+- [ ] S-33: Bitwarden secrets backend  - alternative to 1Password, user choice during init
+- [ ] S-34: Multi-agent LLM support  - Codex, OpenCode, Cursor alongside Claude Code
 
 ## Backlog (no immediate plans)
 
