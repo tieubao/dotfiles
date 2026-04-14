@@ -2,7 +2,7 @@
 id: S-28
 title: README tool showcase icons
 type: feature
-status: planned
+status: done
 old_id: F-14
 ---
 
