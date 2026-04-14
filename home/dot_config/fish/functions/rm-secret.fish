@@ -1,12 +1,12 @@
 function rm-secret --description "Unregister an auto-loaded 1Password secret"
     if test (count $argv) -lt 1
-        echo "Usage: rm-secret VAR_NAME [--commit]"
+        echo "Usage: rm-secret VAR_NAME [--no-commit]"
         return 1
     end
 
     set -l var $argv[1]
-    set -l do_commit 0
-    contains -- --commit $argv; and set do_commit 1
+    set -l do_commit 1
+    contains -- --no-commit $argv; and set do_commit 0
 
     set -l data (chezmoi source-path)/.chezmoidata/secrets.toml
     if not grep -q "^$var = " $data

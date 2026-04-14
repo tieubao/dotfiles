@@ -3,6 +3,19 @@
 How to change anything in this dotfiles repo without going back and
 forth between the source directory and your machine.
 
+## Core requirement
+
+> Every change to a setting must be **applied to the machine** AND
+> **backed up in the dotfiles repo** in one step. The user should never
+> have to remember to re-run `chezmoi apply` or `git commit` separately.
+
+All helpers in this guide (`dfe`, `dfs`, `add-secret`, `rm-secret`) are
+designed to satisfy this rule by default. Opt out with `--no-commit` if
+you need to stage a change but not commit it.
+
+Pushing is still manual. Run `git -C (dirname (chezmoi source-path)) push`
+when you're ready to share the commits with other machines.
+
 ## The one rule
 
 ```
@@ -23,15 +36,33 @@ flowchart LR
 
 ### The shortcut
 
-Typing `chezmoi edit X --apply` does both steps in one command. This
-repo ships a fish wrapper:
+The `dfe` fish helper edits the **source**, applies on save, and
+commits the change in one shot:
 
 ```fish
-dfe ~/.config/fish/config.fish
+dfe ~/.config/fish/config.fish           # edit + apply + commit
+dfe ~/.config/fish/config.fish --no-commit  # edit + apply only
 ```
 
-`dfe` opens the **source** file in your `$EDITOR`; when you save and
-quit, chezmoi applies immediately. No separate `chezmoi apply` call.
+Pushing is still on you. When there are commits to share:
+
+```fish
+git -C (dirname (chezmoi source-path)) push
+```
+
+### Reverse drift — `dfs`
+
+If you edited a deployed file directly (bypassing `dfe`) and want the
+change captured back into the source:
+
+```fish
+dfs                # diff, prompt, chezmoi re-add, commit
+dfs --no-commit    # re-absorb without committing
+```
+
+`dfs` runs `chezmoi diff` so you see the drift before agreeing, then
+uses `chezmoi re-add` to pull the live file contents back into the
+source tree and commits the result.
 
 Other useful shortcuts you can alias yourself or type directly:
 
@@ -90,14 +121,17 @@ flowchart TD
 
 Example:
 ```fish
-add-secret OPENAI_API_KEY "op://Private/OpenAI/credential" --commit
+add-secret OPENAI_API_KEY "op://Private/OpenAI/credential"
 exec fish   # or open a new terminal — now $OPENAI_API_KEY is set
 ```
+
+The commit is automatic. Pass `--no-commit` if you want to stage the
+registry change without committing.
 
 Companions:
 ```fish
 list-secrets                    # show current bindings
-rm-secret OPENAI_API_KEY        # unregister (optional --commit)
+rm-secret OPENAI_API_KEY        # unregister (auto-commits)
 ```
 
 ### How it works under the hood

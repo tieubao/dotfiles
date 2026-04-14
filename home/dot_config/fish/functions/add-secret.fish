@@ -1,6 +1,6 @@
 function add-secret --description "Register a 1Password secret as an auto-loaded env var"
     if test (count $argv) -lt 2
-        echo "Usage: add-secret VAR_NAME \"op://Vault/Item/field\" [--commit]"
+        echo "Usage: add-secret VAR_NAME \"op://Vault/Item/field\" [--no-commit]"
         echo "Example: add-secret OPENAI_API_KEY \"op://Private/OpenAI/credential\""
         echo ""
         echo "If the 1Password item doesn't exist yet you'll be prompted for the"
@@ -10,8 +10,8 @@ function add-secret --description "Register a 1Password secret as an auto-loaded
 
     set -l var $argv[1]
     set -l ref $argv[2]
-    set -l do_commit 0
-    contains -- --commit $argv; and set do_commit 1
+    set -l do_commit 1
+    contains -- --no-commit $argv; and set do_commit 0
 
     if not string match -qr '^[A-Z_][A-Z0-9_]*$' -- $var
         echo "✗ VAR_NAME must be UPPER_SNAKE_CASE, got: $var"

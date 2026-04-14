@@ -207,7 +207,7 @@ For 1Password secrets, one command creates the item (if missing),
 registers it, applies, and commits:
 
 ```fish
-add-secret OPENAI_API_KEY "op://Private/OpenAI/credential" --commit
+add-secret OPENAI_API_KEY "op://Private/OpenAI/credential"
 ```
 
 Full reference — quick-change table for every common file, the secrets
