@@ -193,42 +193,26 @@ chezmoi apply --refresh-externals
 | `home/.chezmoiscripts/run_once_after_macos-defaults.sh.tmpl` | macOS system preferences |
 | `home/.chezmoiexternal.toml` | Fish plugins to auto-download |
 
-### Adding secrets
+### Customizing and adding secrets
 
-Secrets are injected at `chezmoi apply` time and never stored in git.
+The universal flow: **edit source → `chezmoi apply` → new shell/reload**.
+The `dfe` fish helper collapses edit + apply into one command:
 
-**With 1Password — one-command workflow** (recommended):
+```fish
+dfe ~/.Brewfile                  # edit + auto-apply on save
+dfe ~/.config/fish/config.fish
+```
+
+For 1Password secrets, one command creates the item (if missing),
+registers it, applies, and commits:
+
 ```fish
 add-secret OPENAI_API_KEY "op://Private/OpenAI/credential" --commit
 ```
 
-That's it. `add-secret` will:
-1. Check the 1Password item at `op://Private/OpenAI/credential`. If it
-   doesn't exist, prompt you (hidden input) for the value and create the
-   item automatically.
-2. Append the binding to `.chezmoidata/secrets.toml`.
-3. Run `chezmoi apply` so the rendered `secrets.fish` includes it.
-4. With `--commit`, stage the registry file and create the git commit.
-
-Every new fish shell then has `$OPENAI_API_KEY` set.
-
-```fish
-list-secrets             # show current bindings
-rm-secret OPENAI_API_KEY # unregister (optional --commit)
-```
-
-**With macOS Keychain:**
-```fish
-keychain-set MY_TOKEN "secret-value"   # store
-keychain-env MY_TOKEN                  # load into current shell
-```
-
-**On-demand loading (no apply needed):**
-```fish
-op-env GITHUB_TOKEN "op://Vault/GitHub Token/password"   # 1Password
-keychain-env MY_TOKEN                                     # Keychain
-web3-env                                                  # ETH_RPC_URL + Etherscan
-```
+Full reference — quick-change table for every common file, the secrets
+workflow diagram, and troubleshooting — lives in
+[docs/customization.md](docs/customization.md).
 
 <details>
 <summary><b>Encrypted files (age)</b></summary>
