@@ -603,7 +603,104 @@ cd ~/dotfiles && ./install.sh --force
 
 ---
 
-## 9. Architecture reference
+## 9. Lifecycle: install, update, uninstall
+
+### Install (first time)
+
+```bash
+git clone https://github.com/dwarvesf/dotfiles ~/dotfiles
+cd ~/dotfiles && ./install.sh
+```
+
+This installs Homebrew, chezmoi, runs the setup wizard, deploys all
+configs (including `~/.claude/commands/dotfiles-sync.md`), installs
+packages, sets Fish as default shell, and prints a summary.
+
+After install, `/dotfiles-sync` is available in Claude Code from any
+directory. See [section 1](#1-the-llm-workflow).
+
+### Update (ongoing)
+
+**Primary (LLM-assisted):** run `/dotfiles-sync` in Claude Code. Claude
+detects drift, you approve, it syncs.
+
+**Pull from remote** (new commits from another machine):
+
+```fish
+dotfiles update    # git pull + chezmoi apply
+```
+
+**Re-run setup wizard** (change name, email, editor, 1Password config):
+
+```fish
+chezmoi init       # re-prompts for all answers
+chezmoi apply      # deploy with new answers
+```
+
+**Reinstall from scratch** (teardown + rebuild):
+
+```bash
+cd ~/dotfiles && ./install.sh --force
+```
+
+This removes chezmoi state and config, re-links, re-runs the wizard,
+and re-applies everything.
+
+### Uninstall
+
+There is no automated uninstall. To remove this dotfiles setup:
+
+**1. Restore default shell:**
+
+```bash
+chsh -s /bin/zsh
+```
+
+**2. Remove deployed configs:**
+
+```bash
+# See what chezmoi manages
+chezmoi managed
+
+# Remove all chezmoi-managed files from $HOME
+chezmoi managed | while read f; do rm -f "$HOME/$f"; done
+
+# Remove chezmoi state and config
+rm -rf ~/.local/share/chezmoi
+rm -rf ~/.config/chezmoi
+```
+
+**3. Remove the Claude Code slash command:**
+
+```bash
+rm -rf ~/.claude/commands/dotfiles-sync.md
+```
+
+**4. Remove the repo:**
+
+```bash
+rm -rf ~/dotfiles
+```
+
+**5. Optionally uninstall Homebrew packages:**
+
+```bash
+# See what was installed via the Brewfile
+brew bundle list --file=~/.Brewfile
+
+# Remove everything in the Brewfile
+brew bundle cleanup --force --file=~/.Brewfile
+
+# Or uninstall Homebrew entirely
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
+```
+
+After uninstall, your Mac reverts to Zsh with default configs. Any
+1Password secrets remain in your vault (unchanged).
+
+---
+
+## 10. Architecture reference
 
 <p align="center">
   <img src="dotfiles_architecture.svg" alt="Architecture overview" width="680">

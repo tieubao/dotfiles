@@ -119,6 +119,16 @@ dotfiles doctor                             # health check
 
 Full command reference, walkthroughs, secrets management, multi-machine setup, and troubleshooting are in the **[user guide](docs/guide.md)**.
 
+## Lifecycle
+
+| Stage | Command |
+|-------|---------|
+| **Install** | `git clone ... ~/dotfiles && cd ~/dotfiles && ./install.sh` |
+| **Update** (LLM) | `/dotfiles-sync` in Claude Code |
+| **Update** (manual) | `dotfiles update` (pull + apply) |
+| **Reinstall** | `./install.sh --force` |
+| **Uninstall** | See [guide](docs/guide.md#9-lifecycle-install-update-uninstall) |
+
 ## Security
 
 This repo is safe to make public. Actual secrets (API keys, tokens, passwords) are never committed; only `op://` references to 1Password items appear in the source. Real values are resolved at `chezmoi apply` time and only exist on your machine.
