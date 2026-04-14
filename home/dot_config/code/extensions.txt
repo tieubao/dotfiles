@@ -1,6 +1,8 @@
 anthropic.claude-code
 azemoh.one-monokai
 davidanson.vscode-markdownlint
+docker.docker
+dwarvesf.md-ar-ext
 github.codespaces
 github.vscode-github-actions
 golang.go
@@ -19,5 +21,8 @@ ms-vscode-remote.remote-ssh
 ms-vscode-remote.remote-ssh-edit
 ms-vscode.makefile-tools
 ms-vscode.remote-explorer
+ms-vsliveshare.vsliveshare
+ocamllabs.ocaml-platform
+openai.openai-chatgpt-adhoc
 pgourlain.erlang
 shopify.ruby-lsp

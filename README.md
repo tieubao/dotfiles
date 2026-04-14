@@ -125,7 +125,7 @@ cd ~/dotfiles
 | **Editors** | VS Code + Zed (settings, extensions, MCP servers) |
 | **Git** | .gitconfig (delta diffs, aliases) + .gitignore + commit template |
 | **SSH** | 1Password SSH Agent (optional), modular config.d/ |
-| **Secrets** | 1Password (`op://`) + macOS Keychain -- never in git |
+| **Secrets** | 1Password (`op://`) + data-driven registry (`secrets.toml`) -- never in git |
 | **Packages** | Layered Brewfile (base/dev/apps) + Mac App Store (`mas`) |
 | **Languages** | mise (Node, Python, Go, Ruby) via `.tool-versions` |
 | **Containers** | OrbStack / Docker config |
@@ -137,16 +137,51 @@ cd ~/dotfiles
 
 - **Layered Brewfile** -- base tools always install; dev toolchains and GUI apps are conditional. Set `headless=true` for servers.
 - **Zero plaintext secrets** -- 1Password `op://` references in templates, macOS Keychain for the rest. The rendered secrets only exist on your machine, never in git.
-- **13-command CLI** -- `dotfiles sync`, `dotfiles doctor`, `dotfiles bench`, `dotfiles backup`... no need to remember raw chezmoi commands.
+- **Claude-assisted sync** -- run `/dotfiles-sync` in Claude Code to detect all drift (brew, casks, configs, extensions, secrets), review in plain language, and sync with one approval. Manual commands (`dotfiles edit`, `dotfiles drift`) work offline.
+- **15-command CLI** -- `dotfiles edit`, `dotfiles drift`, `dotfiles secret`, `dotfiles sync`, `dotfiles doctor`, `dotfiles bench`... no need to remember raw chezmoi commands ([ADR-006](docs/decisions/006-auto-commit-workflow.md)).
 - **CI-tested weekly** -- shellcheck + chezmoi dry-run on macOS. Catches regressions before your next fresh install.
 - **Graceful degradation** -- works with or without 1Password. Skip web3, skip Mac App Store, pick your editor. Everything is opt-in.
 
 ## Daily usage
 
-The `dotfiles` wrapper provides ergonomic commands:
+**Core principle:** every setting change should be both applied to your machine and committed to the repo in one step. The helpers below enforce this by default.
+
+<p align="center">
+  <img src="docs/dotfiles_chezmoi_model.svg" alt="chezmoi model: source to target" width="680">
+</p>
+
+### Editing configs
 
 ```fish
-dotfiles edit ~/.config/fish/config.fish   # edit a config
+dotfiles edit ~/.config/fish/config.fish   # edit source → apply → auto-commit
+dotfiles edit ~/.Brewfile                  # edit Brewfile → apply (runs brew bundle) → commit
+dotfiles edit ~/.config/ghostty/config     # edit → apply (live reload) → commit
+```
+
+`dotfiles edit` opens the chezmoi source file in your editor, applies on save, and commits the change. Pass `--no-commit` to skip the commit.
+
+<p align="center">
+  <img src="docs/dotfiles_dfe_workflow.svg" alt="dfe workflow: edit, apply, commit" width="680">
+</p>
+
+### Syncing drift
+
+If you edited a deployed file directly (or an app rewrote its config), `dotfiles drift` detects the drift and pulls it back into the source:
+
+```fish
+dotfiles drift                              # detect drift → prompt → re-add → commit
+dotfiles drift --no-commit                  # re-absorb without committing
+```
+
+<p align="center">
+  <img src="docs/dotfiles_dfs_workflow.svg" alt="dotfiles drift workflow: detect drift and sync" width="680">
+</p>
+
+### The `dotfiles` wrapper
+
+For everything else, the `dotfiles` CLI provides ergonomic subcommands:
+
+```fish
 dotfiles diff                              # preview changes
 dotfiles sync                              # apply everything
 dotfiles update                            # pull latest + apply
@@ -155,12 +190,6 @@ dotfiles doctor                            # health check (tools, config, drift)
 dotfiles bench                             # benchmark shell startup time
 dotfiles backup                            # back up config + age key to 1Password
 dotfiles encrypt-setup                     # guided age encryption setup
-```
-
-Adding a Homebrew package:
-```fish
-dotfiles edit ~/.Brewfile     # add the line
-dotfiles sync                 # auto-runs brew bundle
 ```
 
 <details>
@@ -177,42 +206,22 @@ chezmoi apply --refresh-externals
 
 ## Customization
 
-### Files you'll want to edit
-
-| File | What to change |
-|------|---------------|
-| `home/dot_Brewfile.tmpl` | Add/remove Homebrew packages and casks (layered: base/dev/apps) |
-| `home/dot_config/fish/config.fish.tmpl` | Shell aliases, paths, tool integrations |
-| `home/dot_config/ghostty/config` | Terminal theme, font, keybindings |
-| `home/dot_config/tmux/tmux.conf` | tmux prefix, keybindings, status bar |
-| `home/dot_config/code/settings.json` | VS Code theme, font, settings |
-| `home/dot_config/code/extensions.txt` | VS Code extensions (one per line) |
-| `home/dot_config/zed/settings.json.tmpl` | Zed theme, MCP servers |
-| `home/dot_tool-versions` | Global language versions |
-| `home/.chezmoiscripts/run_once_after_mas-apps.sh.tmpl` | Mac App Store apps |
-| `home/.chezmoiscripts/run_once_after_macos-defaults.sh.tmpl` | macOS system preferences |
-| `home/.chezmoiexternal.toml` | Fish plugins to auto-download |
-
-### Customizing and adding secrets
-
-The universal flow: **edit source → `chezmoi apply` → new shell/reload**.
-The `dfe` fish helper collapses edit + apply into one command:
+Use `dotfiles edit` to edit any config (edit → apply → commit in one step):
 
 ```fish
-dfe ~/.Brewfile                  # edit + auto-apply on save
-dfe ~/.config/fish/config.fish
+dotfiles edit ~/.Brewfile                  # add Homebrew packages
+dotfiles edit ~/.config/fish/config.fish   # shell config
+dotfiles edit ~/.config/ghostty/config     # terminal settings
 ```
 
-For 1Password secrets, one command creates the item (if missing),
-registers it, applies, and commits:
+Add secrets via 1Password:
 
 ```fish
-add-secret OPENAI_API_KEY "op://Private/OpenAI/credential"
+dotfiles secret add OPENAI_API_KEY "op://Private/OpenAI/credential"
 ```
 
-Full reference — quick-change table for every common file, the secrets
-workflow diagram, and troubleshooting — lives in
-[docs/customization.md](docs/customization.md).
+The full user guide covers walkthroughs, the secrets workflow, multi-machine
+setup, troubleshooting, and architecture: **[docs/guide.md](docs/guide.md)**.
 
 <details>
 <summary><b>Encrypted files (age)</b></summary>

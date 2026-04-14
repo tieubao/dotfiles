@@ -1,7 +1,224 @@
 function dotfiles -d "Manage dotfiles via chezmoi"
     switch $argv[1]
         case edit e
-            chezmoi edit $argv[2..]
+            if test (count $argv) -lt 2
+                echo "Usage: dotfiles edit <path> [--no-commit]"
+                echo "  Edits the source, applies on save, auto-commits the diff."
+                return 1
+            end
+
+            set -l no_commit 0
+            set -l paths
+            for a in $argv[2..]
+                switch $a
+                    case --no-commit
+                        set no_commit 1
+                    case '*'
+                        set -a paths $a
+                end
+            end
+
+            chezmoi edit --apply $paths; or return 1
+
+            if test $no_commit -eq 1
+                return 0
+            end
+
+            set -l repo (dirname (chezmoi source-path))
+            if not git -C $repo diff --quiet -- home/
+                set -l changed (git -C $repo diff --name-only -- home/)
+                if test (count $changed) -gt 0
+                    git -C $repo add $changed
+                    set -l summary (string join ", " (for p in $changed; basename $p; end))
+                    git -C $repo commit -m "chore(config): update $summary via dotfiles edit" >/dev/null
+                    echo "✓ committed: $summary"
+                    echo "  push with: git -C $repo push"
+                end
+            end
+
+        case drift
+            set -l no_commit 0
+            contains -- --no-commit $argv; and set no_commit 1
+
+            set -l drifted (chezmoi status 2>/dev/null | string match -r '^ M\s+(.+)$' | string replace -r '^ M\s+' '')
+            set -l paths
+            set -l i 2
+            while test $i -le (count $drifted)
+                set -a paths $drifted[$i]
+                set i (math $i + 2)
+            end
+
+            if test (count $paths) -eq 0
+                echo "✓ no drift — deployed files match source"
+                return 0
+            end
+
+            echo "Drifted files (deployed ≠ source):"
+            for p in $paths
+                echo "  $p"
+            end
+            echo ""
+            echo "Run 'chezmoi diff $paths[1]' to preview; 'dotfiles drift' will re-absorb all of them."
+            read -P "Re-absorb into source? [y/N] " ans
+            if not string match -qri '^y' -- $ans
+                echo "aborted"
+                return 1
+            end
+
+            chezmoi re-add $paths; or return 1
+            echo "✓ source updated"
+
+            if test $no_commit -eq 1
+                return 0
+            end
+
+            set -l repo (dirname (chezmoi source-path))
+            if not git -C $repo diff --quiet -- home/
+                set -l changed (git -C $repo diff --name-only -- home/)
+                git -C $repo add $changed
+                set -l summary (string join ", " (for p in $changed; basename $p; end))
+                git -C $repo commit -m "chore(config): sync drift from machine ($summary)" >/dev/null
+                echo "✓ committed. Push with: git -C $repo push"
+            end
+
+        case secret
+            switch $argv[2]
+                case add
+                    if test (count $argv) -lt 4
+                        echo "Usage: dotfiles secret add VAR_NAME \"op://Vault/Item/field\" [--no-commit]"
+                        echo "Example: dotfiles secret add OPENAI_API_KEY \"op://Private/OpenAI/credential\""
+                        echo ""
+                        echo "If the 1Password item doesn't exist yet you'll be prompted for the"
+                        echo "value and the item will be created automatically."
+                        return 1
+                    end
+
+                    set -l var $argv[3]
+                    set -l ref $argv[4]
+                    set -l do_commit 1
+                    contains -- --no-commit $argv; and set do_commit 0
+
+                    if not string match -qr '^[A-Z_][A-Z0-9_]*$' -- $var
+                        echo "✗ VAR_NAME must be UPPER_SNAKE_CASE, got: $var"
+                        return 1
+                    end
+
+                    set -l parts (string split / -- (string replace 'op://' '' -- $ref))
+                    if test (count $parts) -lt 3
+                        echo "✗ reference must be op://Vault/Item/field , got: $ref"
+                        return 1
+                    end
+                    set -l op_vault $parts[1]
+                    set -l op_field $parts[-1]
+                    set -l op_item (string join / $parts[2..-2])
+
+                    if not op read "$ref" >/dev/null 2>&1
+                        echo "No item found at $ref — creating it now."
+                        if not op account list >/dev/null 2>&1
+                            echo "✗ 1Password CLI is not signed in. Run: eval (op signin)"
+                            return 1
+                        end
+                        read -s -P "Enter value for $var: " value
+                        echo ""
+                        if test -z "$value"
+                            echo "✗ empty value, aborting"
+                            return 1
+                        end
+                        if not op item create --vault="$op_vault" --category="API Credential" \
+                                --title="$op_item" "$op_field=$value" >/dev/null 2>&1
+                            echo "✗ op item create failed (vault=$op_vault title=$op_item)"
+                            return 1
+                        end
+                        echo "✓ created 1Password item: $op_item"
+                        if not op read "$ref" >/dev/null 2>&1
+                            echo "✗ item created but $ref still unreadable; check field name"
+                            return 1
+                        end
+                    end
+
+                    set -l data (chezmoi source-path)/.chezmoidata/secrets.toml
+                    if test ! -f $data
+                        echo "✗ $data missing; dotfiles may need reinstall"
+                        return 1
+                    end
+
+                    if grep -q "^$var = " $data
+                        echo "⚠ $var already registered; use 'dotfiles secret rm' first to replace"
+                        return 1
+                    end
+
+                    printf '%s = "%s"\n' "$var" "$ref" >> $data
+                    echo "✓ added $var → $ref"
+
+                    echo "→ chezmoi apply"
+                    chezmoi apply; or begin
+                        echo "✗ chezmoi apply failed; reverting registry"
+                        sed -i '' "/^$var = /d" $data
+                        return 1
+                    end
+
+                    echo "✓ applied. Open a new shell (or `exec fish`) to load \$$var."
+
+                    set -l repo (dirname (chezmoi source-path))
+                    if test $do_commit -eq 1
+                        git -C $repo add .chezmoidata/secrets.toml
+                        git -C $repo commit -m "feat(secrets): register $var" >/dev/null
+                        echo "✓ committed. Push with: git -C $repo push"
+                    else
+                        echo "Commit: git -C $repo add .chezmoidata/secrets.toml && git commit -m 'feat(secrets): register $var'"
+                    end
+
+                case rm
+                    if test (count $argv) -lt 3
+                        echo "Usage: dotfiles secret rm VAR_NAME [--no-commit]"
+                        return 1
+                    end
+
+                    set -l var $argv[3]
+                    set -l do_commit 1
+                    contains -- --no-commit $argv; and set do_commit 0
+
+                    set -l data (chezmoi source-path)/.chezmoidata/secrets.toml
+                    if not grep -q "^$var = " $data
+                        echo "⚠ $var not registered"
+                        return 1
+                    end
+
+                    sed -i '' "/^$var = /d" $data
+                    echo "✓ removed $var"
+
+                    echo "→ chezmoi apply"
+                    chezmoi apply; or return 1
+                    echo "✓ applied. \$$var will be absent from new shells."
+
+                    if test $do_commit -eq 1
+                        set -l repo (dirname (chezmoi source-path))
+                        git -C $repo add .chezmoidata/secrets.toml
+                        git -C $repo commit -m "chore(secrets): unregister $var" >/dev/null
+                        echo "✓ committed."
+                    end
+
+                case list ls
+                    set -l data (chezmoi source-path)/.chezmoidata/secrets.toml
+                    if test ! -f $data
+                        echo "(no secrets registered)"
+                        return 0
+                    end
+                    grep -E '^[A-Z_][A-Z0-9_]* = ' $data | sed 's/ = / → /; s/"//g'
+
+                case ''
+                    echo "Usage: dotfiles secret <add|rm|list>"
+                    echo ""
+                    echo "  add VAR \"op://...\"  Register a secret"
+                    echo "  rm VAR              Unregister a secret"
+                    echo "  list                Show all bindings"
+
+                case '*'
+                    echo "Unknown secret command: $argv[2]"
+                    echo "Usage: dotfiles secret <add|rm|list>"
+                    return 1
+            end
+
         case diff d
             chezmoi diff --no-pager
         case sync s
@@ -26,7 +243,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "====================="
             echo ""
 
-            # chezmoi
             if command -q chezmoi
                 echo "[ok] chezmoi installed"
             else
@@ -34,7 +250,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 set issues (math $issues + 1)
             end
 
-            # Source link
             if test -L ~/.local/share/chezmoi
                 echo "[ok] chezmoi source linked"
             else
@@ -42,7 +257,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 set issues (math $issues + 1)
             end
 
-            # Fish is default shell
             if string match -q "*/fish" $SHELL
                 echo "[ok] fish is default shell"
             else
@@ -50,7 +264,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 set issues (math $issues + 1)
             end
 
-            # Homebrew
             if command -q brew
                 echo "[ok] homebrew installed"
             else
@@ -58,7 +271,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 set issues (math $issues + 1)
             end
 
-            # 1Password CLI
             if command -q op
                 if op account list &>/dev/null
                     echo "[ok] 1Password CLI: signed in"
@@ -69,14 +281,12 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 echo "[--] 1Password CLI: not installed (optional)"
             end
 
-            # 1Password SSH Agent
             if test -e "$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
                 echo "[ok] 1Password SSH agent: socket exists"
             else
                 echo "[--] 1Password SSH agent: not found (optional)"
             end
 
-            # Key config files
             for f in ~/.gitconfig ~/.config/fish/config.fish ~/.ssh/config
                 if test -f $f
                     echo "[ok] $f exists"
@@ -86,7 +296,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 end
             end
 
-            # Git identity
             set -l git_name (git config --global user.name 2>/dev/null)
             if test -n "$git_name"
                 echo "[ok] git identity: $git_name <"(git config --global user.email)">"
@@ -95,7 +304,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 set issues (math $issues + 1)
             end
 
-            # Key CLI tools
             for tool in fzf bat eza zoxide delta mise starship
                 if command -q $tool
                     echo "[ok] $tool"
@@ -105,14 +313,12 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 end
             end
 
-            # Age key
             if test -f ~/.config/chezmoi/key.txt
                 echo "[ok] age encryption key exists"
             else
                 echo "[--] age encryption key: not set up (optional)"
             end
 
-            # Drift
             set -l drift_count (chezmoi diff --no-pager 2>/dev/null | grep '^diff' | wc -l | string trim)
             if test "$drift_count" -gt 0
                 echo "[!!] $drift_count file(s) have drifted from source"
@@ -172,7 +378,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "     chezmoi add --encrypt ~/.kube/config"
 
         case update u
-            # Source path is home/ inside the git repo; find the repo root
             set -l src (chezmoi source-path)
             if not test -d $src
                 echo "chezmoi source not found"
@@ -276,18 +481,20 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "Usage: dotfiles <command>"
             echo ""
             echo "Commands:"
-            echo "  edit <file>     Edit a managed file"
-            echo "  diff            Show pending changes"
-            echo "  sync            Apply all changes"
-            echo "  update          Pull latest + apply"
-            echo "  status          Show managed file count + pending diffs"
-            echo "  cd              cd to chezmoi source directory"
-            echo "  refresh         Re-download external files (fish plugins)"
-            echo "  add <file>      Add a new file to chezmoi"
-            echo "  doctor          Run health check on dotfiles setup"
-            echo "  bench           Benchmark shell startup time"
-            echo "  backup          Back up chezmoi config + age key"
-            echo "  encrypt-setup   Set up age encryption"
+            echo "  edit <file>       Edit + apply + auto-commit"
+            echo "  drift             Detect and re-absorb drifted files"
+            echo "  secret <cmd>      Manage 1Password secrets (add/rm/list)"
+            echo "  diff              Show pending changes"
+            echo "  sync              Apply all changes"
+            echo "  update            Pull latest + apply"
+            echo "  status            Show managed file count + pending diffs"
+            echo "  cd                cd to chezmoi source directory"
+            echo "  refresh           Re-download external files (fish plugins)"
+            echo "  add <file>        Add a new file to chezmoi"
+            echo "  doctor            Run health check on dotfiles setup"
+            echo "  bench             Benchmark shell startup time"
+            echo "  backup            Back up chezmoi config + age key"
+            echo "  encrypt-setup     Set up age encryption"
         case '*'
             chezmoi $argv
     end
