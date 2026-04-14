@@ -131,6 +131,7 @@ cd ~/dotfiles
 | **Containers** | OrbStack / Docker config |
 | **macOS** | 30+ `defaults write` (Dock left, fast key repeat, Finder, screenshots) |
 | **Web3/DeFi** | Foundry (`cast`), fish aliases + helper functions |
+| **Claude Code** | Settings, hooks, statusline, verify-dotfiles subagent, `/implement-feature` command |
 
 ## Why this setup
 

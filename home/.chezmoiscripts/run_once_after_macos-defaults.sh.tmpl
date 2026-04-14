@@ -71,6 +71,19 @@ safe_defaults com.apple.TextEdit RichText -bool false
 # ── Activity Monitor ──────────────────────────────────────────────────
 safe_defaults com.apple.ActivityMonitor ShowCategory -int 0
 
+# ── Terminal.app ──────────────────────────────────────────────────────
+# Set Nerd Font on the base16-eighties.dark profile so Starship glyphs render.
+if osascript -e 'tell application "Terminal" to name of settings set "base16-eighties.dark"' &>/dev/null; then
+    osascript <<'APPLESCRIPT' 2>/dev/null || warn "Terminal.app font update failed" \
+        "AppleScript could not set font on base16-eighties.dark profile." \
+        "Open Terminal > Settings > Profiles and set font manually to SauceCodePro NFM."
+tell application "Terminal"
+    set font name of settings set "base16-eighties.dark" to "SauceCodePro NFM"
+    set font size of settings set "base16-eighties.dark" to 13
+end tell
+APPLESCRIPT
+fi
+
 # ── Apply ─────────────────────────────────────────────────────────────
 for app in "Dock" "Finder" "SystemUIServer"; do
     killall "$app" &>/dev/null || true

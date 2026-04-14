@@ -30,6 +30,9 @@ jobs:
       - name: Lint lib.sh
         run: shellcheck home/dot_config/dotfiles/lib.sh
 
+      - name: Lint statusline script
+        run: shellcheck home/dot_claude/executable_statusline-command.sh
+
   test-macos:
     runs-on: macos-latest
     steps:

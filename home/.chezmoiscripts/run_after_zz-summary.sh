@@ -11,9 +11,9 @@ _gum() { env -u UNDERLINE -u BOLD -u ITALIC -u FAINT -u STRIKETHROUGH gum "$@"; 
 # ── Count results ─────────────────────────────────────────────────────────────
 ok_count=0; warn_count=0; fail_count=0
 if [ -f "$LOG" ] && [ -s "$LOG" ]; then
-    ok_count=$(grep -c "^[^ ]* OK:" "$LOG" 2>/dev/null || echo 0)
-    warn_count=$(grep -c "^[^ ]* WARN:" "$LOG" 2>/dev/null || echo 0)
-    fail_count=$(grep -c "^[^ ]* FAIL:" "$LOG" 2>/dev/null || echo 0)
+    ok_count=$(grep -c "^[^ ]* OK:" "$LOG" 2>/dev/null) || ok_count=0
+    warn_count=$(grep -c "^[^ ]* WARN:" "$LOG" 2>/dev/null) || warn_count=0
+    fail_count=$(grep -c "^[^ ]* FAIL:" "$LOG" 2>/dev/null) || fail_count=0
 fi
 
 # ── Determine border color ───────────────────────────────────────────────────

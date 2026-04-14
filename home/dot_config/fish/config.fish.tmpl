@@ -87,9 +87,12 @@ if status is-interactive
     abbr -a gpr "gh pr create"
 
     # ── Navigation ────────────────────────────────────────────────────
-    abbr -a ll "eza -la --icons --git"
-    abbr -a la "eza -a --icons"
-    abbr -a lt "eza -la --tree --level=2 --icons"
+    abbr -a ls "eza -1 --group-directories-first --icons=never"
+    abbr -a l "eza -1A --group-directories-first --icons=never"
+    abbr -a ll "eza -lh --git --group-directories-first --icons=never"
+    abbr -a la "eza -la --group-directories-first --icons=never"
+    abbr -a lt "eza -la --tree --level=2 --git --group-directories-first --icons=never"
+    abbr -a sl ls
     abbr -a .. "cd .."
     abbr -a ... "cd ../.."
 

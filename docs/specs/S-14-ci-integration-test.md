@@ -1,4 +1,12 @@
-# R-02: Upgrade CI from dry-run to real integration test
+---
+id: S-14
+title: CI integration test
+type: refinement
+status: done
+old_id: R-02
+---
+
+# CI integration test
 
 **Priority:** High
 **Status:** Done

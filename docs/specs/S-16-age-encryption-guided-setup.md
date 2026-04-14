@@ -1,4 +1,12 @@
-# R-04: Add guided age encryption setup
+---
+id: S-16
+title: Age encryption guided setup
+type: refinement
+status: done
+old_id: R-04
+---
+
+# Age encryption guided setup
 
 **Priority:** Medium
 **Status:** Done

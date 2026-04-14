@@ -18,6 +18,7 @@ CLR_DIM=245     # gray
 # ── State ─────────────────────────────────────────────────────────────────────
 DOTFILES_LOG="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-apply.log"
 _HAS_GUM=$(command -v gum &>/dev/null && echo 1 || echo 0)
+_STEP=0
 
 # Wrap gum to unset env vars that clash with its flags (e.g. UNDERLINE, BOLD).
 # Shell color setup often exports these, causing "bool value must be true" errors.
@@ -36,22 +37,24 @@ section() {
 
 # info "message"
 info() {
+    _STEP=$((_STEP + 1))
     if [ "$_HAS_GUM" = 1 ]; then
-        _gum log --level info "$*"
+        _gum log --level info "[$_STEP] $*"
     else
-        printf '\033[38;5;%sm  ✓\033[0m %s\n' "$CLR_INFO" "$*"
+        printf '\033[38;5;%sm  ✓\033[0m [%d] %s\n' "$CLR_INFO" "$_STEP" "$*"
     fi
 }
 
 # warn "what" ["why"] ["fix command"]
 warn() {
+    _STEP=$((_STEP + 1))
     if [ "$_HAS_GUM" = 1 ]; then
-        _gum log --level warn "$1"
-        [ -n "${2:-}" ] && _gum style --faint --foreground $CLR_DIM --padding "0 0 0 8" "$2"
-        [ -n "${3:-}" ] && _gum style --padding "0 0 0 8" \
+        _gum log --level warn "[$_STEP] $1"
+        [ -n "${2:-}" ] && _gum style --faint --foreground $CLR_DIM --padding "0 0 0 4" "$2"
+        [ -n "${3:-}" ] && _gum style --padding "0 0 0 4" \
             "$(_gum join "$(_gum style --faint --foreground $CLR_DIM "Fix: ")" "$(_gum style --foreground $CLR_OK "$3")")"
     else
-        printf '\033[38;5;%sm  ⚠\033[0m \033[1m%s\033[0m\n' "$CLR_WARN" "$1"
+        printf '\033[38;5;%sm  ⚠\033[0m [%d] \033[1m%s\033[0m\n' "$CLR_WARN" "$_STEP" "$1"
         [ -n "${2:-}" ] && printf '\033[38;5;%sm    %s\033[0m\n' "$CLR_DIM" "$2"
         [ -n "${3:-}" ] && printf '\033[38;5;%sm    Fix: \033[38;5;%sm%s\033[0m\n' "$CLR_DIM" "$CLR_OK" "$3"
     fi
@@ -60,13 +63,14 @@ warn() {
 
 # err "what" ["why"] ["fix command"]
 err() {
+    _STEP=$((_STEP + 1))
     if [ "$_HAS_GUM" = 1 ]; then
-        _gum log --level error "$1"
-        [ -n "${2:-}" ] && _gum style --faint --foreground $CLR_DIM --padding "0 0 0 8" "$2"
-        [ -n "${3:-}" ] && _gum style --padding "0 0 0 8" \
+        _gum log --level error "[$_STEP] $1"
+        [ -n "${2:-}" ] && _gum style --faint --foreground $CLR_DIM --padding "0 0 0 4" "$2"
+        [ -n "${3:-}" ] && _gum style --padding "0 0 0 4" \
             "$(_gum join "$(_gum style --faint --foreground $CLR_DIM "Fix: ")" "$(_gum style --foreground $CLR_OK "$3")")"
     else
-        printf '\033[38;5;%sm  ✗\033[0m \033[1m%s\033[0m\n' "$CLR_ERR" "$1" >&2
+        printf '\033[38;5;%sm  ✗\033[0m [%d] \033[1m%s\033[0m\n' "$CLR_ERR" "$_STEP" "$1" >&2
         [ -n "${2:-}" ] && printf '\033[38;5;%sm    %s\033[0m\n' "$CLR_DIM" "$2" >&2
         [ -n "${3:-}" ] && printf '\033[38;5;%sm    Fix: \033[38;5;%sm%s\033[0m\n' "$CLR_DIM" "$CLR_OK" "$3" >&2
     fi

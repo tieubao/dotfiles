@@ -1,4 +1,12 @@
-# R-09: Consolidate toolchain install scripts
+---
+id: S-21
+title: Consolidate toolchain scripts
+type: refinement
+status: done
+old_id: R-09
+---
+
+# Consolidate toolchain scripts
 
 **Priority:** Low
 **Status:** Done

@@ -1,4 +1,12 @@
-# R-07: Add `dotfiles doctor` diagnostic command
+---
+id: S-19
+title: Dotfiles doctor
+type: refinement
+status: done
+old_id: R-07
+---
+
+# Dotfiles doctor
 
 **Priority:** Medium
 **Status:** Done
