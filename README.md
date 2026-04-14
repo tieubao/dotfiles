@@ -199,18 +199,18 @@ Secrets are injected at `chezmoi apply` time and never stored in git.
 
 **With 1Password — one-command workflow** (recommended):
 ```fish
-# 1. Store the secret in 1Password (any vault)
-op item create --vault=Private --category="API Credential" \
-  --title="OpenAI" credential="sk-..."
-
-# 2. Register it as an auto-loaded env var
-add-secret OPENAI_API_KEY "op://Private/OpenAI/credential"
+add-secret OPENAI_API_KEY "op://Private/OpenAI/credential" --commit
 ```
 
-`add-secret` validates the ref with `op read`, appends it to
-`.chezmoidata/secrets.toml`, runs `chezmoi apply`, and (with `--commit`)
-creates the git commit for you. Every new fish shell then has
-`$OPENAI_API_KEY` set.
+That's it. `add-secret` will:
+1. Check the 1Password item at `op://Private/OpenAI/credential`. If it
+   doesn't exist, prompt you (hidden input) for the value and create the
+   item automatically.
+2. Append the binding to `.chezmoidata/secrets.toml`.
+3. Run `chezmoi apply` so the rendered `secrets.fish` includes it.
+4. With `--commit`, stage the registry file and create the git commit.
+
+Every new fish shell then has `$OPENAI_API_KEY` set.
 
 ```fish
 list-secrets             # show current bindings
