@@ -10,11 +10,11 @@ status: done
 ### Problem
 
 The repo has good docs scattered across multiple files:
-- **README.md** — quick start, what's included, daily usage summary
-- **docs/customization.md** — the editing workflow, secrets, troubleshooting
-- **docs/decisions/*.md** — 6 ADRs explaining architectural choices
-- **docs/tool-comparison.md** — why each tool over alternatives
-- **7 SVG workflow diagrams** — visual references
+- **README.md**  - quick start, what's included, daily usage summary
+- **docs/customization.md**  - the editing workflow, secrets, troubleshooting
+- **docs/decisions/*.md**  - 6 ADRs explaining architectural choices
+- **docs/tool-comparison.md**  - why each tool over alternatives
+- **7 SVG workflow diagrams**  - visual references
 
 But three user journeys are poorly served:
 
@@ -26,7 +26,7 @@ But three user journeys are poorly served:
 
 ### Approach
 
-Expand `docs/customization.md` into `docs/guide.md` — a single comprehensive user guide. Don't create a separate manual that duplicates existing content. The README stays as the "front door" (quick start + overview) and links to the guide for depth.
+Expand `docs/customization.md` into `docs/guide.md`  - a single comprehensive user guide. Don't create a separate manual that duplicates existing content. The README stays as the "front door" (quick start + overview) and links to the guide for depth.
 
 ### Proposed structure
 

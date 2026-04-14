@@ -1,5 +1,5 @@
 #!/bin/bash
-# Apply summary — runs at the end of every chezmoi apply.
+# Apply summary  - runs at the end of every chezmoi apply.
 # Reads the apply log and prints a styled status box.
 
 set -eo pipefail
@@ -27,15 +27,15 @@ fi
 
 # ── Build summary content ────────────────────────────────────────────────────
 if [ "$warn_count" -eq 0 ] && [ "$fail_count" -eq 0 ]; then
-    # All OK — short message
+    # All OK  - short message
     if _has_gum; then
-        BODY=$(_gum style --foreground 78 --bold "✓ dotfiles apply complete — all OK")
+        BODY=$(_gum style --foreground 78 --bold "✓ dotfiles apply complete  - all OK")
         TIP=$(_gum style --faint "  Tip: use /dotfiles-sync in Claude Code to detect drift and keep the repo current")
         BODY=$(_gum join --vertical "$BODY" "" "$TIP")
         _gum style --border rounded --border-foreground $border_color --padding "1 2" --margin "1 0" "$BODY"
     else
         echo ""
-        printf '\033[38;5;78m  ✓ dotfiles apply complete — all OK\033[0m\n'
+        printf '\033[38;5;78m  ✓ dotfiles apply complete  - all OK\033[0m\n'
         printf '\033[38;5;245m  Tip: use /dotfiles-sync in Claude Code to detect drift and keep the repo current\033[0m\n'
         echo ""
     fi
@@ -76,7 +76,7 @@ if _has_gum; then
         DETAILS=$(_gum join --vertical "$DETAIL_HEADER" "$DETAILS")
     fi
 
-    # Next steps — extract fix commands from log
+    # Next steps  - extract fix commands from log
     STEPS=""
     step_num=1
     if [ -f "$LOG" ]; then

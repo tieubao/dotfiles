@@ -83,8 +83,8 @@ The LLM presents findings in plain language, grouped by category:
 Dotfiles sync report
 
 Config drift (2 files):
-  - Zed settings — 2 new MCP servers added
-  - tmux config — changed prefix key
+  - Zed settings  - 2 new MCP servers added
+  - tmux config  - changed prefix key
 
 New packages (5):
   ollama, rclone, pandoc, ...
@@ -151,7 +151,7 @@ Claude: [scans machine, 30 seconds]
 Claude: Dotfiles sync report (2026-04-14)
 
   Config drift (1 file):
-    - Zed settings.json — 2 new MCP servers
+    - Zed settings.json  - 2 new MCP servers
 
   New brew packages (5):
     ollama, rclone, pandoc, pipx, opencode

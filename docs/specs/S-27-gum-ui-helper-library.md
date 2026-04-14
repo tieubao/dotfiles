@@ -22,7 +22,7 @@ Create `lib/ui.sh` as a shared helper library sourced by `install.sh` and all ch
 
 ```bash
 #!/bin/bash
-# lib/ui.sh — Styled terminal output using gum
+# lib/ui.sh  - Styled terminal output using gum
 # Source this in any script: source "$(dirname "$0")/lib/ui.sh"
 
 # Colors (Catppuccin Mocha palette to match Ghostty theme)

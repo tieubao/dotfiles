@@ -14,8 +14,8 @@ Starship config (`home/dot_config/starship.toml`) is functional but could be tun
 
 ### Spec
 
-- Review module list — add any missing languages/tools used daily (e.g. `ruby`, `java`, `aws`)
+- Review module list  - add any missing languages/tools used daily (e.g. `ruby`, `java`, `aws`)
 - Check if `detect_folders`/`detect_env_vars` are optimal for k8s module
 - Consider adding `time` module (useful for long-running sessions)
-- Consider adding `git_metrics` (insertions/deletions) — disabled by default in starship
+- Consider adding `git_metrics` (insertions/deletions)  - disabled by default in starship
 - Verify Nerd Font symbols render correctly in Ghostty

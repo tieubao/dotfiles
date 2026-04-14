@@ -49,7 +49,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             end
 
             if test (count $paths) -eq 0
-                echo "✓ no drift — deployed files match source"
+                echo "✓ no drift  - deployed files match source"
                 return 0
             end
 
@@ -113,7 +113,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                     set -l op_item (string join / $parts[2..-2])
 
                     if not op read "$ref" >/dev/null 2>&1
-                        echo "No item found at $ref — creating it now."
+                        echo "No item found at $ref  - creating it now."
                         if not op account list >/dev/null 2>&1
                             echo "✗ 1Password CLI is not signed in. Run: eval (op signin)"
                             return 1

@@ -12,7 +12,7 @@ function op-env --description "Load a 1Password secret into an env var"
         set -gx $var_name $value
         echo "loaded $var_name"
     else
-        echo "failed to read $ref — run: op signin"
+        echo "failed to read $ref  - run: op signin"
         return 1
     end
 end
