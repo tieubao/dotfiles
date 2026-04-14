@@ -650,11 +650,13 @@ and re-applies everything.
 
 There is no automated uninstall. To remove this dotfiles setup:
 
-**1. Restore default shell:**
+**1. Restore default shell** (if you're also removing Fish):
 
 ```bash
 chsh -s /bin/zsh
 ```
+
+Skip this if you want to keep Fish as your shell.
 
 **2. Remove deployed configs:**
 
