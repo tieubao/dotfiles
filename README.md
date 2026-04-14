@@ -197,13 +197,24 @@ chezmoi apply --refresh-externals
 
 Secrets are injected at `chezmoi apply` time and never stored in git.
 
-**With 1Password** (recommended):
-```bash
-# Store the secret
-op item create --vault=Developer --category=api_credential --title="OpenAI" password="sk-..."
+**With 1Password — one-command workflow** (recommended):
+```fish
+# 1. Store the secret in 1Password (any vault)
+op item create --vault=Private --category="API Credential" \
+  --title="OpenAI" credential="sk-..."
 
-# Reference it in a template (e.g., secrets.fish.tmpl)
-set -gx OPENAI_API_KEY "{{ onepasswordRead "op://Developer/OpenAI/password" }}"
+# 2. Register it as an auto-loaded env var
+add-secret OPENAI_API_KEY "op://Private/OpenAI/credential"
+```
+
+`add-secret` validates the ref with `op read`, appends it to
+`.chezmoidata/secrets.toml`, runs `chezmoi apply`, and (with `--commit`)
+creates the git commit for you. Every new fish shell then has
+`$OPENAI_API_KEY` set.
+
+```fish
+list-secrets             # show current bindings
+rm-secret OPENAI_API_KEY # unregister (optional --commit)
 ```
 
 **With macOS Keychain:**

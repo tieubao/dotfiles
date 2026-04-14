@@ -33,7 +33,12 @@ chezmoi uses filename prefixes to encode target attributes:
 ```
 {{ onepasswordRead (printf "op://%s/ItemName/credential" .op_vault) }}
 ```
-Used in: `secrets.fish.tmpl`, `dot_gitconfig.tmpl`, `dot_config/zed/settings.json.tmpl`
+Used directly in: `dot_gitconfig.tmpl`, `dot_config/zed/settings.json.tmpl`.
+
+For auto-loaded shell env vars, prefer the data-driven workflow: register
+entries in `.chezmoidata/secrets.toml` via `add-secret VAR op://...` and let
+`secrets.fish.tmpl` iterate. Do not hand-edit the template to add new env
+vars — use `add-secret` / `rm-secret` / `list-secrets`.
 
 **macOS Keychain** — via `keyring` template function or runtime fish functions:
 ```
