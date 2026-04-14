@@ -12,11 +12,15 @@ $golang\
 $python\
 $nodejs\
 $rust\
+$ruby\
 $elixir\
+$aws\
 $kubernetes\
 $terraform\
 $docker_context\
+$git_metrics\
 $cmd_duration\
+$time\
 $line_break\
 $character"""
 
@@ -59,11 +63,19 @@ symbol = " "
 format = "[$symbol($version)]($style) "
 symbol = " "
 
+[ruby]
+format = "[$symbol($version)]($style) "
+symbol = " "
+
+[aws]
+format = "[$symbol($profile)(/$region)]($style) "
+symbol = " "
+
 [kubernetes]
 disabled = false
 format = "[$symbol$context(/$namespace)]($style) "
 symbol = "☸ "
-detect_folders = ["k8s", "kube", "kubernetes"]
+detect_folders = ["k8s", "kube", ".kube", "kubernetes"]
 detect_env_vars = ["KUBECONFIG"]
 
 [terraform]
@@ -73,3 +85,13 @@ format = "[$symbol$workspace]($style) "
 format = "[$symbol$context]($style) "
 symbol = " "
 only_with_files = true
+
+[git_metrics]
+disabled = false
+format = "([+$added]($added_style) )([-$deleted]($deleted_style) )"
+
+[time]
+disabled = false
+format = "[$time]($style) "
+time_format = "%H:%M"
+style = "dimmed white"

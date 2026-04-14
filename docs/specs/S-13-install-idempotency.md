@@ -1,4 +1,12 @@
-# R-01: Fix install.sh idempotency gap
+---
+id: S-13
+title: Install idempotency
+type: refinement
+status: done
+old_id: R-01
+---
+
+# Install idempotency
 
 **Priority:** High
 **Status:** Done

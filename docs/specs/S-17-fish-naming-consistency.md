@@ -1,4 +1,12 @@
-# R-05: Standardize fish function naming convention
+---
+id: S-17
+title: Fish naming consistency
+type: refinement
+status: done
+old_id: R-05
+---
+
+# Fish naming consistency
 
 **Priority:** Low
 **Status:** Done

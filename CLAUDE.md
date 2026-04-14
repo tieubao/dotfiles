@@ -79,3 +79,54 @@ The ignore file is itself a Go template. macOS-only configs (Ghostty, Zed, Brewf
 - **Error message library** (`~/.config/dotfiles/lib.sh`) is sourced by all `run_*_after_*` scripts. Uses `gum log`/`gum style` for styled output with ANSI fallback. Functions: `info`, `warn "what" "why" "fix"`, `err`, `die`, `require_cmd`, `section`, `script_ok`. All warnings/errors log to `~/.cache/dotfiles-apply.log`.
 - **Template guards** — every `.tmpl` file validates required variables with `hasKey`/`fail` at the top. Missing variables produce `Fix: chezmoi init` instead of cryptic Go template errors.
 - **Apply summary** — `run_after_zz-summary.sh` prints a gum-styled status box at the end of every apply with OK/warning/failure counts, details, and actionable next steps.
+
+## Claude Code project config
+
+- **`.claude/settings.json`** — project-level permissions (allow lint/verify, deny destructive) + PostToolUse hook that auto-runs shellcheck on `.sh` and `fish -n` on `.fish` after every edit.
+- **`.claude/agents/verify-dotfiles.md`** — QA subagent. Runs 5 checks: shellcheck, fish syntax, chezmoi dry-run, file existence, managed file count. Use proactively after implementing any feature.
+- **`.claude/commands/implement-feature.md`** — Slash command: `/implement-feature S-24` reads the spec, implements, verifies via subagent, fixes, commits.
+- **`home/dot_claude/`** — chezmoi-managed Claude Code user config (settings.json, keybindings.json, statusline script). Deployed to `~/.claude/` on apply. Skipped on headless/Codespaces.
+
+## Verification rules
+
+After implementing any feature from `docs/specs/S-*.md`:
+
+### Mandatory self-check (do NOT skip)
+1. Run the relevant verification commands (see table below)
+2. If ANY check fails, fix the issue and re-run
+3. Repeat until all checks pass or you've made 5 fix attempts
+4. Do NOT ask the user to verify. Run verification yourself.
+5. Only report back when all checks are green, or when you've hit the 5-attempt limit and need human help
+6. When reporting, include the actual test output, not a summary of what you think happened
+
+### Verification commands by file type
+
+| File pattern | Command | What it checks |
+|-------------|---------|---------------|
+| `*.sh` | `shellcheck --severity=warning FILE` | Shell script lint |
+| `*.fish` | `fish -n FILE` | Fish syntax check |
+| `*.tmpl` | `chezmoi execute-template < FILE > /dev/null` | Template rendering |
+| `home/dot_Brewfile*` | `chezmoi apply --dry-run 2>&1 \| head -50` | Brewfile validity |
+| Any chezmoi file | `chezmoi apply --dry-run --verbose 2>&1 \| tail -20` | Full dry run |
+| `install.sh` | `bash -n install.sh && shellcheck install.sh` | Syntax + lint |
+
+### After every feature implementation
+```bash
+# 1. Lint all shell scripts
+find . -name "*.sh" -not -path "./.git/*" | xargs shellcheck --severity=warning
+
+# 2. Syntax check all fish files
+find home -name "*.fish" | while read f; do fish -n "$f" || echo "FAIL: $f"; done
+
+# 3. Dry run chezmoi
+chezmoi apply --dry-run 2>&1 | tail -20
+
+# 4. Check managed file list is not empty
+test $(chezmoi managed | wc -l) -gt 10 || echo "FAIL: too few managed files"
+```
+
+### Git workflow
+- Commit each feature separately with conventional commit format
+- Commit message: `feat(S-XX): short description`
+- Do NOT batch multiple features into one commit
+- Run verification BEFORE committing, not after

@@ -1,5 +1,5 @@
 #!/bin/bash
-{{ if ne .chezmoi.os "darwin" }}
+{{ if or (ne .chezmoi.os "darwin") (not (contains "code" .editor)) }}
 exit 0
 {{ end }}
 
@@ -14,24 +14,31 @@ LIB="$HOME/.config/dotfiles/lib.sh"
 
 VSCODE_USER="${HOME}/Library/Application Support/Code/User"
 
-if [ -d "/Applications/Visual Studio Code.app" ] || command -v code &>/dev/null; then
+CODE_CMD=""
+if command -v code &>/dev/null; then
+    CODE_CMD="code"
+elif [ -x "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" ]; then
+    CODE_CMD="/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
+fi
+
+if [ -n "$CODE_CMD" ]; then
     section "Syncing VS Code settings"
     mkdir -p "$VSCODE_USER"
     cp "${HOME}/.config/code/settings.json" "$VSCODE_USER/settings.json"
 
     section "Checking VS Code extensions"
-    installed=$(code --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    installed=$("$CODE_CMD" --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]')
     failed=0
     while IFS= read -r ext; do
         [ -z "$ext" ] && continue
         ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
         if ! echo "$installed" | grep -qx "$ext_lower"; then
-            if code --install-extension "$ext" 2>/dev/null; then
+            if "$CODE_CMD" --install-extension "$ext" 2>/dev/null; then
                 info "Installed: $ext"
             else
                 warn "VS Code: failed to install $ext" \
                      "Extension may have been renamed or removed." \
-                     "code --install-extension $ext"
+                     "$CODE_CMD --install-extension $ext"
                 failed=$((failed + 1))
             fi
         fi
@@ -40,7 +47,7 @@ if [ -d "/Applications/Visual Studio Code.app" ] || command -v code &>/dev/null;
     if [ "$failed" -gt 0 ]; then
         warn "VS Code: $failed extension(s) failed to install" \
              "Review warnings above for details." \
-             "code --install-extension <name> to retry individually"
+             "$CODE_CMD --install-extension <name> to retry individually"
     fi
 
     script_ok "vscode"
