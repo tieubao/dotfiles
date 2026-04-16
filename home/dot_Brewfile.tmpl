@@ -17,8 +17,7 @@
 # ══════════════════════════════════════════════════════════════════════
 
 # ── Taps ──────────────────────────────────────────────────────────────
-tap "homebrew/bundle"
-tap "homebrew/services"
+# homebrew/bundle and homebrew/services are now built-in (deprecated as taps)
 tap "hashicorp/tap"
 
 # ── Shell & Terminal ──────────────────────────────────────────────────
@@ -55,6 +54,10 @@ brew "shellcheck"             # shell script linter
 brew "lnav"                   # log navigator
 brew "chezmoi"                # dotfiles manager
 brew "mdq"                    # jq for markdown
+brew "tldr"                   # example-driven man pages
+brew "sd"                     # simpler find/replace (sed alternative)
+brew "gping"                  # ping with graph TUI
+brew "atuin"                  # SQLite-backed shell history w/ sync
 
 # ── Editors ───────────────────────────────────────────────────────────
 brew "neovim"
@@ -85,6 +88,8 @@ brew "elixir"
 # ── Git extras ────────────────────────────────────────────────────────
 brew "git-filter-repo"
 brew "git-sizer"
+brew "lazygit"                # Git TUI
+brew "difftastic"             # structural diff (syntax-aware)
 
 # ── Containers & Infra ───────────────────────────────────────────────
 cask "orbstack"               # container runtime (replaces Docker Desktop)
@@ -94,8 +99,13 @@ brew "docker-compose"         # multi-container orchestration
 brew "docker-credential-helper"
 brew "kubernetes-cli"
 brew "k9s"                    # Kubernetes TUI
+brew "kubectx"                # fast ctx/ns switching (includes kubens)
+brew "kubecolor"              # colored kubectl output
+brew "stern"                  # multi-pod log tailing
 brew "helm"
 brew "terraform"
+brew "opentofu"               # community fork of terraform (CNCF)
+brew "dive"                   # Docker image layer explorer (TUI)
 brew "awscli"
 brew "flyctl"
 brew "caddy"
@@ -117,13 +127,13 @@ brew "yt-dlp"                 # youtube-dl successor
 
 # ── AI Tools ──────────────────────────────────────────────────────────
 brew "aichat"                 # multi-LLM CLI
-brew "sentencepiece"          # text tokenizer (ML/LLM tooling)
 # llm via: uv tool install llm
 # opencode via: npm i -g opencode-ai
 
 # ── Build Tools ───────────────────────────────────────────────────────
 brew "cmake"
 brew "protobuf"
+brew "buf"                    # modern Protobuf CLI (lint, breaking, compile)
 
 # ── Web3 / DeFi ──────────────────────────────────────────────────────
 # Foundry (cast for on-chain queries, anvil for local fork)
@@ -137,7 +147,7 @@ cask "1password"
 cask "1password-cli"
 {{ end -}}
 
-brew "nordvpn"
+cask "nordvpn"                # VPN (cask, not formula)
 
 # ══════════════════════════════════════════════════════════════════════
 # APPS — GUI casks, fonts, Mac App Store
@@ -155,21 +165,17 @@ cask "codex"                  # OpenAI Codex CLI
 cask "visual-studio-code"
 cask "zed"
 cask "arc"
-cask "zen"
 cask "google-chrome"
 cask "microsoft-edge"
-cask "tor-browser"
 cask "discord"
 cask "zoom"
 cask "slack"
 cask "raycast"
-cask "meetingbar"
 cask "devutils"
-cask "gifski"
+brew "gifski"                 # GIF encoder (moved from cask to formula)
 cask "qbittorrent"
-cask "lume"                   # macOS VM manager
-cask "google-cloud-sdk"       # GCP CLI tools
-cask "zen-browser"            # privacy-focused browser
+cask "gcloud-cli"             # GCP CLI tools (renamed from google-cloud-sdk)
+cask "zen"                    # privacy-focused browser (renamed from zen-browser)
 
 # ── Fonts ─────────────────────────────────────────────────────────────
 cask "font-jetbrains-mono"
