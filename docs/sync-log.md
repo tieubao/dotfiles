@@ -47,6 +47,19 @@ Audit:
   - git log --all scanned for hardcoded secrets: clean
   - No tokens, keys, or op:// values with plaintext ever committed
 
+Post-session fixes (same day):
+  - fix(doctor): exclude always-run scripts (R status) from drift count
+  - fix(doctor): check login shell via dscl, not $SHELL (was misreporting after chsh)
+  - chezmoi apply --force resolved Zed One Light/Dark drift
+  - Default shell confirmed via dscl: /opt/homebrew/bin/fish (chsh worked previously,
+    $SHELL was just stale in inherited processes)
+
+Documentation refresh:
+  - README.md: multi-machine positioning, .local pattern, lazy secrets section
+  - docs/llm-dotfiles.md: added multi-machine sync + lazy secrets sections
+    (stack-agnostic, shareable patterns)
+  - CLAUDE.md: explicit design philosophy section (6 principles)
+
 ---
 
 ## [2026-04-16] sync

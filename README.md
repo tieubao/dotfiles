@@ -8,35 +8,40 @@
 ![1Password](https://img.shields.io/badge/1Password-Secrets-0572EC?logo=1password&logoColor=white)
 ![CI](https://img.shields.io/github/actions/workflow/status/dwarvesf/dotfiles/test.yml?label=CI&logo=github)
 
-A dotfiles repo maintained by an LLM. You operate your Mac freely; Claude detects what drifted and syncs it back to the repo on your approval. **You never manually keep this repo in sync.**
+**Multi-machine dotfiles maintained by an LLM.** You operate each Mac freely; Claude detects what drifted, asks whether new packages are shared across machines or specific to this one, and keeps everything in sync. **You never manually keep this repo in sync.**
 
 ## The idea
 
-Most dotfiles repos expect you to edit the source, apply, commit, push. In practice, nobody does this consistently. You `brew install` while debugging, tweak a config directly, add an API key, and move on. After a few weeks, the repo is stale.
+Most dotfiles repos expect you to edit the source, apply, commit, push. In practice, nobody does this consistently. You `brew install` while debugging, tweak a config directly, add an API key, and move on. After a few weeks, the repo is stale. Add a second machine to the mix and the workflow becomes intractable -- machine-specific tools end up in the shared template and propagate everywhere.
 
-This repo works differently. You change things on your machine. Periodically, you ask Claude to catch up:
+This repo works differently. You change things on each machine independently. Periodically, you ask Claude to catch up:
 
 ```
 You:    /dotfiles-sync
 Claude: [scans machine  - packages, configs, extensions, secrets]
 
-Claude: Dotfiles sync report
+Claude: Dotfiles sync report (@ work-mac)
           Config drift: Zed settings (2 new MCP servers)
-          New packages: ollama, rclone, pandoc
+          New packages: ollama, chrysalis, lunar, rclone
           Stale: raycast, slack (not installed)
-          VS Code: 5 new extensions
-        What should I do?
 
-You:    sync everything, drop raycast and slack
+        Classify the new ones?
+          [Core] shared across all machines
+          [Local] this machine only
 
-Claude: [edits Brewfile, re-adds configs, updates extensions,
-         logs to sync-log.md, commits]
-        Done. Push?
+You:    chrysalis and lunar are local (hardware-specific),
+        ollama and rclone are core. drop raycast and slack.
+
+Claude: [adds ollama+rclone to Brewfile (committed), appends
+         chrysalis+lunar to ~/.Brewfile.local (NOT committed),
+         re-adds Zed settings, drops stale entries, logs to
+         sync-log.md tagged @ work-mac, commits]
+        Done. 1 commit. Push?
 
 You:    push
 ```
 
-Two sentences from you. The LLM handled 6 file edits, a commit message, and a push.
+Two sentences from you. The LLM handled the classification, kept machine-specific tools out of the shared repo, and tagged the sync log so the next machine knows what happened where.
 
 The pattern is general and works with any dotfiles manager and any LLM agent. The full write-up, including setup instructions, is in **[docs/llm-dotfiles.md](docs/llm-dotfiles.md)**.
 
@@ -53,14 +58,37 @@ The `/dotfiles-sync` command is installed to `~/.claude/commands/` during setup,
 | Dimension | What it detects |
 |-----------|----------------|
 | Config drift | Files changed on machine but not in repo |
-| Brew packages | Installed but not in Brewfile (and vice versa) |
-| Cask apps | GUI apps installed but not tracked |
-| VS Code extensions | New or removed extensions |
+| Brew packages | Installed but not in Brewfile or `~/.Brewfile.local` |
+| Cask apps | GUI apps installed but not tracked (core or local) |
+| VS Code extensions | New / removed extensions (core list + per-machine list) |
 | Fish functions | Functions created outside chezmoi |
-| SSH configs | New host configs in config.d/ |
+| SSH configs | New host configs in `config.d/` |
 | Secrets | Hardcoded keys that should be in 1Password |
 
-Every sync is logged in [docs/sync-log.md](docs/sync-log.md) so future syncs have context.
+Every sync is logged in [docs/sync-log.md](docs/sync-log.md) tagged with the machine hostname (`@ work-mac`, `@ personal-mini`), so future syncs on any machine have full cross-machine context.
+
+## Multi-machine sync
+
+The repo is designed for running across N Macs simultaneously. Two patterns make this work without manual coordination:
+
+**`.local` overrides for per-machine state.** Anything machine-specific lives outside the shared template -- `~/.Brewfile.local` for hardware-specific brew/casks, `~/.config/code/extensions.local.txt` for editor extensions, plus `config.local.fish`, `tmux.local.conf`, and `.gitconfig.local` for shell/editor configs. These files are gitignored AND in `.chezmoiignore`, so they can never accidentally sync to other machines. Items move between core and local with one command:
+
+```fish
+dotfiles local promote cask raycast       # local → core (shared with all machines)
+dotfiles local demote brew sentencepiece  # core → local (this machine only)
+```
+
+**Lazy 1Password secrets via Keychain cache.** The shared template never bakes secrets in -- it bakes in a *call* to a Keychain-first reader. `chezmoi apply` triggers zero 1Password popups; the first shell on a fresh machine triggers exactly one popup per registered secret (then cached silently in macOS Keychain). 1Password remains the source of truth across machines; Keychain is just the per-machine cache. See the [S-35 spec](docs/specs/S-35-local-pattern-and-lazy-secrets.md) for the full design.
+
+**Fresh machine in 5 minutes:**
+```bash
+git clone https://github.com/dwarvesf/dotfiles ~/dotfiles
+cd ~/dotfiles && ./install.sh
+# Then in Claude Code on the new machine:
+/dotfiles-sync   # Claude detects this machine's unique installs and asks how to classify them
+```
+
+The full multi-machine test plan is in [docs/testing.md](docs/testing.md).
 
 ## Quick start
 
@@ -114,7 +142,11 @@ When you're not in a Claude session (SSH, airplane, quick edit), the `dotfiles` 
 ```fish
 dotfiles edit ~/.config/fish/config.fish   # edit + apply + auto-commit
 dotfiles drift                              # detect and re-absorb drift
-dotfiles doctor                             # health check
+dotfiles local list                         # show machine-specific overrides
+dotfiles local promote cask <name>          # move from local to core
+dotfiles secret list                        # show secrets + Keychain cache status
+dotfiles secret refresh <VAR>               # invalidate cache, re-fetch from 1P
+dotfiles doctor                             # health check (incl. .local pattern integrity)
 ```
 
 Full command reference, walkthroughs, secrets management, multi-machine setup, and troubleshooting are in the **[user guide](docs/guide.md)**.
@@ -131,9 +163,11 @@ Full command reference, walkthroughs, secrets management, multi-machine setup, a
 
 ## Security
 
-This repo is safe to make public. Actual secrets (API keys, tokens, passwords) are never committed; only `op://` references to 1Password items appear in the source. Real values are resolved at `chezmoi apply` time and only exist on your machine.
+This repo is safe to make public. Actual secrets (API keys, tokens, passwords) are never committed; only `op://` references to 1Password items appear in the source. The rendered `secrets.fish` on disk doesn't even contain the real values -- it just has a lazy call to a Keychain-first reader. Real values flow: 1Password → first shell on each machine → Keychain → env var. The shared template never sees plaintext.
 
 The `op://` references do reveal 1Password vault and item names (e.g. `op://Private/OpenAI/credential`). This is intentional: it makes the repo forkable. If you fork, replace the item names with your own. The vault structure tells someone what services you use, not how to access them.
+
+**`.local` files are never committed.** Machine-specific Brewfile entries, VS Code extensions, fish/tmux/git overrides all live in gitignored `~/.X.local` files. `dotfiles doctor` audits git history to confirm none ever leaked.
 
 ## Docs
 
@@ -141,8 +175,10 @@ The `op://` references do reveal 1Password vault and item names (e.g. `op://Priv
 |----------|---------------|
 | **[docs/llm-dotfiles.md](docs/llm-dotfiles.md)** | The LLM-maintained dotfiles pattern. Shareable, stack-agnostic. Includes setup instructions. |
 | **[docs/guide.md](docs/guide.md)** | Full user guide. chezmoi details, manual commands, customization, secrets, multi-machine, troubleshooting. |
+| **[docs/specs/S-35-local-pattern-and-lazy-secrets.md](docs/specs/S-35-local-pattern-and-lazy-secrets.md)** | The multi-machine architecture: `.local` overrides + lazy 1Password resolution. |
+| **[docs/testing.md](docs/testing.md)** | End-to-end test plan for local pattern + lazy secrets. Cross-machine validation steps. |
 | **[docs/decisions/](docs/decisions/)** | Architecture decision records (why chezmoi, Fish, Ghostty, 1Password, auto-commit). |
-| **[docs/sync-log.md](docs/sync-log.md)** | Sync history. Append-only log of every Claude-assisted sync. |
+| **[docs/sync-log.md](docs/sync-log.md)** | Sync history. Append-only log of every Claude-assisted sync, hostname-tagged. |
 
 ## Credits
 

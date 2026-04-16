@@ -180,6 +180,73 @@ Claude: [pushes]
 The user spoke 2 sentences. The LLM handled 6 file edits, a commit
 message, and a push.
 
+## Multi-machine sync
+
+The pattern extends naturally to N machines, but only if you separate
+**shared state** from **per-machine state**. Without this distinction,
+machine-specific tools (a keyboard firmware flasher, an external display
+manager, a niche language toolchain) leak into the shared repo and end up
+trying to install on every machine.
+
+The fix is a **`.local` override pattern.** For every config type with
+a native include mechanism, add a sibling file that's gitignored and
+never tracked by the dotfiles tool:
+
+| Config type | Shared (repo) | Local (per-machine) | Include mechanism |
+|-------------|--------------|--------------------|-------------------|
+| Brew | `Brewfile` | `~/.Brewfile.local` | Ruby `eval()` |
+| VS Code | `extensions.txt` | `extensions.local.txt` | Apply script reads both |
+| Fish | `config.fish` | `~/.config/fish/config.local.fish` | `source` at end |
+| Tmux | `tmux.conf` | `~/.config/tmux/tmux.local.conf` | `source-file -q` |
+| Git | `.gitconfig` | `~/.gitconfig.local` | `[include] path = ...` |
+| SSH | `~/.ssh/config` | `~/.ssh/config.d/*` | `Include` directive |
+
+The sync workflow becomes a **three-way classification**: each new item
+is core (shared with all machines), local (this machine only), or skip.
+The LLM asks per-item or accepts shorthand: "chrysalis is local, rest is
+core." The user can also move items between core and local later via a
+`promote/demote` command -- e.g., "this app started as local but I want
+it on my new laptop too."
+
+Every sync log entry is **tagged with the machine hostname** (`@ work-mac`,
+`@ home-mini`) so the LLM can build cross-machine context: "last sync on
+work-mac added these 3 packages to local; on home-mini they're not present."
+
+## Lazy secrets across machines
+
+Secrets are the trickiest part of multi-machine sync. The naive approach
+(template resolves `op://...` at apply time) creates two problems:
+
+1. Every `chezmoi apply` (or equivalent) triggers a 1Password popup,
+   coupling infrastructure ops to human auth
+2. The rendered file on disk contains the literal secret value, which
+   makes accidental sharing easy and rotation painful
+
+The cleaner pattern: **lazy resolution with a per-machine cache.** The
+template doesn't bake secret values; it bakes a *call* to a Keychain-first
+reader. At shell startup, the reader checks the OS keychain. If the value
+is cached: silent. If not: fall back to the secret manager (1Password,
+Bitwarden, etc.), prompt the user once, cache for next time.
+
+```
+Apply phase:    render template -> bakes:  set TOKEN ($cache_read TOKEN op://...)
+                                           # NO secret manager call yet
+
+Shell startup:  source secrets file
+                  -> $cache_read runs
+                    -> Keychain hit? echo value, done (silent)
+                    -> Keychain miss? -> secret manager -> popup once -> cache
+```
+
+Result: `apply` never triggers a popup. The first shell on each new
+machine triggers exactly one popup per secret (one-time, then cached).
+The secret manager remains the source of truth across machines; OS
+keychain is just the per-machine cache.
+
+**Don't use cloud-synced keychains** (iCloud Keychain, etc.) for these
+secrets even if available. Per-machine isolation is a feature: it makes
+revocation explicit and auditable. The secret manager is the sync layer.
+
 ## What stays manual
 
 - **Initial setup.** Clone, install, configure. The LLM can guide you
@@ -189,6 +256,9 @@ message, and a push.
 - **Push.** Always manual. A bad push propagates to every machine.
 - **New tool adoption.** If you switch from Zsh to Fish, that's a
   design decision, not bookkeeping. Tell the LLM what you decided.
+- **Secret population on new machines.** First shell on each new machine
+  prompts the secret manager once per secret. This is intentional --
+  the LLM never auto-fetches secrets in the background.
 
 ## Design principles
 

@@ -4,11 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A chezmoi-managed dotfiles repo for macOS (Apple Silicon). The `home/` directory is the chezmoi source state  - it maps to `$HOME` on the target machine. The `install.sh` script bootstraps a fresh Mac from zero.
+**LLM-maintained dotfiles for multi-machine sync.** A chezmoi-managed repo for macOS (Apple Silicon) where Claude Code is the primary maintenance interface. The `home/` directory is the chezmoi source state -- it maps to `$HOME` on the target machine. The `install.sh` script bootstraps a fresh Mac from zero.
 
-**Default workflow:** When a user opens this repo and wants to apply, sync, update, or ask what to do with their dotfiles, suggest the `/dotfiles-sync` skill first. It handles drift detection, selective apply, and the full sync workflow.
+**Default workflow:** When a user opens this repo and wants to apply, sync, update, or ask what to do with their dotfiles, suggest the `/dotfiles-sync` skill first. It handles drift detection, classification (core vs local), selective apply, and the full sync workflow.
 
 User-facing customization flows (how to change Brewfile, secrets, editors, etc.) live in [`docs/guide.md`](docs/guide.md). When a user asks "how do I change X", point them there rather than reinventing.
+
+## Design philosophy (read before making changes)
+
+These principles govern the repo's architecture. Don't violate them without explicit user buy-in.
+
+1. **The LLM does bookkeeping, the user makes decisions.** Never auto-sync, auto-promote, auto-demote, or auto-rotate without user confirmation. The whole point is that the user's hands stay on the wheel for choices; the LLM only handles mechanics.
+
+2. **Three-way classification: core / local / skip.** Every new package, extension, or config is one of these. Core = shared across all machines (committed). Local = this machine only (gitignored `.local` files). Skip = don't track. When in doubt, ask -- don't assume "all core" or "all local."
+
+3. **Multi-machine is a first-class use case.** Every change should consider: how does this behave when N machines run it? Per-machine state stays per-machine; shared state stays shared.
+
+4. **Secrets live in 1Password; Keychain is a per-machine cache.** Never commit secret values. Never use iCloud Keychain for these (per-machine isolation is a feature, not a limitation). `chezmoi apply` MUST NOT trigger 1P popups -- secrets resolve lazily at shell startup via `secret-cache-read`.
+
+5. **Apply must be idempotent and silent.** Running `chezmoi apply` 100 times in a row should produce the same final state with zero interactive prompts (no 1P popups, no sudo prompts unless genuinely needed). If a script needs interactivity, it's likely the wrong abstraction.
+
+6. **Sync log is the audit trail.** Every meaningful change appends an entry to `docs/sync-log.md`, hostname-tagged (`@ <hostname>`). This is more discoverable than git log for "what did I change on which machine."
 
 ## Key commands
 
