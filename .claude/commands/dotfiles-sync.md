@@ -68,13 +68,19 @@ comm -23 <(ls ~/.ssh/config.d/ 2>/dev/null | sort) <(chezmoi managed | grep 'ssh
 grep -n 'set -gx.*[A-Za-z0-9_]\{20,\}' ~/.config/fish/config.fish ~/.config/fish/conf.d/*.fish 2>/dev/null | grep -v 'onepasswordRead\|op://' || true
 ```
 
-### Already-local packages
+### Already-local overrides
 ```bash
 # Show what's in .local files for context
-echo "--- Brewfile.local ---"
+echo "--- ~/.Brewfile.local ---"
 grep -E '^(brew|cask) "' ~/.Brewfile.local 2>/dev/null | sed 's/".*/"/' || echo "(none)"
-echo "--- extensions.local.txt ---"
+echo "--- ~/.config/code/extensions.local.txt ---"
 cat ~/.config/code/extensions.local.txt 2>/dev/null || echo "(none)"
+echo "--- ~/.config/fish/config.local.fish ---"
+test -f ~/.config/fish/config.local.fish && wc -l < ~/.config/fish/config.local.fish | xargs echo "(lines:" | tr -d '\n' && echo ")" || echo "(not created)"
+echo "--- ~/.config/tmux/tmux.local.conf ---"
+test -f ~/.config/tmux/tmux.local.conf && wc -l < ~/.config/tmux/tmux.local.conf | xargs echo "(lines:" | tr -d '\n' && echo ")" || echo "(not created)"
+echo "--- ~/.gitconfig.local ---"
+test -f ~/.gitconfig.local && wc -l < ~/.gitconfig.local | xargs echo "(lines:" | tr -d '\n' && echo ")" || echo "(not created)"
 ```
 
 ## Step 3: Report
@@ -95,9 +101,16 @@ New packages (N brew, N casks):
   Brew: pkg1, pkg2, ...
   Cask: app1, app2, ...
 
-Already local (tracked in ~/.Brewfile.local):
-  Brew: localpkg1, ...
-  Cask: localapp1, ...
+Already local (tracked in .local files):
+  ~/.Brewfile.local:      brew: pkg1, ...  cask: app1, ...
+  extensions.local.txt:   ext1, ...
+  config.local.fish:      (N lines, or "not created")
+  tmux.local.conf:        (N lines, or "not created")
+  .gitconfig.local:       (N lines, or "not created")
+
+Tip: to move items between core and local, use:
+  dotfiles local promote <type> <name>   # local → core
+  dotfiles local demote <type> <name>    # core → local
 
 Stale entries (N brew, N casks):
   Brew: pkg1, pkg2, ... (in Brewfile but not installed)

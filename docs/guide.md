@@ -60,15 +60,31 @@ via `~/.config/code/extensions.local.txt`.
 Keyboardio, `lunar` for display brightness), rarely-used apps (`skype`),
 disk utilities (`disk-inventory-x`).
 
-**Manual local management** (without `/dotfiles-sync`):
+**Manual local management** via the `dotfiles local` subcommand:
 ```bash
-# Add a local package
-echo 'cask "some-app"' >> ~/.Brewfile.local
-brew bundle --file=~/.Brewfile
-
-# See what's local
-cat ~/.Brewfile.local
+dotfiles local list                        # show everything in .local files
+dotfiles local edit                        # open ~/.Brewfile.local in $EDITOR
+dotfiles local promote cask chrysalis      # move from local to core (shared repo)
+dotfiles local demote brew sentencepiece   # move from core to local
+dotfiles local promote ext openai.chatgpt  # VS Code extension
 ```
+
+Promote/demote auto-commits core changes. Tab completion suggests the exact
+packages available to move in each direction.
+
+**Other config files with machine-specific overrides:**
+
+| Config | Local file | Include mechanism |
+|--------|-----------|-------------------|
+| Brew/cask | `~/.Brewfile.local` | Ruby `eval()` in `.Brewfile` |
+| VS Code | `~/.config/code/extensions.local.txt` | Read by apply script |
+| Fish | `~/.config/fish/config.local.fish` | `source` at end of config.fish |
+| Tmux | `~/.config/tmux/tmux.local.conf` | `source-file -q` at end of tmux.conf |
+| Git | `~/.gitconfig.local` | `[include] path = ...` |
+| SSH | `~/.ssh/config.d/*` | `Include config.d/*` |
+
+All `.local` paths are in `.chezmoiignore`, so `chezmoi add` won't accidentally
+track them.
 
 ---
 

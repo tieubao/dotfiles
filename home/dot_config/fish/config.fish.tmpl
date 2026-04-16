@@ -148,4 +148,10 @@ if status is-interactive
 
     # Greeting
     set -g fish_greeting ""
+
+    # ── Local overrides (machine-specific, not committed) ────────────
+    # Put machine-specific config in ~/.config/fish/config.local.fish
+    if test -f $HOME/.config/fish/config.local.fish
+        source $HOME/.config/fish/config.local.fish
+    end
 end

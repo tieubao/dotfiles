@@ -70,6 +70,19 @@ holds machine-specific VS Code extensions. Both `.local` files are listed in
 The sync workflow asks the user to classify each new package as core, local, or skip.
 If the user says "do it all" without classifying, default to local.
 
+**Config files with native include support:** git (`[include]`), SSH (`Include config.d/*`),
+fish (`source ~/.config/fish/config.local.fish` at end of config.fish), tmux (`source-file -q`
+at end of tmux.conf). All `.local` paths are in `.chezmoiignore`.
+
+**Promoting/demoting between core and local:**
+```
+dotfiles local list                       # show all .local files
+dotfiles local promote <type> <name>      # local → core (repo)
+dotfiles local demote <type> <name>       # core → local
+# type: brew, cask, ext
+```
+The fish function auto-commits to the repo; local file changes are never committed.
+
 ### Script execution order
 
 Scripts in `.chezmoiscripts/` run during `chezmoi apply`:
