@@ -17,8 +17,8 @@
 # ══════════════════════════════════════════════════════════════════════
 
 # ── Taps ──────────────────────────────────────────────────────────────
-tap "homebrew/bundle"
-tap "homebrew/services"
+# homebrew/bundle and homebrew/services are now built-in (deprecated as taps)
+tap "hashicorp/tap"
 
 # ── Shell & Terminal ──────────────────────────────────────────────────
 brew "fish"
@@ -52,12 +52,20 @@ brew "watch"
 brew "tldr"
 brew "shellcheck"             # shell script linter
 brew "lnav"                   # log navigator
+brew "chezmoi"                # dotfiles manager
+brew "mdq"                    # jq for markdown
+brew "tldr"                   # example-driven man pages
+brew "sd"                     # simpler find/replace (sed alternative)
+brew "gping"                  # ping with graph TUI
+brew "atuin"                  # SQLite-backed shell history w/ sync
 
 # ── Editors ───────────────────────────────────────────────────────────
 brew "neovim"
 
 # ── Security & Secrets ────────────────────────────────────────────────
 brew "age"                    # file encryption (chezmoi encrypted_ files)
+brew "certbot"                # Let's Encrypt / ACME client
+brew "hashicorp/tap/vault"    # secrets management
 
 {{ if not .headless -}}
 # ══════════════════════════════════════════════════════════════════════
@@ -80,13 +88,24 @@ brew "elixir"
 # ── Git extras ────────────────────────────────────────────────────────
 brew "git-filter-repo"
 brew "git-sizer"
+brew "lazygit"                # Git TUI
+brew "difftastic"             # structural diff (syntax-aware)
 
 # ── Containers & Infra ───────────────────────────────────────────────
 cask "orbstack"               # container runtime (replaces Docker Desktop)
+brew "colima"                 # lightweight container runtime (Lima VMs)
+brew "docker"                 # Docker CLI
+brew "docker-compose"         # multi-container orchestration
+brew "docker-credential-helper"
 brew "kubernetes-cli"
 brew "k9s"                    # Kubernetes TUI
+brew "kubectx"                # fast ctx/ns switching (includes kubens)
+brew "kubecolor"              # colored kubectl output
+brew "stern"                  # multi-pod log tailing
 brew "helm"
 brew "terraform"
+brew "opentofu"               # community fork of terraform (CNCF)
+brew "dive"                   # Docker image layer explorer (TUI)
 brew "awscli"
 brew "flyctl"
 brew "caddy"
@@ -114,6 +133,7 @@ brew "aichat"                 # multi-LLM CLI
 # ── Build Tools ───────────────────────────────────────────────────────
 brew "cmake"
 brew "protobuf"
+brew "buf"                    # modern Protobuf CLI (lint, breaking, compile)
 
 # ── Web3 / DeFi ──────────────────────────────────────────────────────
 # Foundry (cast for on-chain queries, anvil for local fork)
@@ -127,7 +147,7 @@ cask "1password"
 cask "1password-cli"
 {{ end -}}
 
-brew "nordvpn"
+cask "nordvpn"                # VPN (cask, not formula)
 
 # ══════════════════════════════════════════════════════════════════════
 # APPS — GUI casks, fonts, Mac App Store
@@ -139,24 +159,23 @@ brew "mas"                    # Mac App Store CLI
 
 # ── AI / LLM ─────────────────────────────────────────────────────────
 cask "claude"                 # Claude desktop + Claude Code CLI
+cask "codex"                  # OpenAI Codex CLI
 
 # ── macOS Apps ────────────────────────────────────────────────────────
 cask "visual-studio-code"
 cask "zed"
 cask "arc"
-cask "zen"
 cask "google-chrome"
 cask "microsoft-edge"
-cask "tor-browser"
 cask "discord"
 cask "zoom"
 cask "slack"
 cask "raycast"
-cask "meetingbar"
 cask "devutils"
-cask "gifski"
+brew "gifski"                 # GIF encoder (moved from cask to formula)
 cask "qbittorrent"
-cask "lume"                   # macOS VM manager
+cask "gcloud-cli"             # GCP CLI tools (renamed from google-cloud-sdk)
+cask "zen"                    # privacy-focused browser (renamed from zen-browser)
 
 # ── Fonts ─────────────────────────────────────────────────────────────
 cask "font-jetbrains-mono"
@@ -165,6 +184,12 @@ cask "font-fira-code-nerd-font"
 cask "font-source-code-pro"
 cask "font-sauce-code-pro-nerd-font"
 {{ end -}}
+
+# ── Local overrides (machine-specific, not committed) ────────────────
+# Add machine-specific packages to ~/.Brewfile.local
+# This file is gitignored and not managed by chezmoi.
+local_brewfile = File.expand_path("~/.Brewfile.local")
+eval(File.read(local_brewfile), binding) if File.exist?(local_brewfile)
 
 # ── npm Global Tools ─────────────────────────────────────────────────
 # npm i -g ccusage markdownlint-cli2 npm-check-updates opencode-ai

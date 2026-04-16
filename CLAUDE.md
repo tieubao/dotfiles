@@ -4,11 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A chezmoi-managed dotfiles repo for macOS (Apple Silicon). The `home/` directory is the chezmoi source state  - it maps to `$HOME` on the target machine. The `install.sh` script bootstraps a fresh Mac from zero.
+**LLM-maintained dotfiles for multi-machine sync.** A chezmoi-managed repo for macOS (Apple Silicon) where Claude Code is the primary maintenance interface. The `home/` directory is the chezmoi source state -- it maps to `$HOME` on the target machine. The `install.sh` script bootstraps a fresh Mac from zero.
 
-**Default workflow:** When a user opens this repo and wants to apply, sync, update, or ask what to do with their dotfiles, suggest the `/dotfiles-sync` skill first. It handles drift detection, selective apply, and the full sync workflow.
+**Default workflow:** When a user opens this repo and wants to apply, sync, update, or ask what to do with their dotfiles, suggest the `/dotfiles-sync` skill first. It handles drift detection, classification (core vs local), selective apply, and the full sync workflow.
 
 User-facing customization flows (how to change Brewfile, secrets, editors, etc.) live in [`docs/guide.md`](docs/guide.md). When a user asks "how do I change X", point them there rather than reinventing.
+
+## Design philosophy (read before making changes)
+
+These principles govern the repo's architecture. Don't violate them without explicit user buy-in.
+
+1. **The LLM does bookkeeping, the user makes decisions.** Never auto-sync, auto-promote, auto-demote, or auto-rotate without user confirmation. The whole point is that the user's hands stay on the wheel for choices; the LLM only handles mechanics.
+
+2. **Three-way classification: core / local / skip.** Every new package, extension, or config is one of these. Core = shared across all machines (committed). Local = this machine only (gitignored `.local` files). Skip = don't track. When in doubt, ask -- don't assume "all core" or "all local."
+
+3. **Multi-machine is a first-class use case.** Every change should consider: how does this behave when N machines run it? Per-machine state stays per-machine; shared state stays shared.
+
+4. **Secrets live in 1Password; Keychain is a per-machine cache.** Never commit secret values. Never use iCloud Keychain for these (per-machine isolation is a feature, not a limitation). `chezmoi apply` MUST NOT trigger 1P popups -- secrets resolve lazily at shell startup via `secret-cache-read`.
+
+5. **Apply must be idempotent and silent.** Running `chezmoi apply` 100 times in a row should produce the same final state with zero interactive prompts (no 1P popups, no sudo prompts unless genuinely needed). If a script needs interactivity, it's likely the wrong abstraction.
+
+6. **Sync log is the audit trail.** Every meaningful change appends an entry to `docs/sync-log.md`, hostname-tagged (`@ <hostname>`). This is more discoverable than git log for "what did I change on which machine."
 
 ## Key commands
 
@@ -33,16 +49,29 @@ chezmoi uses filename prefixes to encode target attributes:
 
 ### Secret injection (two backends)
 
-**1Password** (primary)  - via chezmoi Go templates at apply time:
-```
-{{ onepasswordRead (printf "op://%s/ItemName/credential" .op_vault) }}
-```
-Used directly in: `dot_gitconfig.tmpl`, `dot_config/zed/settings.json.tmpl`.
+**1Password** (primary):
 
-For auto-loaded shell env vars, prefer the data-driven workflow: register
-entries in `.chezmoidata/secrets.toml` via `dotfiles secret add VAR op://...`
-and let `secrets.fish.tmpl` iterate. Do not hand-edit the template to add
-new env vars  - use `dotfiles secret add` / `dotfiles secret rm` / `dotfiles secret list`.
+- **Apply-time resolution** (`onepasswordRead` in Go templates) — resolves at
+  `chezmoi apply`, bakes secret into rendered file. Triggers 1P popup on every
+  apply. Used only where the secret must be present at file write time (e.g.,
+  `dot_gitconfig.tmpl`, `dot_config/zed/settings.json.tmpl`).
+- **Lazy-resolution + Keychain cache** (preferred for env vars) — the
+  `secrets.fish.tmpl` emits calls to `~/.local/bin/secret-cache-read`, which
+  checks macOS Keychain first and only calls `op read` on cache miss. Result:
+  `chezmoi apply` never touches 1Password; only the first shell on a new
+  machine triggers popups.
+
+Register auto-loaded env vars via:
+```
+dotfiles secret add VAR "op://Vault/Item/field"   # register
+dotfiles secret rm VAR                            # unregister
+dotfiles secret list                              # show bindings + cache status
+dotfiles secret refresh VAR                       # invalidate Keychain cache
+dotfiles secret refresh --all                     # invalidate all
+```
+
+Never hand-edit `secrets.fish.tmpl` or `.chezmoidata/secrets.toml` — use the
+subcommands.
 
 **macOS Keychain**  - via `keyring` template function or runtime fish functions:
 ```
@@ -55,6 +84,37 @@ Template variables are prompted once during `chezmoi init` and cached:
 - `.headless`  - boolean, skips GUI apps and dev tools on servers
 - `.use_1password`  - boolean, gates all 1Password sections
 - `.op_account`, `.op_vault`  - only prompted if `use_1password` is true
+
+### Core vs local packages
+
+Packages are classified during `/dotfiles-sync`:
+- **Core** - shared across all machines, committed to `home/dot_Brewfile.tmpl`
+- **Local** - this machine only, stored in `~/.Brewfile.local` (never committed)
+
+`~/.Brewfile.local` is sourced by `~/.Brewfile` via Ruby `eval()`. It uses the
+same DSL (`brew "pkg"`, `cask "app"`). Similarly, `~/.config/code/extensions.local.txt`
+holds machine-specific VS Code extensions. Both `.local` files are listed in
+`.chezmoiignore` so chezmoi never manages them.
+
+The sync workflow asks the user to classify each new package as core, local, or skip.
+If the user says "do it all" without classifying, default to local.
+
+**Config files with native include support:** git (`[include]`), SSH (`Include config.d/*`),
+fish (`source ~/.config/fish/config.local.fish` at end of config.fish), tmux (`source-file -q`
+at end of tmux.conf). All `.local` paths are in `.chezmoiignore`.
+
+**Promoting/demoting between core and local:**
+```
+dotfiles local list                       # show all .local files
+dotfiles local promote <type> <name>      # local → core (repo)
+dotfiles local demote <type> <name>       # core → local
+# type: brew, cask, ext
+```
+The fish function auto-commits to the repo; local file changes are never committed.
+
+Design rationale and full cross-machine test plan:
+- [docs/specs/S-35-local-pattern-and-lazy-secrets.md](docs/specs/S-35-local-pattern-and-lazy-secrets.md)
+- [docs/testing.md](docs/testing.md)
 
 ### Script execution order
 

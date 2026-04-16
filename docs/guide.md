@@ -41,6 +41,51 @@ The manual commands in the sections below are fallbacks for when you're
 offline, SSH'd into a server, or want a quick one-off edit. You don't
 need to learn them to use this repo day-to-day.
 
+### Core vs local packages
+
+When syncing, Claude asks you to classify each new package:
+
+| Classification | Where it goes | Committed? | Installed on all machines? |
+|---------------|--------------|-----------|--------------------------|
+| **Core** | `~/.Brewfile` (from template) | Yes | Yes |
+| **Local** | `~/.Brewfile.local` | No | This machine only |
+| **Skip** | Nowhere | No | N/A |
+
+`~/.Brewfile.local` is automatically sourced by `~/.Brewfile` and uses
+the same syntax (`brew "pkg"`, `cask "app"`). It is never committed to
+git or managed by chezmoi. The same pattern works for VS Code extensions
+via `~/.config/code/extensions.local.txt`.
+
+**Examples of local packages:** hardware-specific tools (`chrysalis` for
+Keyboardio, `lunar` for display brightness), rarely-used apps (`skype`),
+disk utilities (`disk-inventory-x`).
+
+**Manual local management** via the `dotfiles local` subcommand:
+```bash
+dotfiles local list                        # show everything in .local files
+dotfiles local edit                        # open ~/.Brewfile.local in $EDITOR
+dotfiles local promote cask chrysalis      # move from local to core (shared repo)
+dotfiles local demote brew sentencepiece   # move from core to local
+dotfiles local promote ext openai.chatgpt  # VS Code extension
+```
+
+Promote/demote auto-commits core changes. Tab completion suggests the exact
+packages available to move in each direction.
+
+**Other config files with machine-specific overrides:**
+
+| Config | Local file | Include mechanism |
+|--------|-----------|-------------------|
+| Brew/cask | `~/.Brewfile.local` | Ruby `eval()` in `.Brewfile` |
+| VS Code | `~/.config/code/extensions.local.txt` | Read by apply script |
+| Fish | `~/.config/fish/config.local.fish` | `source` at end of config.fish |
+| Tmux | `~/.config/tmux/tmux.local.conf` | `source-file -q` at end of tmux.conf |
+| Git | `~/.gitconfig.local` | `[include] path = ...` |
+| SSH | `~/.ssh/config.d/*` | `Include config.d/*` |
+
+All `.local` paths are in `.chezmoiignore`, so `chezmoi add` won't accidentally
+track them.
+
 ---
 
 ## 2. How chezmoi works
@@ -423,21 +468,21 @@ dotfiles secret add OPENAI_API_KEY "op://Private/OpenAI/credential"
 This command:
 1. Creates the 1Password item if it doesn't exist (prompts for the value)
 2. Registers the `op://` binding in `secrets.toml`
-3. Runs `chezmoi apply` to render `secrets.fish` with the real value
-4. Auto-commits the change (only the `op://` ref, never the value)
+3. Runs `chezmoi apply` to update `secrets.fish` with the lazy-resolve call (no 1P call during apply)
+4. Auto-commits the registry change (only the `op://` ref, never the value)
 
-Open a new shell (or `exec fish`) to pick up the variable.
+Open a new shell (or `exec fish`) to pick up the variable. The first shell on this machine triggers one 1Password prompt per newly registered secret; Keychain caches the value silently for every shell after.
 
 ### Rotating a token
 
 Update the value in 1Password (app or CLI). Then:
 
 ```fish
-chezmoi apply ~/.config/fish/conf.d/secrets.fish
+dotfiles secret refresh OPENAI_API_KEY   # clears Keychain cache, re-fetches from 1P
 exec fish
 ```
 
-No repo change needed  - the `op://` reference hasn't changed.
+No repo change needed -- the `op://` reference hasn't changed.
 
 ### Removing a secret
 
@@ -448,20 +493,35 @@ dotfiles secret rm OPENAI_API_KEY    # unregisters from secrets.toml, auto-commi
 ### Listing current secrets
 
 ```fish
-dotfiles secret list    # shows all registered VAR → op:// bindings
+dotfiles secret list
+# Registered secrets (cache status from macOS Keychain):
+#   [cached] OPENAI_API_KEY → op://Private/OpenAI/credential
+#   [ empty] NEW_TOKEN → op://Private/New/credential
 ```
 
 ### How it works under the hood
 
-<p align="center">
-  <img src="dotfiles_secrets_flow.svg" alt="Secrets flow: template to machine" width="680">
-</p>
-
 `secrets.toml` is a chezmoi data file loaded as `.secrets` in templates.
-`secrets.fish.tmpl` iterates the registry and emits one `set -gx` per
-entry, resolving each `op://` ref via `onepasswordRead`. The rendered
-file at `~/.config/fish/conf.d/secrets.fish` contains real tokens but
-never leaves your machine.
+`secrets.fish.tmpl` iterates the registry and emits one `set -gx` per entry,
+but **does not resolve** via `onepasswordRead`. Instead, each emitted line
+calls `~/.local/bin/secret-cache-read VAR OP_REF` at shell startup time,
+which:
+
+1. Looks up `VAR` in macOS Keychain (silent, ~1 ms)
+2. On cache miss, runs `op read OP_REF` (1P popup if interactive)
+3. Stores the result back in Keychain for next time
+
+This means **`chezmoi apply` never calls 1Password**. Secrets are only
+fetched when a shell actually starts for the first time on a machine, or
+after `dotfiles secret refresh`. The rendered `secrets.fish` on disk is
+safe to grep -- it contains only references, not values.
+
+### Why Keychain instead of a dotfile cache
+
+- **Silent after approval.** macOS prompts once per app ("allow access to this keychain item?"); after "Always Allow", reads are invisible
+- **Encrypted at rest** by the OS
+- **Machine-local**, which matches the rest of the local-override philosophy
+- **Easy to invalidate** per-entry via `security delete-generic-password` (wrapped as `dotfiles secret refresh`)
 
 ---
 
