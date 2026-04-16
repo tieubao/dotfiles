@@ -187,10 +187,11 @@ When creating `~/.Brewfile.local` for the first time, add this header:
 
 ## Step 6: Log
 
-Append an entry to `docs/sync-log.md`, distinguishing core vs local:
+Append an entry to `docs/sync-log.md`, tagging the machine and distinguishing core vs local.
+Get the hostname with `scutil --get ComputerName 2>/dev/null || hostname -s`.
 
 ```markdown
-## [YYYY-MM-DD] sync
+## [YYYY-MM-DD] sync @ <hostname>
 
 Brewfile (core):
   - added brew: pkg1, pkg2
@@ -204,6 +205,9 @@ Brewfile (local - ~/.Brewfile.local):
 
 ---
 ```
+
+The `@ hostname` tag makes it easy to trace classification decisions back to
+the machine they were made on, and spot patterns across syncs.
 
 ## Step 7: Commit
 

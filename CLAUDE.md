@@ -33,16 +33,29 @@ chezmoi uses filename prefixes to encode target attributes:
 
 ### Secret injection (two backends)
 
-**1Password** (primary)  - via chezmoi Go templates at apply time:
-```
-{{ onepasswordRead (printf "op://%s/ItemName/credential" .op_vault) }}
-```
-Used directly in: `dot_gitconfig.tmpl`, `dot_config/zed/settings.json.tmpl`.
+**1Password** (primary):
 
-For auto-loaded shell env vars, prefer the data-driven workflow: register
-entries in `.chezmoidata/secrets.toml` via `dotfiles secret add VAR op://...`
-and let `secrets.fish.tmpl` iterate. Do not hand-edit the template to add
-new env vars  - use `dotfiles secret add` / `dotfiles secret rm` / `dotfiles secret list`.
+- **Apply-time resolution** (`onepasswordRead` in Go templates) — resolves at
+  `chezmoi apply`, bakes secret into rendered file. Triggers 1P popup on every
+  apply. Used only where the secret must be present at file write time (e.g.,
+  `dot_gitconfig.tmpl`, `dot_config/zed/settings.json.tmpl`).
+- **Lazy-resolution + Keychain cache** (preferred for env vars) — the
+  `secrets.fish.tmpl` emits calls to `~/.local/bin/secret-cache-read`, which
+  checks macOS Keychain first and only calls `op read` on cache miss. Result:
+  `chezmoi apply` never touches 1Password; only the first shell on a new
+  machine triggers popups.
+
+Register auto-loaded env vars via:
+```
+dotfiles secret add VAR "op://Vault/Item/field"   # register
+dotfiles secret rm VAR                            # unregister
+dotfiles secret list                              # show bindings + cache status
+dotfiles secret refresh VAR                       # invalidate Keychain cache
+dotfiles secret refresh --all                     # invalidate all
+```
+
+Never hand-edit `secrets.fish.tmpl` or `.chezmoidata/secrets.toml` — use the
+subcommands.
 
 **macOS Keychain**  - via `keyring` template function or runtime fish functions:
 ```
@@ -82,6 +95,10 @@ dotfiles local demote <type> <name>       # core → local
 # type: brew, cask, ext
 ```
 The fish function auto-commits to the repo; local file changes are never committed.
+
+Design rationale and full cross-machine test plan:
+- [docs/specs/S-35-local-pattern-and-lazy-secrets.md](docs/specs/S-35-local-pattern-and-lazy-secrets.md)
+- [docs/testing.md](docs/testing.md)
 
 ### Script execution order
 
