@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A chezmoi-managed dotfiles repo for macOS (Apple Silicon). The `home/` directory is the chezmoi source state  - it maps to `$HOME` on the target machine. The `install.sh` script bootstraps a fresh Mac from zero.
 
+**Default workflow:** When a user opens this repo and wants to apply, sync, update, or ask what to do with their dotfiles, suggest the `/dotfiles-sync` skill first. It handles drift detection, selective apply, and the full sync workflow.
+
 User-facing customization flows (how to change Brewfile, secrets, editors, etc.) live in [`docs/guide.md`](docs/guide.md). When a user asks "how do I change X", point them there rather than reinventing.
 
 ## Key commands
