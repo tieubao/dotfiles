@@ -8,7 +8,7 @@
 ![1Password](https://img.shields.io/badge/1Password-Secrets-0572EC?logo=1password&logoColor=white)
 ![CI](https://img.shields.io/github/actions/workflow/status/dwarvesf/dotfiles/test.yml?label=CI&logo=github)
 
-**Multi-machine dotfiles maintained by an LLM.** You operate each Mac freely; Claude detects what drifted, asks whether new packages are shared across machines or specific to this one, and keeps everything in sync. **You never manually keep this repo in sync.**
+**Multi-machine dotfiles maintained by an LLM.** You operate each Mac freely; Claude detects what drifted, asks whether new packages are shared across machines or specific to this one, and keeps everything in sync. **You don't need to sync this repo by hand** — there's a `dotfiles` CLI for offline edits, but day-to-day you just talk to Claude.
 
 ## The idea
 
@@ -78,17 +78,9 @@ dotfiles local promote cask raycast       # local → core (shared with all mach
 dotfiles local demote brew sentencepiece  # core → local (this machine only)
 ```
 
-**Lazy 1Password secrets via Keychain cache.** The shared template never bakes secrets in -- it bakes in a *call* to a Keychain-first reader. `chezmoi apply` triggers zero 1Password popups; the first shell on a fresh machine triggers exactly one popup per registered secret (then cached silently in macOS Keychain). 1Password remains the source of truth across machines; Keychain is just the per-machine cache. See the [S-35 spec](docs/specs/S-35-local-pattern-and-lazy-secrets.md) for the full design.
+**Lazy 1Password secrets via Keychain cache.** The shared template never bakes secrets in -- it bakes in a *call* to a Keychain-first reader. `chezmoi apply` triggers zero 1Password popups; the first shell on a fresh machine triggers exactly one popup per registered secret (then cached silently in macOS Keychain). 1Password remains the source of truth across machines; Keychain is just the per-machine cache.
 
-**Fresh machine in 5 minutes:**
-```bash
-git clone https://github.com/dwarvesf/dotfiles ~/dotfiles
-cd ~/dotfiles && ./install.sh
-# Then in Claude Code on the new machine:
-/dotfiles-sync   # Claude detects this machine's unique installs and asks how to classify them
-```
-
-The full multi-machine test plan is in [docs/testing.md](docs/testing.md).
+To bring up an additional Mac, follow the [Quick start](#quick-start) below — the same bootstrap runs on every machine, and the `/dotfiles-sync` prompt in the cheat sheet is what classifies whatever is unique to the new one. The full multi-machine test plan is in [docs/testing.md](docs/testing.md).
 
 ## Quick start
 
@@ -97,9 +89,27 @@ git clone https://github.com/dwarvesf/dotfiles ~/dotfiles
 cd ~/dotfiles && ./install.sh
 ```
 
-A [gum](https://github.com/charmbracelet/gum)-powered wizard prompts for your name, email, editor, headless mode, and 1Password. First run takes ~30 minutes (Homebrew downloads). After that, just use `/dotfiles-sync` to keep things current.
+A [gum](https://github.com/charmbracelet/gum)-powered wizard prompts for your name, email, editor, headless mode, and 1Password. First run takes ~30 minutes (Homebrew downloads). The Brewfile includes Claude Code itself, so once the installer finishes you have everything needed to talk to Claude about this repo.
 
 **Requirements:** macOS 12+, Apple Silicon (Intel works too).
+
+### Day-to-day: tell Claude what you want
+
+After install, you never edit this repo by hand. Open Claude Code anywhere and say things like:
+
+| What you want | What to say |
+|---|---|
+| Catch up after drift | `/dotfiles-sync` |
+| Add a shared tool | *"Add ripgrep to dotfiles, shared across machines"* |
+| Add a tool just for this Mac | *"Install chrysalis but local to this Mac"* |
+| Promote local → core | *"Promote raycast from local to core"* |
+| Demote core → local | *"Move sentencepiece to local only"* |
+| Register a 1Password secret | *"Register OPENAI\_API\_KEY from op://Private/OpenAI/credential"* |
+| Rotate a cached secret | *"Refresh my GITHUB\_TOKEN in Keychain"* |
+| Remove a package | *"Drop slack from dotfiles"* |
+| Health check | *"Run `dotfiles doctor` and explain any issues"* |
+
+Claude maps each request to the right `dotfiles` subcommand, template edit, or git action, then commits with a descriptive message. The full conversation-driven workflow is in [docs/guide.md](docs/guide.md).
 
 <details>
 <summary><b>Other install methods</b></summary>
@@ -175,7 +185,6 @@ The `op://` references do reveal 1Password vault and item names (e.g. `op://Priv
 |----------|---------------|
 | **[docs/llm-dotfiles.md](docs/llm-dotfiles.md)** | The LLM-maintained dotfiles pattern. Shareable, stack-agnostic. Includes setup instructions. |
 | **[docs/guide.md](docs/guide.md)** | Full user guide. chezmoi details, manual commands, customization, secrets, multi-machine, troubleshooting. |
-| **[docs/specs/S-35-local-pattern-and-lazy-secrets.md](docs/specs/S-35-local-pattern-and-lazy-secrets.md)** | The multi-machine architecture: `.local` overrides + lazy 1Password resolution. |
 | **[docs/testing.md](docs/testing.md)** | End-to-end test plan for local pattern + lazy secrets. Cross-machine validation steps. |
 | **[docs/decisions/](docs/decisions/)** | Architecture decision records (why chezmoi, Fish, Ghostty, 1Password, auto-commit). |
 | **[docs/sync-log.md](docs/sync-log.md)** | Sync history. Append-only log of every Claude-assisted sync, hostname-tagged. |

@@ -22,3 +22,9 @@ key.txt
 !.claude/agents/*
 !.claude/commands
 !.claude/commands/*
+
+# Machine-specific overrides — never committed to the shared repo.
+# Defense-in-depth: .chezmoiignore blocks `chezmoi add` from tracking these,
+# and these patterns block `git add` from catching anything that sneaks in.
+*.local
+*.local.*
