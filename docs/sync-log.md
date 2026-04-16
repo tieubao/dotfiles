@@ -6,6 +6,85 @@ context.
 
 ---
 
+## [2026-04-16] design session @ Mac mini
+
+Big architectural session extending the core/local pattern and rewriting secret
+loading. Full spec: [S-35](specs/S-35-local-pattern-and-lazy-secrets.md).
+Test plan: [testing.md](testing.md).
+
+Config includes:
+  - fish: source ~/.config/fish/config.local.fish (new)
+  - tmux: source-file -q ~/.config/tmux/tmux.local.conf (new)
+  - git/ssh: already had native includes
+
+dotfiles local CLI (new subcommand):
+  - list / promote / demote / edit
+  - dynamic completions for brew / cask / ext
+  - auto-commits core changes; never commits .local files
+
+Secrets rearchitected (lazy + Keychain):
+  - Removed {{ onepasswordRead }} from secrets.fish.tmpl
+  - New helper ~/.local/bin/secret-cache-read (Keychain first, op fallback)
+  - dotfiles secret list now shows [cached]/[empty]
+  - dotfiles secret refresh VAR (clear cache + re-fetch)
+  - chezmoi apply no longer triggers any 1Password popups
+
+Brewfile housekeeping:
+  - Added 12 modern tools: tldr, sd, gping, atuin, lazygit, difftastic,
+    kubectx, kubecolor, stern, opentofu, dive, buf
+  - Removed deprecated taps: homebrew/bundle, homebrew/services
+  - Fixed renames: zen-browser->zen, google-cloud-sdk->gcloud-cli
+  - Fixed cask->formula: gifski, lume
+  - Fixed formula->cask: nordvpn
+  - Demoted to ~/.Brewfile.local: sentencepiece, tor-browser, lume, meetingbar
+    (kept nordvpn, microsoft-edge, cloudflared, elixir in core per user)
+
+Verification hooks:
+  - Hostname tag in sync log entries (@ Mac mini)
+  - Three new dotfiles doctor checks for .local pattern integrity
+
+Audit:
+  - git log --all scanned for hardcoded secrets: clean
+  - No tokens, keys, or op:// values with plaintext ever committed
+
+Post-session fixes (same day):
+  - fix(doctor): exclude always-run scripts (R status) from drift count
+  - fix(doctor): check login shell via dscl, not $SHELL (was misreporting after chsh)
+  - chezmoi apply --force resolved Zed One Light/Dark drift
+  - Default shell confirmed via dscl: /opt/homebrew/bin/fish (chsh worked previously,
+    $SHELL was just stale in inherited processes)
+
+Documentation refresh:
+  - README.md: multi-machine positioning, .local pattern, lazy secrets section
+  - docs/llm-dotfiles.md: added multi-machine sync + lazy secrets sections
+    (stack-agnostic, shareable patterns)
+  - CLAUDE.md: explicit design philosophy section (6 principles)
+
+---
+
+## [2026-04-16] sync
+
+Config:
+  - re-add Zed settings.json (removed agent_servers block, absorbed local edits)
+  - chezmoi apply deployed all pending repo changes (fish config, starship, lib.sh, dotfiles CLI, completions, Claude config)
+
+Brewfile:
+  - added tap: hashicorp/tap
+  - added brew: chezmoi, mdq, certbot, hashicorp/tap/vault, colima, docker, docker-compose, docker-credential-helper, sentencepiece
+  - added cask: codex, chrysalis, disk-inventory-x, google-cloud-sdk, lunar, monitorcontrol, skype, zen-browser
+  - skipped legacy packages already superseded (htop->btop, hub->gh, z->zoxide, pipx->uv, youtube-dl->yt-dlp, etc.)
+
+VS Code extensions:
+  - synced to match installed: added openai.chatgpt, removed 4 uninstalled (docker.docker, dwarvesf.md-ar-ext, ms-vsliveshare.vsliveshare, ocamllabs.ocaml-platform)
+
+Fish functions:
+  - tracked 4 unmanaged: keychain_env.fish, keychain_set.fish, op_env.fish, web3_env.fish
+
+Secrets:
+  - CLOUDFLARE_API_TOKEN already registered in secrets.toml, resolved from 1Password at apply time
+
+---
+
 ## [2026-04-14] sync
 
 Config:

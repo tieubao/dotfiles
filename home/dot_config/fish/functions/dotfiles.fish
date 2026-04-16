@@ -204,18 +204,275 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                         echo "(no secrets registered)"
                         return 0
                     end
-                    grep -E '^[A-Z_][A-Z0-9_]* = ' $data | sed 's/ = / → /; s/"//g'
+                    echo "Registered secrets (cache status from macOS Keychain):"
+                    for line in (grep -E '^[A-Z_][A-Z0-9_]* = ' $data)
+                        set -l var (echo $line | awk '{print $1}')
+                        set -l ref (echo $line | sed 's/.*= //;s/"//g')
+                        if security find-generic-password -a "$USER" -s "$var" -w >/dev/null 2>&1
+                            echo "  [cached] $var → $ref"
+                        else
+                            echo "  [ empty] $var → $ref"
+                        end
+                    end
+
+                case refresh
+                    # Delete Keychain entry so next shell (or immediate call) re-fetches from 1Password.
+                    set -l data (chezmoi source-path)/.chezmoidata/secrets.toml
+                    set -l do_all 0
+                    contains -- --all $argv; and set do_all 1
+
+                    if test $do_all -eq 1
+                        for var in (grep -E '^[A-Z_][A-Z0-9_]* = ' $data | awk '{print $1}')
+                            security delete-generic-password -a "$USER" -s "$var" >/dev/null 2>&1
+                            echo "✓ cleared cache: $var"
+                        end
+                        echo ""
+                        echo "Run 'exec fish' (or open a new shell) to re-populate from 1Password."
+                        return 0
+                    end
+
+                    if test (count $argv) -lt 3
+                        echo "Usage: dotfiles secret refresh <VAR>"
+                        echo "       dotfiles secret refresh --all"
+                        echo ""
+                        echo "  Clears the Keychain cache so the secret is re-fetched from 1Password"
+                        echo "  on next shell startup (or next access)."
+                        return 1
+                    end
+
+                    set -l var $argv[3]
+                    if not grep -q "^$var = " $data
+                        echo "✗ $var not registered (see 'dotfiles secret list')"
+                        return 1
+                    end
+
+                    security delete-generic-password -a "$USER" -s "$var" >/dev/null 2>&1
+                    echo "✓ cleared cache: $var"
+
+                    # Immediately re-populate (triggers 1P popup once)
+                    set -l ref (grep "^$var = " $data | sed 's/.*= //;s/"//g')
+                    set -l val ($HOME/.local/bin/secret-cache-read "$var" "$ref")
+                    if test -n "$val"
+                        echo "✓ re-fetched from 1Password and cached"
+                        echo "  Restart shell or: set -gx $var '$val'"
+                    else
+                        echo "⚠ could not fetch from 1Password (op not signed in?)"
+                    end
 
                 case ''
-                    echo "Usage: dotfiles secret <add|rm|list>"
+                    echo "Usage: dotfiles secret <add|rm|list|refresh>"
                     echo ""
                     echo "  add VAR \"op://...\"  Register a secret"
                     echo "  rm VAR              Unregister a secret"
-                    echo "  list                Show all bindings"
+                    echo "  list                Show all bindings (with cache status)"
+                    echo "  refresh VAR         Clear Keychain cache, re-fetch from 1Password"
+                    echo "  refresh --all       Refresh all cached secrets"
 
                 case '*'
                     echo "Unknown secret command: $argv[2]"
-                    echo "Usage: dotfiles secret <add|rm|list>"
+                    echo "Usage: dotfiles secret <add|rm|list|refresh>"
+                    return 1
+            end
+
+        case local
+            set -l brewlocal $HOME/.Brewfile.local
+            set -l extlocal $HOME/.config/code/extensions.local.txt
+            set -l fishlocal $HOME/.config/fish/config.local.fish
+            set -l tmuxlocal $HOME/.config/tmux/tmux.local.conf
+            set -l gitlocal $HOME/.gitconfig.local
+            set -l repo (dirname (chezmoi source-path))
+            set -l brewtmpl $repo/home/dot_Brewfile.tmpl
+            set -l exttxt $repo/home/dot_config/code/extensions.txt
+
+            switch $argv[2]
+                case list ls ''
+                    echo "Local overrides (machine-specific, not committed)"
+                    echo "================================================="
+
+                    echo ""
+                    echo "~/.Brewfile.local"
+                    if test -f $brewlocal
+                        grep -E '^(brew|cask) "' $brewlocal | sed 's/^/  /' || echo "  (empty)"
+                    else
+                        echo "  (not created)"
+                    end
+
+                    echo ""
+                    echo "~/.config/code/extensions.local.txt"
+                    if test -f $extlocal
+                        sed 's/^/  /' $extlocal
+                    else
+                        echo "  (not created)"
+                    end
+
+                    echo ""
+                    echo "~/.config/fish/config.local.fish"
+                    if test -f $fishlocal
+                        echo "  ($(wc -l < $fishlocal | string trim) lines)"
+                    else
+                        echo "  (not created)"
+                    end
+
+                    echo ""
+                    echo "~/.config/tmux/tmux.local.conf"
+                    if test -f $tmuxlocal
+                        echo "  ($(wc -l < $tmuxlocal | string trim) lines)"
+                    else
+                        echo "  (not created)"
+                    end
+
+                    echo ""
+                    echo "~/.gitconfig.local"
+                    if test -f $gitlocal
+                        echo "  ($(wc -l < $gitlocal | string trim) lines)"
+                    else
+                        echo "  (not created)"
+                    end
+
+                case edit
+                    if not test -f $brewlocal
+                        printf '%s\n' \
+                            '# ~/.Brewfile.local - machine-specific packages (not committed)' \
+                            '# Sourced automatically by ~/.Brewfile via eval()' \
+                            '' > $brewlocal
+                    end
+                    $EDITOR $brewlocal
+
+                case promote
+                    if test (count $argv) -lt 4
+                        echo "Usage: dotfiles local promote <brew|cask|ext> <name>"
+                        echo "  Moves an item from a .local file to the shared repo."
+                        return 1
+                    end
+                    set -l type $argv[3]
+                    set -l name $argv[4]
+
+                    switch $type
+                        case brew cask
+                            if not test -f $brewlocal
+                                echo "✗ ~/.Brewfile.local does not exist"
+                                return 1
+                            end
+                            if not grep -qE "^$type \"$name\"" $brewlocal
+                                echo "✗ $type \"$name\" not found in ~/.Brewfile.local"
+                                return 1
+                            end
+                            # Extract full line (with comment) before deleting
+                            set -l line (grep -E "^$type \"$name\"" $brewlocal | head -1)
+                            # Remove from local
+                            sed -i '' "/^$type \"$name\"/d" $brewlocal
+                            # Insert in core before the local-overrides anchor
+                            set -l anchor '# ── Local overrides'
+                            if not grep -qF "$anchor" $brewtmpl
+                                echo "✗ anchor not found in $brewtmpl; aborting"
+                                # Restore local entry
+                                echo $line >> $brewlocal
+                                return 1
+                            end
+                            # Use awk to insert before the anchor line
+                            awk -v line="$line" -v anchor="$anchor" '
+                                index($0, anchor) && !inserted {
+                                    print line "  # promoted from local"
+                                    print ""
+                                    inserted = 1
+                                }
+                                { print }
+                            ' $brewtmpl > $brewtmpl.tmp && mv $brewtmpl.tmp $brewtmpl
+                            echo "✓ promoted $type \"$name\" to core Brewfile"
+
+                        case ext
+                            if not test -f $extlocal
+                                echo "✗ ~/.config/code/extensions.local.txt does not exist"
+                                return 1
+                            end
+                            if not grep -qxF "$name" $extlocal
+                                echo "✗ \"$name\" not found in extensions.local.txt"
+                                return 1
+                            end
+                            sed -i '' "/^$name\$/d" $extlocal
+                            echo "$name" >> $exttxt
+                            # Re-sort extensions.txt to keep it alphabetical
+                            sort -o $exttxt $exttxt
+                            echo "✓ promoted extension $name to core"
+
+                        case '*'
+                            echo "Unknown type: $type (expected: brew, cask, ext)"
+                            return 1
+                    end
+
+                    # chezmoi apply + commit
+                    chezmoi apply; or return 1
+                    if not git -C $repo diff --quiet -- home/
+                        git -C $repo add home/
+                        git -C $repo commit -m "feat(core): promote $type $name from local" >/dev/null
+                        echo "✓ committed. Push with: git -C $repo push"
+                    end
+
+                case demote
+                    if test (count $argv) -lt 4
+                        echo "Usage: dotfiles local demote <brew|cask|ext> <name>"
+                        echo "  Moves an item from the shared repo to a .local file."
+                        return 1
+                    end
+                    set -l type $argv[3]
+                    set -l name $argv[4]
+
+                    switch $type
+                        case brew cask
+                            if not grep -qE "^$type \"$name\"" $brewtmpl
+                                echo "✗ $type \"$name\" not found in dot_Brewfile.tmpl"
+                                return 1
+                            end
+                            # Extract and remove line from template
+                            set -l line (grep -E "^$type \"$name\"" $brewtmpl | head -1 | sed 's/  # promoted from local//')
+                            sed -i '' "/^$type \"$name\"/d" $brewtmpl
+                            # Ensure local file exists with header
+                            if not test -f $brewlocal
+                                printf '%s\n' \
+                                    '# ~/.Brewfile.local - machine-specific packages (not committed)' \
+                                    '# Sourced automatically by ~/.Brewfile via eval()' \
+                                    '' > $brewlocal
+                            end
+                            echo $line >> $brewlocal
+                            echo "✓ demoted $type \"$name\" to ~/.Brewfile.local"
+
+                        case ext
+                            if not grep -qxF "$name" $exttxt
+                                echo "✗ \"$name\" not found in extensions.txt"
+                                return 1
+                            end
+                            sed -i '' "/^$name\$/d" $exttxt
+                            echo "$name" >> $extlocal
+                            echo "✓ demoted extension $name to extensions.local.txt"
+
+                        case '*'
+                            echo "Unknown type: $type (expected: brew, cask, ext)"
+                            return 1
+                    end
+
+                    # chezmoi apply + commit repo changes
+                    chezmoi apply; or return 1
+                    if not git -C $repo diff --quiet -- home/
+                        git -C $repo add home/
+                        git -C $repo commit -m "chore(local): demote $type $name to local" >/dev/null
+                        echo "✓ committed. Push with: git -C $repo push"
+                    end
+
+                case '*'
+                    echo "Usage: dotfiles local <list|promote|demote|edit>"
+                    echo ""
+                    echo "  list                       Show all local overrides"
+                    echo "  promote <type> <name>      Move local → core (repo)"
+                    echo "  demote <type> <name>       Move core → local"
+                    echo "  edit                       Open ~/.Brewfile.local in \$EDITOR"
+                    echo ""
+                    echo "  <type>: brew, cask, ext"
+                    echo ""
+                    echo "Examples:"
+                    echo "  dotfiles local list"
+                    echo "  dotfiles local promote cask chrysalis"
+                    echo "  dotfiles local demote brew sentencepiece"
+                    echo "  dotfiles local promote ext openai.chatgpt"
                     return 1
             end
 
@@ -257,10 +514,16 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 set issues (math $issues + 1)
             end
 
-            if string match -q "*/fish" $SHELL
-                echo "[ok] fish is default shell"
+            # Check the authoritative login shell from Directory Services, not $SHELL
+            # ($SHELL is inherited from the parent process and goes stale after chsh)
+            set -l login_shell (dscl . -read /Users/$USER UserShell 2>/dev/null | string replace 'UserShell: ' '')
+            if test -z "$login_shell"
+                set login_shell $SHELL  # fallback for non-macOS
+            end
+            if string match -q "*/fish" $login_shell
+                echo "[ok] fish is default shell ($login_shell)"
             else
-                echo "[!!] default shell is $SHELL (not fish)"
+                echo "[!!] default shell is $login_shell (not fish)"
                 set issues (math $issues + 1)
             end
 
@@ -319,12 +582,46 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 echo "[--] age encryption key: not set up (optional)"
             end
 
-            set -l drift_count (chezmoi diff --no-pager 2>/dev/null | grep '^diff' | wc -l | string trim)
+            # Count real drift: exclude " R " (always-run scripts, not actual file changes)
+            set -l drift_count (chezmoi status 2>/dev/null | grep -vcE '^ R ' | string trim)
             if test "$drift_count" -gt 0
                 echo "[!!] $drift_count file(s) have drifted from source"
                 set issues (math $issues + 1)
             else
                 echo "[ok] no drift detected"
+            end
+
+            # ── .local pattern integrity ──────────────────────────────
+            if chezmoi managed 2>/dev/null | grep -qE '(Brewfile\.local|\.local\.fish|tmux\.local\.conf|gitconfig\.local|extensions\.local\.txt)'
+                echo "[!!] .local files are being tracked by chezmoi (should be ignored)"
+                set issues (math $issues + 1)
+            else
+                echo "[ok] .local files correctly excluded from chezmoi"
+            end
+
+            if test -f ~/.Brewfile.local
+                if ruby -c ~/.Brewfile.local >/dev/null 2>&1
+                    echo "[ok] ~/.Brewfile.local is valid Ruby"
+                else
+                    echo "[!!] ~/.Brewfile.local has syntax errors"
+                    set issues (math $issues + 1)
+                end
+            end
+
+            set -l src (chezmoi source-path 2>/dev/null)
+            if test -n "$src"
+                set -l repo (dirname $src)
+                set -l leaked (git -C $repo log --all --pretty=format: --name-only 2>/dev/null \
+                    | grep -E '\.local($|\.|/)' | grep -v '^$' | sort -u)
+                if test -n "$leaked"
+                    echo "[!!] .local files found in git history:"
+                    for f in $leaked
+                        echo "     $f"
+                    end
+                    set issues (math $issues + 1)
+                else
+                    echo "[ok] no .local files leaked into git history"
+                end
             end
 
             echo ""
@@ -486,6 +783,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "  edit <file>       Edit + apply + auto-commit"
             echo "  drift             Detect and re-absorb drifted files"
             echo "  secret <cmd>      Manage 1Password secrets (add/rm/list)"
+            echo "  local <cmd>       Manage machine-specific .local files (list/promote/demote/edit)"
             echo "  diff              Show pending changes"
             echo "  sync              Apply all changes"
             echo "  update            Pull latest + apply"

@@ -9,14 +9,14 @@
 
 <!-- Scenario labels -->
 <rect x="20" y="50" width="310" height="36" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
-<text x="175" y="72" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="12" font-weight="500" fill="#3C3489">Scenario A: you edit via dfe (ideal)</text>
+<text x="175" y="72" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="12" font-weight="500" fill="#3C3489">Scenario A: edit via dotfiles edit (ideal)</text>
 
 <rect x="350" y="50" width="310" height="36" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
 <text x="505" y="72" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="12" font-weight="500" fill="#712B13">Scenario B: you edit the file directly</text>
 
 <!-- Scenario A flow -->
 <rect x="40" y="110" width="270" height="36" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
-<text x="175" y="132" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="12" font-weight="500" fill="#2C2C2A">dfe ~/.config/fish/config.fish</text>
+<text x="175" y="132" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="12" font-weight="500" fill="#2C2C2A">dotfiles edit ~/.config/fish/config.fish</text>
 
 <line x1="175" y1="146" x2="175" y2="170" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#a)"/>
 
@@ -53,7 +53,7 @@
 
 <!-- Recovery -->
 <rect x="370" y="262" width="270" height="36" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
-<text x="505" y="284" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="12" font-weight="500" fill="#2C2C2A">Fix: run dfs</text>
+<text x="505" y="284" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="12" font-weight="500" fill="#2C2C2A">Fix: run dotfiles drift</text>
 
 <line x1="505" y1="298" x2="505" y2="322" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#ag)"/>
 

@@ -19,6 +19,11 @@
 .DS_Store
 .Trash
 .cache
+.Brewfile.local
+.config/code/extensions.local.txt
+.config/fish/config.local.fish
+.config/tmux/tmux.local.conf
+.gitconfig.local
 
 # Codespaces / CI — skip GUI-dependent configs
 {{- if env "CODESPACES" }}

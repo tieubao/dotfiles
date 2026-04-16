@@ -1,5 +1,7 @@
 You are maintaining a chezmoi-managed dotfiles repo. The user operates their Mac freely (installs packages, edits configs, adds API keys). Your job is to detect what changed on the machine, report it clearly, and sync approved changes back into the repo.
 
+Packages are classified as **core** (shared across all machines, committed to repo) or **local** (this machine only, stored in `~/.Brewfile.local`). The sync workflow must ask the user to classify new packages.
+
 ## Step 1: Read context
 
 Read `docs/sync-log.md` to understand when the last sync happened and what changed. If the file doesn't exist, this is the first sync.
@@ -16,8 +18,11 @@ Look for lines starting with ` M` (modified) or `MM` (modified both sides).
 
 ### Brew packages
 ```bash
-# Installed but not in Brewfile
-comm -23 <(brew leaves | sort) <(grep '^brew "' ~/.Brewfile 2>/dev/null | sed 's/brew "//;s/".*//' | sort)
+# Installed but not in Brewfile or Brewfile.local
+comm -23 <(brew leaves | sort) \
+  <(cat <(grep '^brew "' ~/.Brewfile 2>/dev/null) \
+        <(grep '^brew "' ~/.Brewfile.local 2>/dev/null) \
+  | sed 's/brew "//;s/".*//' | sort -u)
 
 # In Brewfile but not installed
 comm -13 <(brew leaves | sort) <(grep '^brew "' ~/.Brewfile 2>/dev/null | sed 's/brew "//;s/".*//' | sort)
@@ -25,8 +30,11 @@ comm -13 <(brew leaves | sort) <(grep '^brew "' ~/.Brewfile 2>/dev/null | sed 's
 
 ### Cask apps
 ```bash
-# Installed but not in Brewfile
-comm -23 <(brew list --cask 2>/dev/null | sort) <(grep '^cask "' ~/.Brewfile 2>/dev/null | sed 's/cask "//;s/".*//' | sort)
+# Installed but not in Brewfile or Brewfile.local
+comm -23 <(brew list --cask 2>/dev/null | sort) \
+  <(cat <(grep '^cask "' ~/.Brewfile 2>/dev/null) \
+        <(grep '^cask "' ~/.Brewfile.local 2>/dev/null) \
+  | sed 's/cask "//;s/".*//' | sort -u)
 
 # In Brewfile but not installed
 comm -13 <(brew list --cask 2>/dev/null | sort) <(grep '^cask "' ~/.Brewfile 2>/dev/null | sed 's/cask "//;s/".*//' | sort)
@@ -34,10 +42,11 @@ comm -13 <(brew list --cask 2>/dev/null | sort) <(grep '^cask "' ~/.Brewfile 2>/
 
 ### VS Code extensions
 ```bash
-# Installed but not tracked
-comm -23 <(code --list-extensions 2>/dev/null | sort) <(sort ~/.config/code/extensions.txt 2>/dev/null)
+# Installed but not tracked (core or local)
+comm -23 <(code --list-extensions 2>/dev/null | sort) \
+  <(cat ~/.config/code/extensions.txt ~/.config/code/extensions.local.txt 2>/dev/null | sort -u)
 
-# Tracked but not installed
+# Tracked (core) but not installed
 comm -13 <(code --list-extensions 2>/dev/null | sort) <(sort ~/.config/code/extensions.txt 2>/dev/null)
 ```
 
@@ -59,6 +68,21 @@ comm -23 <(ls ~/.ssh/config.d/ 2>/dev/null | sort) <(chezmoi managed | grep 'ssh
 grep -n 'set -gx.*[A-Za-z0-9_]\{20,\}' ~/.config/fish/config.fish ~/.config/fish/conf.d/*.fish 2>/dev/null | grep -v 'onepasswordRead\|op://' || true
 ```
 
+### Already-local overrides
+```bash
+# Show what's in .local files for context
+echo "--- ~/.Brewfile.local ---"
+grep -E '^(brew|cask) "' ~/.Brewfile.local 2>/dev/null | sed 's/".*/"/' || echo "(none)"
+echo "--- ~/.config/code/extensions.local.txt ---"
+cat ~/.config/code/extensions.local.txt 2>/dev/null || echo "(none)"
+echo "--- ~/.config/fish/config.local.fish ---"
+test -f ~/.config/fish/config.local.fish && wc -l < ~/.config/fish/config.local.fish | xargs echo "(lines:" | tr -d '\n' && echo ")" || echo "(not created)"
+echo "--- ~/.config/tmux/tmux.local.conf ---"
+test -f ~/.config/tmux/tmux.local.conf && wc -l < ~/.config/tmux/tmux.local.conf | xargs echo "(lines:" | tr -d '\n' && echo ")" || echo "(not created)"
+echo "--- ~/.gitconfig.local ---"
+test -f ~/.gitconfig.local && wc -l < ~/.gitconfig.local | xargs echo "(lines:" | tr -d '\n' && echo ")" || echo "(not created)"
+```
+
 ## Step 3: Report
 
 Present findings in plain language, grouped by category. For each category, show:
@@ -76,6 +100,17 @@ Config drift (N files):
 New packages (N brew, N casks):
   Brew: pkg1, pkg2, ...
   Cask: app1, app2, ...
+
+Already local (tracked in .local files):
+  ~/.Brewfile.local:      brew: pkg1, ...  cask: app1, ...
+  extensions.local.txt:   ext1, ...
+  config.local.fish:      (N lines, or "not created")
+  tmux.local.conf:        (N lines, or "not created")
+  .gitconfig.local:       (N lines, or "not created")
+
+Tip: to move items between core and local, use:
+  dotfiles local promote <type> <name>   # local → core
+  dotfiles local demote <type> <name>    # core → local
 
 Stale entries (N brew, N casks):
   Brew: pkg1, pkg2, ... (in Brewfile but not installed)
@@ -108,6 +143,20 @@ Do NOT make any changes yet. Ask the user what to do. They'll respond in plain l
 - "Sync the Zed config"
 - "Do it all"
 
+**For new packages/extensions, ask the user to classify:**
+
+```
+For new packages, classify as:
+  [Core]  - shared across all machines (committed to repo)
+  [Local] - this machine only (~/.Brewfile.local)
+  [Skip]  - don't track
+
+You can say: "all core", "all local", or classify individually
+  e.g. "chrysalis and lunar are local, rest is core"
+```
+
+If the user says "do it all" without classifying, ask once: "Should new packages go to core (repo) or local (this machine)?" Default to local if the user doesn't specify.
+
 ## Step 5: Execute
 
 Based on the user's decisions:
@@ -115,38 +164,60 @@ Based on the user's decisions:
 | Action | Method |
 |--------|--------|
 | Absorb config drift | `chezmoi re-add <paths>` |
-| Add brew packages | Edit `home/dot_Brewfile.tmpl`, add `brew "pkg"` in correct section |
+| Add brew to core | Edit `home/dot_Brewfile.tmpl`, add `brew "pkg"` in correct section |
+| Add brew to local | Append `brew "pkg"` to `~/.Brewfile.local` (create if needed) |
 | Remove stale brew | Edit `home/dot_Brewfile.tmpl`, delete lines |
-| Add casks | Edit `home/dot_Brewfile.tmpl`, add `cask "app"` in correct section |
+| Add cask to core | Edit `home/dot_Brewfile.tmpl`, add `cask "app"` in correct section |
+| Add cask to local | Append `cask "app"` to `~/.Brewfile.local` (create if needed) |
 | Remove stale casks | Edit `home/dot_Brewfile.tmpl`, delete lines |
-| Sync VS Code extensions | Update `home/dot_config/code/extensions.txt` |
+| Add VS Code ext to core | Update `home/dot_config/code/extensions.txt` |
+| Add VS Code ext to local | Append to `~/.config/code/extensions.local.txt` (create if needed) |
 | Track fish functions | `chezmoi add ~/.config/fish/functions/NAME.fish` |
 | Track SSH configs | `chezmoi add ~/.ssh/config.d/NAME` |
 | Register secrets | Append to `home/.chezmoidata/secrets.toml` |
 
 When editing the Brewfile, preserve the existing section structure (base/dev/apps). Place new entries in the appropriate section.
 
+When creating `~/.Brewfile.local` for the first time, add this header:
+```ruby
+# ~/.Brewfile.local - machine-specific packages (not committed to dotfiles repo)
+# Sourced automatically by ~/.Brewfile via eval()
+# Managed by /dotfiles-sync - classify packages as "local" during sync
+```
+
 ## Step 6: Log
 
-Append an entry to `docs/sync-log.md`:
+Append an entry to `docs/sync-log.md`, tagging the machine and distinguishing core vs local.
+Get the hostname with `scutil --get ComputerName 2>/dev/null || hostname -s`.
 
 ```markdown
-## [YYYY-MM-DD] sync
+## [YYYY-MM-DD] sync @ <hostname>
 
-[Category]:
+Brewfile (core):
+  - added brew: pkg1, pkg2
+  - added cask: app1
+
+Brewfile (local - ~/.Brewfile.local):
+  - added cask: localapp1, localapp2
+
+[Other categories]:
   - [what changed]
 
 ---
 ```
 
+The `@ hostname` tag makes it easy to trace classification decisions back to
+the machine they were made on, and spot patterns across syncs.
+
 ## Step 7: Commit
 
-Stage all changes and commit with a descriptive message:
+Stage all repo changes and commit with a descriptive message. Local file changes (`~/.Brewfile.local`, `extensions.local.txt`) are NOT committed since they live outside the repo.
 
 ```
 chore(sync): dotfiles sync YYYY-MM-DD
 
-[Summary of changes by category]
+[Summary of core changes by category]
+Local: N packages added to ~/.Brewfile.local (not committed)
 ```
 
 Then ask: "Push to remote?" Only push if the user confirms.
