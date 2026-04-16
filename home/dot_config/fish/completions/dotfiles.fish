@@ -23,9 +23,15 @@ complete -c dotfiles -n "__fish_seen_subcommand_from edit" -F
 complete -c dotfiles -n "__fish_seen_subcommand_from drift" -a "--no-commit" -d "Skip auto-commit"
 
 # dotfiles secret subcommands
-complete -c dotfiles -n "__fish_seen_subcommand_from secret; and not __fish_seen_subcommand_from add rm list ls" -a "add" -d "Register a secret"
-complete -c dotfiles -n "__fish_seen_subcommand_from secret; and not __fish_seen_subcommand_from add rm list ls" -a "rm" -d "Unregister a secret"
-complete -c dotfiles -n "__fish_seen_subcommand_from secret; and not __fish_seen_subcommand_from add rm list ls" -a "list" -d "Show all bindings"
+complete -c dotfiles -n "__fish_seen_subcommand_from secret; and not __fish_seen_subcommand_from add rm list ls refresh" -a "add" -d "Register a secret"
+complete -c dotfiles -n "__fish_seen_subcommand_from secret; and not __fish_seen_subcommand_from add rm list ls refresh" -a "rm" -d "Unregister a secret"
+complete -c dotfiles -n "__fish_seen_subcommand_from secret; and not __fish_seen_subcommand_from add rm list ls refresh" -a "list" -d "Show all bindings"
+complete -c dotfiles -n "__fish_seen_subcommand_from secret; and not __fish_seen_subcommand_from add rm list ls refresh" -a "refresh" -d "Clear Keychain cache, re-fetch from 1P"
+
+# dotfiles secret refresh: --all or a registered VAR name
+complete -c dotfiles -n "__fish_seen_subcommand_from refresh; and __fish_seen_subcommand_from secret" -a "--all" -d "Refresh all cached secrets"
+complete -c dotfiles -n "__fish_seen_subcommand_from refresh; and __fish_seen_subcommand_from secret" \
+    -a "(grep -E '^[A-Z_][A-Z0-9_]* = ' (chezmoi source-path 2>/dev/null)/.chezmoidata/secrets.toml 2>/dev/null | awk '{print \$1}')"
 
 # dotfiles local subcommands
 complete -c dotfiles -n "__fish_seen_subcommand_from local; and not __fish_seen_subcommand_from list ls promote demote edit" -a "list" -d "Show all local overrides"

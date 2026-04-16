@@ -204,18 +204,73 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                         echo "(no secrets registered)"
                         return 0
                     end
-                    grep -E '^[A-Z_][A-Z0-9_]* = ' $data | sed 's/ = / → /; s/"//g'
+                    echo "Registered secrets (cache status from macOS Keychain):"
+                    for line in (grep -E '^[A-Z_][A-Z0-9_]* = ' $data)
+                        set -l var (echo $line | awk '{print $1}')
+                        set -l ref (echo $line | sed 's/.*= //;s/"//g')
+                        if security find-generic-password -a "$USER" -s "$var" -w >/dev/null 2>&1
+                            echo "  [cached] $var → $ref"
+                        else
+                            echo "  [ empty] $var → $ref"
+                        end
+                    end
+
+                case refresh
+                    # Delete Keychain entry so next shell (or immediate call) re-fetches from 1Password.
+                    set -l data (chezmoi source-path)/.chezmoidata/secrets.toml
+                    set -l do_all 0
+                    contains -- --all $argv; and set do_all 1
+
+                    if test $do_all -eq 1
+                        for var in (grep -E '^[A-Z_][A-Z0-9_]* = ' $data | awk '{print $1}')
+                            security delete-generic-password -a "$USER" -s "$var" >/dev/null 2>&1
+                            echo "✓ cleared cache: $var"
+                        end
+                        echo ""
+                        echo "Run 'exec fish' (or open a new shell) to re-populate from 1Password."
+                        return 0
+                    end
+
+                    if test (count $argv) -lt 3
+                        echo "Usage: dotfiles secret refresh <VAR>"
+                        echo "       dotfiles secret refresh --all"
+                        echo ""
+                        echo "  Clears the Keychain cache so the secret is re-fetched from 1Password"
+                        echo "  on next shell startup (or next access)."
+                        return 1
+                    end
+
+                    set -l var $argv[3]
+                    if not grep -q "^$var = " $data
+                        echo "✗ $var not registered (see 'dotfiles secret list')"
+                        return 1
+                    end
+
+                    security delete-generic-password -a "$USER" -s "$var" >/dev/null 2>&1
+                    echo "✓ cleared cache: $var"
+
+                    # Immediately re-populate (triggers 1P popup once)
+                    set -l ref (grep "^$var = " $data | sed 's/.*= //;s/"//g')
+                    set -l val ($HOME/.local/bin/secret-cache-read "$var" "$ref")
+                    if test -n "$val"
+                        echo "✓ re-fetched from 1Password and cached"
+                        echo "  Restart shell or: set -gx $var '$val'"
+                    else
+                        echo "⚠ could not fetch from 1Password (op not signed in?)"
+                    end
 
                 case ''
-                    echo "Usage: dotfiles secret <add|rm|list>"
+                    echo "Usage: dotfiles secret <add|rm|list|refresh>"
                     echo ""
                     echo "  add VAR \"op://...\"  Register a secret"
                     echo "  rm VAR              Unregister a secret"
-                    echo "  list                Show all bindings"
+                    echo "  list                Show all bindings (with cache status)"
+                    echo "  refresh VAR         Clear Keychain cache, re-fetch from 1Password"
+                    echo "  refresh --all       Refresh all cached secrets"
 
                 case '*'
                     echo "Unknown secret command: $argv[2]"
-                    echo "Usage: dotfiles secret <add|rm|list>"
+                    echo "Usage: dotfiles secret <add|rm|list|refresh>"
                     return 1
             end
 
@@ -459,10 +514,16 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 set issues (math $issues + 1)
             end
 
-            if string match -q "*/fish" $SHELL
-                echo "[ok] fish is default shell"
+            # Check the authoritative login shell from Directory Services, not $SHELL
+            # ($SHELL is inherited from the parent process and goes stale after chsh)
+            set -l login_shell (dscl . -read /Users/$USER UserShell 2>/dev/null | string replace 'UserShell: ' '')
+            if test -z "$login_shell"
+                set login_shell $SHELL  # fallback for non-macOS
+            end
+            if string match -q "*/fish" $login_shell
+                echo "[ok] fish is default shell ($login_shell)"
             else
-                echo "[!!] default shell is $SHELL (not fish)"
+                echo "[!!] default shell is $login_shell (not fish)"
                 set issues (math $issues + 1)
             end
 
@@ -521,12 +582,46 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 echo "[--] age encryption key: not set up (optional)"
             end
 
-            set -l drift_count (chezmoi diff --no-pager 2>/dev/null | grep '^diff' | wc -l | string trim)
+            # Count real drift: exclude " R " (always-run scripts, not actual file changes)
+            set -l drift_count (chezmoi status 2>/dev/null | grep -vcE '^ R ' | string trim)
             if test "$drift_count" -gt 0
                 echo "[!!] $drift_count file(s) have drifted from source"
                 set issues (math $issues + 1)
             else
                 echo "[ok] no drift detected"
+            end
+
+            # ── .local pattern integrity ──────────────────────────────
+            if chezmoi managed 2>/dev/null | grep -qE '(Brewfile\.local|\.local\.fish|tmux\.local\.conf|gitconfig\.local|extensions\.local\.txt)'
+                echo "[!!] .local files are being tracked by chezmoi (should be ignored)"
+                set issues (math $issues + 1)
+            else
+                echo "[ok] .local files correctly excluded from chezmoi"
+            end
+
+            if test -f ~/.Brewfile.local
+                if ruby -c ~/.Brewfile.local >/dev/null 2>&1
+                    echo "[ok] ~/.Brewfile.local is valid Ruby"
+                else
+                    echo "[!!] ~/.Brewfile.local has syntax errors"
+                    set issues (math $issues + 1)
+                end
+            end
+
+            set -l src (chezmoi source-path 2>/dev/null)
+            if test -n "$src"
+                set -l repo (dirname $src)
+                set -l leaked (git -C $repo log --all --pretty=format: --name-only 2>/dev/null \
+                    | grep -E '\.local($|\.|/)' | grep -v '^$' | sort -u)
+                if test -n "$leaked"
+                    echo "[!!] .local files found in git history:"
+                    for f in $leaked
+                        echo "     $f"
+                    end
+                    set issues (math $issues + 1)
+                else
+                    echo "[ok] no .local files leaked into git history"
+                end
             end
 
             echo ""
