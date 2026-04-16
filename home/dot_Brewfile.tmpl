@@ -168,12 +168,7 @@ cask "devutils"
 cask "gifski"
 cask "qbittorrent"
 cask "lume"                   # macOS VM manager
-cask "chrysalis"              # Keyboardio firmware flasher
-cask "disk-inventory-x"       # disk space analyzer
 cask "google-cloud-sdk"       # GCP CLI tools
-cask "lunar"                  # adaptive display brightness
-cask "monitorcontrol"         # external monitor brightness/volume
-cask "skype"
 cask "zen-browser"            # privacy-focused browser
 
 # ── Fonts ─────────────────────────────────────────────────────────────
@@ -183,6 +178,12 @@ cask "font-fira-code-nerd-font"
 cask "font-source-code-pro"
 cask "font-sauce-code-pro-nerd-font"
 {{ end -}}
+
+# ── Local overrides (machine-specific, not committed) ────────────────
+# Add machine-specific packages to ~/.Brewfile.local
+# This file is gitignored and not managed by chezmoi.
+local_brewfile = File.expand_path("~/.Brewfile.local")
+eval(File.read(local_brewfile), binding) if File.exist?(local_brewfile)
 
 # ── npm Global Tools ─────────────────────────────────────────────────
 # npm i -g ccusage markdownlint-cli2 npm-check-updates opencode-ai

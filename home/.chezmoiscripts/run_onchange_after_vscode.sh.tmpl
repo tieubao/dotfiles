@@ -44,6 +44,23 @@ if [ -n "$CODE_CMD" ]; then
         fi
     done < "${HOME}/.config/code/extensions.txt"
 
+    # Also install local extensions (machine-specific, not committed to repo)
+    LOCAL_EXT="${HOME}/.config/code/extensions.local.txt"
+    if [ -f "$LOCAL_EXT" ]; then
+        while IFS= read -r ext; do
+            [ -z "$ext" ] && continue
+            ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+            if ! echo "$installed" | grep -qx "$ext_lower"; then
+                if "$CODE_CMD" --install-extension "$ext" 2>/dev/null; then
+                    info "Installed (local): $ext"
+                else
+                    warn "VS Code: failed to install local ext $ext"
+                    failed=$((failed + 1))
+                fi
+            fi
+        done < "$LOCAL_EXT"
+    fi
+
     if [ "$failed" -gt 0 ]; then
         warn "VS Code: $failed extension(s) failed to install" \
              "Review warnings above for details." \

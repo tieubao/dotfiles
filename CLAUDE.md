@@ -56,6 +56,20 @@ Template variables are prompted once during `chezmoi init` and cached:
 - `.use_1password`  - boolean, gates all 1Password sections
 - `.op_account`, `.op_vault`  - only prompted if `use_1password` is true
 
+### Core vs local packages
+
+Packages are classified during `/dotfiles-sync`:
+- **Core** - shared across all machines, committed to `home/dot_Brewfile.tmpl`
+- **Local** - this machine only, stored in `~/.Brewfile.local` (never committed)
+
+`~/.Brewfile.local` is sourced by `~/.Brewfile` via Ruby `eval()`. It uses the
+same DSL (`brew "pkg"`, `cask "app"`). Similarly, `~/.config/code/extensions.local.txt`
+holds machine-specific VS Code extensions. Both `.local` files are listed in
+`.chezmoiignore` so chezmoi never manages them.
+
+The sync workflow asks the user to classify each new package as core, local, or skip.
+If the user says "do it all" without classifying, default to local.
+
 ### Script execution order
 
 Scripts in `.chezmoiscripts/` run during `chezmoi apply`:

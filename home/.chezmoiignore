@@ -19,6 +19,8 @@
 .DS_Store
 .Trash
 .cache
+.Brewfile.local
+.config/code/extensions.local.txt
 
 # Codespaces / CI — skip GUI-dependent configs
 {{- if env "CODESPACES" }}

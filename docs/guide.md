@@ -41,6 +41,35 @@ The manual commands in the sections below are fallbacks for when you're
 offline, SSH'd into a server, or want a quick one-off edit. You don't
 need to learn them to use this repo day-to-day.
 
+### Core vs local packages
+
+When syncing, Claude asks you to classify each new package:
+
+| Classification | Where it goes | Committed? | Installed on all machines? |
+|---------------|--------------|-----------|--------------------------|
+| **Core** | `~/.Brewfile` (from template) | Yes | Yes |
+| **Local** | `~/.Brewfile.local` | No | This machine only |
+| **Skip** | Nowhere | No | N/A |
+
+`~/.Brewfile.local` is automatically sourced by `~/.Brewfile` and uses
+the same syntax (`brew "pkg"`, `cask "app"`). It is never committed to
+git or managed by chezmoi. The same pattern works for VS Code extensions
+via `~/.config/code/extensions.local.txt`.
+
+**Examples of local packages:** hardware-specific tools (`chrysalis` for
+Keyboardio, `lunar` for display brightness), rarely-used apps (`skype`),
+disk utilities (`disk-inventory-x`).
+
+**Manual local management** (without `/dotfiles-sync`):
+```bash
+# Add a local package
+echo 'cask "some-app"' >> ~/.Brewfile.local
+brew bundle --file=~/.Brewfile
+
+# See what's local
+cat ~/.Brewfile.local
+```
+
 ---
 
 ## 2. How chezmoi works
