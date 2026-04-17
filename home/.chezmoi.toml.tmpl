@@ -3,6 +3,7 @@
 
 {{- $name := promptStringOnce . "name" "Full name (for git)" -}}
 {{- $email := promptStringOnce . "email" "Email address" -}}
+{{- $work_email_domains := promptStringOnce . "work_email_domains" "Work email domains (comma-separated, e.g. @d.foundation; leave blank if none)" -}}
 {{- $editor := promptChoiceOnce . "editor" "Default editor" (list "code --wait" "zed --wait" "nvim" "vim") -}}
 {{- $headless := promptBoolOnce . "headless" "Headless/server environment (skip GUI apps, dev tools)" -}}
 {{- $guardrails_variant := promptChoiceOnce . "guardrails_variant" "Claude-guardrails security variant" (list "lite" "full" "none") -}}
@@ -24,6 +25,7 @@
 [data]
   name = {{ $name | quote }}
   email = {{ $email | quote }}
+  work_email_domains = {{ $work_email_domains | quote }}
   editor = {{ $editor | quote }}
   headless = {{ $headless }}
   guardrails_variant = {{ $guardrails_variant | quote }}

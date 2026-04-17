@@ -37,9 +37,27 @@ during `chezmoi apply`, so it works from any directory in Claude Code,
 not just the dotfiles repo. If it's missing, run `chezmoi apply` to
 deploy it.
 
-The manual commands in the sections below are fallbacks for when you're
-offline, SSH'd into a server, or want a quick one-off edit. You don't
-need to learn them to use this repo day-to-day.
+### Free-form asks (beyond `/dotfiles-sync`)
+
+`/dotfiles-sync` is the batched scan-and-sync flow. For any single change,
+just describe it to Claude in plain language — Claude knows where each piece
+of the repo lives and will make the edit in the right place, apply, verify,
+and offer a commit:
+
+> "Add `ollama` to the Brewfile as local."
+>
+> "Rotate my OpenAI key — I just generated a new value."
+>
+> "Prefer Biome over Prettier+ESLint in my Claude tech stack rules."
+>
+> "Add an SSH host called `staging` pointing at 10.0.1.50."
+>
+> "Bump claude-guardrails to v0.3.9 and commit."
+
+This is usually faster than looking up the right file or command. The
+manual commands in the sections below are fallbacks for when Claude isn't
+available (offline, SSH'd into a server, quick one-off), or when you want
+to know what's actually happening under the hood.
 
 ### Core vs local packages
 
@@ -343,6 +361,7 @@ All subcommands have tab completions. Abbreviations expand on space (e.g. type `
 | 1Password secrets | `.chezmoidata/secrets.toml` | `dotfiles secret add VAR op://...` |
 | Claude Code security (guardrails) variant | `run_onchange_after_claude-guardrails.sh.tmpl` hash comment | edit + `chezmoi apply` |
 | Personal Claude settings.json fields | `home/dot_claude/modify_settings.json` | edit + `chezmoi apply` |
+| Personal Claude rules (`~/.claude/CLAUDE.md`) | `home/dot_claude/modify_CLAUDE.md.tmpl` | edit + `chezmoi apply` |
 
 ### Walkthrough: add a new fish function
 
@@ -510,6 +529,62 @@ idempotent.
 **Do not** re-create `home/dot_claude/settings.json` as a regular file.
 That path was abandoned in S-36 because it races with the guardrails
 installer - see `docs/specs/S-36-guardrails-as-managed-installer.md`.
+
+### Walkthrough: change your personal Claude Code rules
+
+**Goal:** add a new Tech stack preference, Security Rule, or behavioral
+guideline to `~/.claude/CLAUDE.md` so it applies to every Claude Code session
+on every machine.
+**File:** `home/dot_claude/modify_CLAUDE.md.tmpl`
+
+The file at `~/.claude/CLAUDE.md` has two regions separated by the marker
+`# --- END claude-context ---`:
+
+| Region | Owner | Sync behavior |
+|--------|-------|---------------|
+| **Above** the marker | Your personal context generator (auto-regenerated on this machine) | Machine-local; not in the repo |
+| **Below** the marker | `home/dot_claude/modify_CLAUDE.md.tmpl` (a chezmoi `modify_` script) | Same on every machine; committed |
+
+The `modify_` script is templated with chezmoi data. It reads `.email` and the
+optional `.work_email_domains` prompt (set during `chezmoi init`) and feeds
+them into the ownership-check line inside the rules, so the email list isn't
+hardcoded.
+
+**Do not hand-edit `~/.claude/CLAUDE.md` below the marker.** The modify
+script re-asserts the canonical content on every `chezmoi apply` — any
+manual edit to the deployed file is silently overwritten.
+
+**Recommended: ask Claude.** Open any Claude Code session and describe the
+change in plain language:
+
+> "Add a tech stack preference: prefer Biome over Prettier+ESLint."
+>
+> "Add a security rule: never deploy to production on a Friday."
+>
+> "Drop the mention of conda from the Python row — I don't care about it."
+
+Claude edits the template in the right place, runs `chezmoi apply`, verifies
+the rendered file matches, and offers a commit.
+
+**Manual alternative:**
+
+```fish
+chezmoi edit ~/.claude/CLAUDE.md     # opens modify_CLAUDE.md.tmpl (the source)
+# edit the content inside the <<'MARKDOWN' ... MARKDOWN heredoc
+chezmoi apply ~/.claude/CLAUDE.md    # re-runs the modify script
+dotfiles cd
+git add home/dot_claude/modify_CLAUDE.md.tmpl
+git commit -m "chore(claude): <what changed>"
+git push
+```
+
+**Detection.** `chezmoi diff ~/.claude/CLAUDE.md` is empty when the rendered
+file matches the template. Non-empty output means either the template
+changed (commit it) or someone hand-edited the deployed file (port the edit
+up into the template, then apply to re-sync).
+
+**Expected result:** the next Claude Code session on this Mac picks up the
+change immediately. Other machines get it after `git pull && chezmoi apply`.
 
 ---
 
