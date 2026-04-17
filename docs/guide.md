@@ -447,20 +447,23 @@ The change is auto-committed.
 
 ### Walkthrough: upgrade claude-guardrails
 
-**Goal:** pick up a new `claude-guardrails` release (e.g. 0.3.7 -> 0.3.8).
+**Goal:** pick up a new `claude-guardrails` release (e.g. v0.3.7 -> v0.3.8).
 **File:** `home/.chezmoiscripts/run_onchange_after_claude-guardrails.sh.tmpl`
 
-Version is pinned on purpose, so upgrades are deliberate. Edit two lines:
+The pin is a git tag from the claude-guardrails GitHub repo (not an npm
+version — the project does not publish every release to npm). Upgrades
+are deliberate. Edit two lines:
 
 ```bash
-# guardrails: variant={{ .guardrails_variant }} version=0.3.8
+# guardrails: variant={{ .guardrails_variant }} ref=v0.3.8
 ...
-VERSION="0.3.8"
+REF="v0.3.8"
 ```
 
+The tag must already exist upstream at `github.com/dwarvesf/claude-guardrails`.
 Commit and run `chezmoi apply`. The `run_onchange_` hash changes, the script
-fires, and `npx -y claude-guardrails@0.3.8 install <variant>` merges the
-new version into `~/.claude/settings.json`. Your personal overlay
+fires, and `npx -y github:dwarvesf/claude-guardrails#v0.3.8 install <variant>`
+merges the new version into `~/.claude/settings.json`. Your personal overlay
 (`modify_settings.json`) is unaffected.
 
 **Expected result:** `jq '."$schema", (.permissions.deny | length), (.hooks.PreToolUse | length)' ~/.claude/settings.json`

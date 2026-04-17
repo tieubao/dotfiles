@@ -12,7 +12,7 @@ date: 2026-04-17
 
 `~/.claude/settings.json` has two owners today, and they collide:
 
-1. **claude-guardrails** (installed via `npx claude-guardrails install`) owns the security layer: 21 deny rules, PreToolUse hooks (scan-commit, push guard, pipe-to-shell, rm-rf), the UserPromptSubmit scan-secrets hook, plus the critical `$schema` URL that Claude Code uses to validate the file.
+1. **claude-guardrails** (installed via `npx github:dwarvesf/claude-guardrails#<tag>`) owns the security layer: 21 deny rules, PreToolUse hooks (scan-commit, push guard, pipe-to-shell, rm-rf), the UserPromptSubmit scan-secrets hook, plus the critical `$schema` URL that Claude Code uses to validate the file.
 
 2. **This dotfiles repo** currently tries to own the whole file via `home/dot_claude/settings.json`. That copy is an older, hand-forked snapshot of guardrails lite that:
    - Has `"schema"` (wrong key, should be `$schema`) pointed at the pre-v0.3.5 URL. Claude Code silently discards any settings.json with that schema value. Any fresh machine running `chezmoi apply` from this repo gets zero active guardrails and no warning.
@@ -29,7 +29,7 @@ Vendoring the full guardrails bundle into the dotfiles repo is tempting but wors
 
 ## Solution
 
-Stop vendoring. Treat `~/.claude/settings.json` as a file chezmoi *patches* (not owns), with guardrails installed on a pinned version by a chezmoi-managed script.
+Stop vendoring. Treat `~/.claude/settings.json` as a file chezmoi *patches* (not owns), with guardrails installed on a pinned git tag by a chezmoi-managed script. Using a git tag (not an npm semver) is intentional: claude-guardrails is a small single-maintainer project and is not published to npm on every release. Pinning to `github:dwarvesf/claude-guardrails#vX.Y.Z` means every merge + tag push is immediately installable via `npx`, with no `npm publish` step in the release flow.
 
 ### A. Stop managing settings.json as a regular file
 
@@ -76,32 +76,27 @@ Values: `"lite"` (default), `"full"`, `"none"`. Prompted on `chezmoi init` along
 ### C. New script: `home/.chezmoiscripts/run_onchange_after_claude-guardrails.sh.tmpl`
 
 ```bash
-#!/usr/bin/env bash
-# hash: {{ printf "variant=%s version=%s" .guardrails_variant "0.3.7" }}
-#
-# Installs or upgrades claude-guardrails on this machine. Runs only when
-# the pinned version or variant changes. Uses npx so there's nothing to
-# clone or cache manually.
-set -euo pipefail
-
-{{- if or (eq .guardrails_variant "none") .headless }}
-echo "guardrails: skipped (variant=none or headless)"
+#!/bin/bash
+# guardrails: variant={{ .guardrails_variant }} ref=v0.3.7
+{{ if or .headless (eq .guardrails_variant "none") }}
 exit 0
-{{- end }}
+{{ end }}
+
+set -eo pipefail
 
 VARIANT="{{ .guardrails_variant }}"
-VERSION="0.3.7"
+REF="v0.3.7"
+REPO="github:dwarvesf/claude-guardrails"
 
 if ! command -v npx >/dev/null 2>&1; then
-  echo "guardrails: npx not found; install node first" >&2
-  exit 1
+  echo "guardrails: npx not found; brew install node" >&2
+  exit 0
 fi
 
-echo "guardrails: installing claude-guardrails@${VERSION} (${VARIANT})"
-npx -y "claude-guardrails@${VERSION}" install "${VARIANT}"
+npx --yes "${REPO}#${REF}" install "${VARIANT}"
 ```
 
-Hash comment pins `variant=X version=Y`. Chezmoi re-runs the script whenever either changes. Bumping guardrails = edit one line in this script + commit.
+Hash comment pins `variant=X ref=v0.Y.Z`. Chezmoi re-runs the script whenever either changes. Bumping guardrails = edit the two `v0.3.7` strings in this script + commit. The tag must exist in the upstream repo (a release flow artifact, not an npm one).
 
 ### D. Apply order (no conflicts)
 
@@ -109,7 +104,7 @@ Chezmoi execution order is documented in `CLAUDE.md`:
 
 1. `run_before_*` scripts (unchanged).
 2. Regular files deployed, **including `modify_settings.json.tmpl`** — runs against the currently-live file.
-3. `run_once_after_*` and `run_onchange_after_*` — `claude-guardrails.sh` fires here if variant/version changed. Its install.sh merges guardrails on top of whatever settings.json now contains.
+3. `run_once_after_*` and `run_onchange_after_*` — `claude-guardrails.sh` fires here if variant/ref changed. `npx` clones the tagged tree and runs its `install.sh`, which merges guardrails on top of whatever settings.json now contains.
 4. `run_after_zz-summary.sh`.
 
 On a fresh machine:
@@ -119,7 +114,7 @@ On a fresh machine:
 
 On every subsequent apply:
 - Step 2: modify script patches personal fields into the live (already-merged) file. Idempotent.
-- Step 3: no-op unless version/variant changed.
+- Step 3: no-op unless ref/variant changed.
 
 No ordering race because the modify script and the installer both use additive jq merges.
 
@@ -140,6 +135,7 @@ Rollback: revert the commit, run `chezmoi apply`. The old `home/dot_claude/setti
 | Risk | Mitigation |
 |------|-----------|
 | npx needs network on first apply | Acceptable: fresh-machine bootstrap already requires network for brew/mas/fish plugins. |
+| npx clones the repo each install (slower than a cached npm tarball) | Acceptable: install runs only on ref/variant change, not every apply. Sub-second on typical connections. |
 | Guardrails upstream breaking change | Version is pinned; bumping is a deliberate edit. |
 | `modify_` script bug corrupts settings.json | Chezmoi stages changes to a tempfile and only moves on success. Add a jq syntax check at the top of the script as defense. |
 | User edits settings.json manually between applies | Personal fields survive (modify merges additively). Fields outside the personal set and the guardrails set are left alone by both layers. |
@@ -162,4 +158,5 @@ Rollback: revert the commit, run `chezmoi apply`. The old `home/dot_claude/setti
 
 - Bootstrapping `install.sh` in this dotfiles repo to run guardrails install directly (redundant with the chezmoi script, and install.sh is meant to be pre-chezmoi).
 - `~/.claude/CLAUDE.md` management — the guardrails "Security Rules" section is already there; personal content dominates the file. Leave unmanaged for now.
-- The `schema-remediation` notice from guardrails 0.3.6. The pinned-version approach already sidesteps it (we start from 0.3.7).
+- The `schema-remediation` notice from guardrails 0.3.6. The pinned-ref approach already sidesteps it (we start from v0.3.7).
+- Surfacing new upstream releases in the sync workflow. Done separately in S-37.
