@@ -68,6 +68,24 @@ comm -23 <(ls ~/.ssh/config.d/ 2>/dev/null | sort) <(chezmoi managed | grep 'ssh
 grep -n 'set -gx.*[A-Za-z0-9_]\{20,\}' ~/.config/fish/config.fish ~/.config/fish/conf.d/*.fish 2>/dev/null | grep -v 'onepasswordRead\|op://' || true
 ```
 
+### Claude-guardrails upstream release (notify-only)
+```bash
+# Compare the pinned git tag in the onchange script against the most
+# recent tag on dwarvesf/claude-guardrails. Purely informational: this
+# check never auto-bumps. Uses tags (not GitHub Releases) because the
+# project tags every version but does not always create a Release entry.
+# Fail silent if the user opted out, gh is missing, or network is
+# unavailable -- do not block the rest of the sync.
+VARIANT=$(grep -oE 'guardrails_variant = "[^"]+"' ~/.config/chezmoi/chezmoi.toml 2>/dev/null | cut -d'"' -f2)
+if [ "$VARIANT" != "none" ] && command -v gh >/dev/null 2>&1; then
+  PINNED=$(grep -oE '^REF="v[0-9.]+"' home/.chezmoiscripts/run_onchange_after_claude-guardrails.sh.tmpl 2>/dev/null | cut -d'"' -f2)
+  LATEST=$(gh api repos/dwarvesf/claude-guardrails/tags --jq '.[0].name' 2>/dev/null)
+  if [ -n "$PINNED" ] && [ -n "$LATEST" ] && [ "$PINNED" != "$LATEST" ]; then
+    echo "guardrails: pinned=$PINNED, latest=$LATEST"
+  fi
+fi
+```
+
 ### Already-local overrides
 ```bash
 # Show what's in .local files for context
@@ -111,6 +129,11 @@ Already local (tracked in .local files):
 Tip: to move items between core and local, use:
   dotfiles local promote <type> <name>   # local → core
   dotfiles local demote <type> <name>    # core → local
+
+Guardrails upgrade available (optional):
+  Pinned: v<pinned>    Latest: v<latest>
+  Release notes: https://github.com/dwarvesf/claude-guardrails/releases/tag/v<latest>
+  (Notification only; the pin is not auto-updated. Say "bump guardrails" if you want me to update it.)
 
 Stale entries (N brew, N casks):
   Brew: pkg1, pkg2, ... (in Brewfile but not installed)
@@ -175,6 +198,7 @@ Based on the user's decisions:
 | Track fish functions | `chezmoi add ~/.config/fish/functions/NAME.fish` |
 | Track SSH configs | `chezmoi add ~/.ssh/config.d/NAME` |
 | Register secrets | Append to `home/.chezmoidata/secrets.toml` |
+| Bump guardrails pin | Replace both `v<old>` occurrences (the `REF="v..."` line and the `ref=v...` hash comment) in `home/.chezmoiscripts/run_onchange_after_claude-guardrails.sh.tmpl` with `v<new>`. Do NOT auto-apply; the user should run `chezmoi apply` after reviewing the release notes. |
 
 When editing the Brewfile, preserve the existing section structure (base/dev/apps). Place new entries in the appropriate section.
 
