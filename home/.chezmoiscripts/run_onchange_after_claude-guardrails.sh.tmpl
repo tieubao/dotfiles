@@ -1,0 +1,46 @@
+#!/bin/bash
+# Install or upgrade claude-guardrails via npx. Re-runs only when the
+# pinned version or the .guardrails_variant chezmoi variable changes
+# (chezmoi re-hashes this file after template render, hash comment below
+# is what makes that detection work).
+#
+# Runtime contract: npx fetches the published package from npm and runs
+# its install.sh against ~/.claude/settings.json. install.sh merges
+# guardrails deny rules and hooks additively; personal fields managed by
+# home/dot_claude/modify_settings.json survive the merge.
+#
+# Skipped when headless (no interactive Claude Code) or when the user
+# opted out with .guardrails_variant = "none".
+#
+# guardrails: variant={{ .guardrails_variant }} version=0.3.7
+{{ if or .headless (eq .guardrails_variant "none") }}
+exit 0
+{{ end }}
+
+set -eo pipefail
+
+LIB="$HOME/.config/dotfiles/lib.sh"
+# shellcheck source=/dev/null
+[ -f "$LIB" ] && source "$LIB" || { echo "dotfiles lib not found"; exit 1; }
+
+VARIANT="{{ .guardrails_variant }}"
+VERSION="0.3.7"
+
+section "Installing claude-guardrails@${VERSION} (${VARIANT})"
+
+if ! command -v npx >/dev/null 2>&1; then
+    warn "claude-guardrails: npx not found" \
+         "Node/npm is required to install guardrails from the npm registry." \
+         "brew install node"
+    exit 0
+fi
+
+# --yes auto-accepts the download prompt; stderr captured so we only
+# surface failures (npx prints progress to stderr under normal operation).
+if npx --yes "claude-guardrails@${VERSION}" install "${VARIANT}"; then
+    script_ok "claude-guardrails"
+else
+    warn "claude-guardrails: install failed" \
+         "The scanner and deny rules may be stale or absent." \
+         "npx --yes claude-guardrails@${VERSION} install ${VARIANT}"
+fi

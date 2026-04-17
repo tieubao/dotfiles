@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Personal overlay for ~/.claude/settings.json.
+#
+# chezmoi invokes this script as a `modify_` source: current target on
+# stdin, new target on stdout. Runs every `chezmoi apply`.
+#
+# Scope: guarantees personal fields are present (statusLine, the learning-
+# capture Stop hook, enabled plugins, skipDangerousModePermissionPrompt).
+# Deliberately DOES NOT touch $schema, permissions.deny, hooks.PreToolUse,
+# or hooks.UserPromptSubmit -- those are owned by claude-guardrails and
+# installed by the sibling run_onchange_after_claude-guardrails.sh script.
+#
+# Idempotent: running multiple times yields the same result. The Stop hook
+# is de-duplicated by marker string ("LEARNING CAPTURE CHECK") so user-
+# added Stop hooks survive and our entry stays single.
+set -euo pipefail
+
+INPUT="$(cat)"
+# Fail-open to empty object so a corrupt/new settings.json still gets
+# our personal fields instead of a jq error + empty output.
+if ! echo "$INPUT" | jq -e . >/dev/null 2>&1; then
+    INPUT='{}'
+fi
+
+LEARNING_HOOK_CMD='echo '"'"'{"decision":"approve","reason":"LEARNING CAPTURE CHECK: Did you just explain a root cause, make a non-obvious architectural decision, identify a pattern, or break a debugging spiral? If yes, suggest capturing it. If no, carry on."}'"'"''
+
+echo "$INPUT" | jq --arg learning_cmd "$LEARNING_HOOK_CMD" '
+    . as $existing |
+    $existing + {
+        enableAllProjectMcpServers: ($existing.enableAllProjectMcpServers // false),
+        skipDangerousModePermissionPrompt: ($existing.skipDangerousModePermissionPrompt // true),
+        statusLine: ($existing.statusLine // {
+            type: "command",
+            command: "bash ~/.claude/statusline-command.sh"
+        }),
+        enabledPlugins: (($existing.enabledPlugins // {}) + {
+            "ouroboros@ouroboros": true,
+            "telegram@claude-plugins-official": true
+        }),
+        extraKnownMarketplaces: (($existing.extraKnownMarketplaces // {}) + {
+            "ouroboros": {source: {source: "github", repo: "Q00/ouroboros"}},
+            "claude-plugins-official": {source: {source: "github", repo: "anthropics/claude-plugins-official"}}
+        })
+    }
+    | .hooks = ((.hooks // {}) + {
+        Stop: (
+            ((.hooks.Stop // []) | map(select(
+                (.hooks // []) | map(.command // "" | contains("LEARNING CAPTURE CHECK")) | any | not
+            ))) + [{hooks: [{type: "command", command: $learning_cmd, timeout: 5}]}]
+        )
+    })
+'
