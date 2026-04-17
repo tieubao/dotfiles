@@ -55,6 +55,7 @@ jobs:
             email = "ci@test.com"
             editor = "vim"
             headless = true
+            guardrails_variant = "none"
             use_1password = false
             op_account = ""
             op_vault = ""
