@@ -154,7 +154,11 @@ The ignore file is itself a Go template. macOS-only configs (Ghostty, Zed, Brewf
 - **`.claude/settings.json`**  - project-level permissions (allow lint/verify, deny destructive) + PostToolUse hook that auto-runs shellcheck on `.sh` and `fish -n` on `.fish` after every edit.
 - **`.claude/agents/verify-dotfiles.md`**  - QA subagent. Runs 5 checks: shellcheck, fish syntax, chezmoi dry-run, file existence, managed file count. Use proactively after implementing any feature.
 - **`.claude/commands/implement-feature.md`**  - Slash command: `/implement-feature S-24` reads the spec, implements, verifies via subagent, fixes, commits.
-- **`home/dot_claude/`**  - chezmoi-managed Claude Code user config (settings.json, keybindings.json, statusline script). Deployed to `~/.claude/` on apply. Skipped on headless/Codespaces.
+- **`home/dot_claude/`**  - chezmoi-managed Claude Code user config (keybindings.json, statusline script, commands/). Deployed to `~/.claude/` on apply. Skipped on headless/Codespaces.
+- **`~/.claude/settings.json`** is a two-layer construction (S-36):
+  1. **Security layer** - owned by [claude-guardrails](https://github.com/dwarvesf/claude-guardrails). Installed via `home/.chezmoiscripts/run_onchange_after_claude-guardrails.sh.tmpl`, which runs `npx -y claude-guardrails@VERSION install <variant>`. Version is pinned in that script's hash comment; bumping the `VERSION="..."` line is the only way to upgrade, by design. Variant prompted on `chezmoi init` as `.guardrails_variant` (`lite` | `full` | `none`).
+  2. **Personal overlay** - `home/dot_claude/modify_settings.json` (a chezmoi `modify_` script). Reads the live file on stdin, guarantees personal fields (statusLine, learning-capture Stop hook, enabledPlugins, skipDangerousModePermissionPrompt) are present, emits on stdout. Never touches `$schema`, `permissions.deny`, `hooks.PreToolUse`, or `hooks.UserPromptSubmit` - those are the guardrails layer's job.
+  Both layers use additive jq merges, so they are idempotent and order-independent. Do NOT convert `modify_settings.json` back to a regular file - that would re-introduce the "whole file owned by dotfiles" conflict S-36 fixed.
 
 ## Verification rules
 
