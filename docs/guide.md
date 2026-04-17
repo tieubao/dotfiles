@@ -341,6 +341,8 @@ All subcommands have tab completions. Abbreviations expand on space (e.g. type `
 | Fish plugins | `.chezmoiexternal.toml` | edit + `chezmoi apply --refresh-externals` |
 | Setup answers | `~/.config/chezmoi/chezmoi.toml` | `chezmoi init` |
 | 1Password secrets | `.chezmoidata/secrets.toml` | `dotfiles secret add VAR op://...` |
+| Claude Code security (guardrails) variant | `run_onchange_after_claude-guardrails.sh.tmpl` hash comment | edit + `chezmoi apply` |
+| Personal Claude settings.json fields | `home/dot_claude/modify_settings.json` | edit + `chezmoi apply` |
 
 ### Walkthrough: add a new fish function
 
@@ -442,6 +444,72 @@ Save and close.
 **Expected result:** `ssh staging` connects to 10.0.1.50. The main
 `~/.ssh/config` includes everything in `config.d/` via `Include config.d/*`.
 The change is auto-committed.
+
+### Walkthrough: upgrade claude-guardrails
+
+**Goal:** pick up a new `claude-guardrails` release (e.g. v0.3.7 -> v0.3.8).
+**File:** `home/.chezmoiscripts/run_onchange_after_claude-guardrails.sh.tmpl`
+
+The pin is a git tag from the claude-guardrails GitHub repo (not an npm
+version — the project does not publish every release to npm). Upgrades
+are deliberate. Edit two lines:
+
+```bash
+# guardrails: variant={{ .guardrails_variant }} ref=v0.3.8
+...
+REF="v0.3.8"
+```
+
+The tag must already exist upstream at `github.com/dwarvesf/claude-guardrails`.
+Commit and run `chezmoi apply`. The `run_onchange_` hash changes, the script
+fires, and `npx -y github:dwarvesf/claude-guardrails#v0.3.8 install <variant>`
+merges the new version into `~/.claude/settings.json`. Your personal overlay
+(`modify_settings.json`) is unaffected.
+
+**Expected result:** `jq '."$schema", (.permissions.deny | length), (.hooks.PreToolUse | length)' ~/.claude/settings.json`
+shows the current schemastore URL, 21 deny rules (lite) or 40 (full),
+and the expected hook count for the variant.
+
+### Walkthrough: change the guardrails variant (or disable it)
+
+**Goal:** switch from `lite` to `full`, or opt a headless box out entirely.
+**File:** `~/.config/chezmoi/chezmoi.toml`
+
+```toml
+[data]
+  guardrails_variant = "full"   # or "lite" or "none"
+```
+
+Run `chezmoi apply`. On `none`, the install script exits early and no
+guardrails are written; existing security fields in `~/.claude/settings.json`
+will stay until you remove them by hand (uninstall is not automatic, by
+design - silent removal of security is a bigger risk than leftover state).
+
+### Walkthrough: add a personal Claude Code setting
+
+**Goal:** add a new field to `~/.claude/settings.json` that should exist on
+every machine without going into claude-guardrails.
+**File:** `home/dot_claude/modify_settings.json`
+
+The file is a bash+jq script that runs on every `chezmoi apply`. It reads
+the live file on stdin and emits a patched version. To add a field, extend
+the first jq merge object:
+
+```jq
+$existing + {
+    yourNewField: ($existing.yourNewField // "default value"),
+    ...
+}
+```
+
+The `//` operator keeps any existing value on the machine, only falling
+back to the default. For hooks, follow the Stop-hook pattern already in
+the script (filter by marker string + append) so repeated applies stay
+idempotent.
+
+**Do not** re-create `home/dot_claude/settings.json` as a regular file.
+That path was abandoned in S-36 because it races with the guardrails
+installer - see `docs/specs/S-36-guardrails-as-managed-installer.md`.
 
 ---
 
@@ -645,6 +713,42 @@ dotfiles bench
 
 Common causes: 1Password CLI calls on every shell (move to auto-loaded
 secrets), too many PATH additions, slow network for async prompt.
+
+### "Claude Code blocked my prompt" (guardrails false positive)
+
+The `claude-guardrails` prompt scanner saw something that matched a
+secret pattern. The stderr message shows which pattern hit.
+
+Most common causes and fixes:
+
+| Pattern | Likely trigger | Fix |
+|---------|---------------|-----|
+| `BIP39 mnemonic` | 12+ consecutive words all in the BIP39 wordlist (rare in prose, near-zero FP rate after 0.3.7) | Rephrase. Check `~/.claude/hooks/patterns/bip39-english.txt`. |
+| `Secret-like variable assignment` | A sentence containing `api_key = something-16-chars-plus` or similar | Rephrase without the literal pattern. |
+| `Hex private key (64 chars)` | Git commit SHA pasted (sha256 is 64 hex chars) | Rephrase; git short SHAs (7-10 chars) are safe. |
+
+If a real credential triggered the block: it was **not** sent to the
+model, but you should still rotate it on the upstream service because
+the prompt may already be in your shell history / clipboard / editor
+undo buffer. The pattern files at `~/.claude/hooks/patterns/` are
+installed by claude-guardrails; do not hand-edit them (they will be
+overwritten on next upgrade). File an issue upstream if a pattern
+consistently false-positives.
+
+### "Claude Code has no security hooks / `$schema` warning"
+
+Guardrails isn't active on this machine. Check in order:
+
+1. `jq '."$schema"' ~/.claude/settings.json` - must be
+   `https://json.schemastore.org/claude-code-settings.json`. Any other
+   value (especially `https://claude.ai/schemas/...`) means Claude Code
+   silently discards the file.
+2. `jq '.guardrails_variant' ~/.config/chezmoi/chezmoi.toml` (should be
+   `"lite"`, `"full"`, or `"none"`). If missing, re-run `chezmoi init`.
+3. Re-run `chezmoi apply` - the `run_onchange_after_claude-guardrails.sh`
+   script should fire. If it doesn't, check `~/.cache/dotfiles-apply.log`
+   for errors.
+4. Fallback: `npx -y claude-guardrails@latest install lite` directly.
 
 ### Nuclear options
 

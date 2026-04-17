@@ -1,0 +1,61 @@
+{{- $e := printf "%c" 27 -}}
+{{- if not (hasKey . "guardrails_variant") -}}
+{{-   fail (printf "\n\n%s[38;5;204m  ✗ Missing config variable: guardrails_variant%s[0m\n    Run: %s[38;5;78mchezmoi init%s[0m\n" $e $e $e $e) -}}
+{{- end -}}
+{{- if not (hasKey . "headless") -}}
+{{-   fail (printf "\n\n%s[38;5;204m  ✗ Missing config variable: headless%s[0m\n    Run: %s[38;5;78mchezmoi init%s[0m\n" $e $e $e $e) -}}
+{{- end -}}
+#!/bin/bash
+# Install or upgrade claude-guardrails via npx, pinned to a git tag in
+# the dwarvesf/claude-guardrails GitHub repo. Re-runs only when the
+# pinned tag or the .guardrails_variant chezmoi variable changes
+# (chezmoi re-hashes this file after template render; the hash comment
+# below is what makes that detection work).
+#
+# Why git ref, not npm version: claude-guardrails is small and does not
+# publish every release to npm. Pinning to a git tag means every PR
+# merge plus tag push is immediately installable, with no npm publish
+# step. The trade-off is npx re-clones on each install (acceptable for
+# a rare operation).
+#
+# Runtime contract: npx fetches the tarball at the tag, then runs the
+# package's install.sh against ~/.claude/settings.json. install.sh
+# merges guardrails deny rules and hooks additively; personal fields
+# managed by home/dot_claude/modify_settings.json survive the merge.
+#
+# Skipped when headless (no interactive Claude Code) or when the user
+# opted out with .guardrails_variant = "none".
+#
+# guardrails: variant={{ .guardrails_variant }} ref=v0.3.7
+{{ if or .headless (eq .guardrails_variant "none") }}
+exit 0
+{{ end }}
+
+set -eo pipefail
+
+LIB="$HOME/.config/dotfiles/lib.sh"
+# shellcheck source=/dev/null
+[ -f "$LIB" ] && source "$LIB" || { echo "dotfiles lib not found"; exit 1; }
+
+VARIANT="{{ .guardrails_variant }}"
+REF="v0.3.7"
+REPO="github:dwarvesf/claude-guardrails"
+
+section "Installing claude-guardrails@${REF} (${VARIANT})"
+
+if ! command -v npx >/dev/null 2>&1; then
+    warn "claude-guardrails: npx not found" \
+         "Node is required to install guardrails from the GitHub repo." \
+         "brew install node"
+    exit 0
+fi
+
+# --yes auto-accepts the download prompt. The "${REPO}#${REF}" form makes
+# npx clone the tag directly; no npm registry round-trip.
+if npx --yes "${REPO}#${REF}" install "${VARIANT}"; then
+    script_ok "claude-guardrails"
+else
+    warn "claude-guardrails: install failed" \
+         "The scanner and deny rules may be stale or absent." \
+         "npx --yes ${REPO}#${REF} install ${VARIANT}"
+fi

@@ -5,6 +5,7 @@
 {{- $email := promptStringOnce . "email" "Email address" -}}
 {{- $editor := promptChoiceOnce . "editor" "Default editor" (list "code --wait" "zed --wait" "nvim" "vim") -}}
 {{- $headless := promptBoolOnce . "headless" "Headless/server environment (skip GUI apps, dev tools)" -}}
+{{- $guardrails_variant := promptChoiceOnce . "guardrails_variant" "Claude-guardrails security variant" (list "lite" "full" "none") -}}
 {{- $use_1password := promptBoolOnce . "use_1password" "Use 1Password for secrets" -}}
 {{- $op_account := "" -}}
 {{- $op_vault := "" -}}
@@ -25,6 +26,7 @@
   email = {{ $email | quote }}
   editor = {{ $editor | quote }}
   headless = {{ $headless }}
+  guardrails_variant = {{ $guardrails_variant | quote }}
   use_1password = {{ $use_1password }}
   op_account = {{ $op_account | quote }}
   op_vault = {{ $op_vault | quote }}
