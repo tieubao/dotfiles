@@ -464,6 +464,86 @@ Save and close.
 `~/.ssh/config` includes everything in `config.d/` via `Include config.d/*`.
 The change is auto-committed.
 
+### Walkthrough: back up your SSH keys
+
+**Goal:** make sure no SSH private key exists on only one machine, and keep
+an offline escape hatch in case 1Password is ever unavailable.
+
+**Tools:** `dotfiles ssh audit`, `dotfiles ssh adopt`, `dotfiles ssh backup`.
+Requires `op` signed in. Backup additionally requires `age` and
+`~/.config/chezmoi/key.txt`.
+
+**Step 1. See what you have.**
+
+```fish
+dotfiles ssh audit
+```
+
+The output shows four sections: on-disk keys, agent keys, 1P SSH items, and
+a backup-status summary. Any `⚠ adopt` or `⚠ plaintext` flag means the key
+is on disk only. A `⚠ weak` or `⚠ old` flag is a rotation hint, not a
+backup concern.
+
+**Step 2. Adopt each disk key into 1Password.**
+
+```fish
+dotfiles ssh adopt ~/.ssh/id_ed25519_trading_vps
+```
+
+The tool derives the fingerprint, checks 1P for a matching key (idempotent
+if already adopted), confirms once, then creates an `SSH Key` item. The
+on-disk file is not touched. After adoption, the 1P SSH agent serves the
+key automatically.
+
+**Step 3. Investigate unknown-usage keys before retiring.**
+
+A disk key you no longer remember using is not safe to delete. Before
+removing the disk copy, confirm it is unused:
+
+```fish
+# Which hosts trust this public key?
+for host in $KNOWN_HOSTS_YOU_CAN_REACH
+    ssh $host "grep -l '$(cat ~/.ssh/id_rsa.pub | awk '{print $2}')' ~/.ssh/authorized_keys 2>/dev/null"
+end
+
+# Which key does an existing SSH session offer?
+ssh -v $host 2>&1 | grep -i 'offering\|identity file'
+
+# Check remote SSH key lists (browser)
+#   GitHub    https://github.com/settings/keys
+#   GitLab    https://gitlab.com/-/user_settings/ssh_keys
+#   Bitbucket https://bitbucket.org/account/settings/ssh-keys/
+#   VPS vendor / cloud provider panels
+```
+
+After adoption, keep the disk copy for 3 months and re-run `dotfiles ssh
+audit` monthly. If nothing surfaces, move the file to `~/.Trash/` and
+re-audit.
+
+**Step 4. Write an offline escape hatch (quarterly).**
+
+Plug in a USB drive, then:
+
+```fish
+dotfiles ssh backup --destination /Volumes/Backup
+```
+
+Produces `/Volumes/Backup/ssh-keys-YYYY-MM-DD.age`, encrypted to the same
+age recipient used for `chezmoi`-encrypted files. Label the drive and store
+it somewhere you can physically reach if 1Password is lost.
+
+**Step 5. Restore drill (do this once so you know it works).**
+
+On any machine with your age key available:
+
+```fish
+age --decrypt -i ~/.config/chezmoi/key.txt /Volumes/Backup/ssh-keys-YYYY-MM-DD.age
+```
+
+Output is the plaintext bundle. Confirm it contains `=== BEGIN KEY` blocks
+for every key you expect. Then close the terminal without saving the
+output to disk.
+
 ### Walkthrough: upgrade claude-guardrails
 
 **Goal:** pick up a new `claude-guardrails` release (e.g. v0.3.7 -> v0.3.8).
