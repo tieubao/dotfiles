@@ -203,3 +203,18 @@ test $(chezmoi managed | wc -l) -gt 10 || echo "FAIL: too few managed files"
 - Commit message: `feat(S-XX): short description`
 - Do NOT batch multiple features into one commit
 - Run verification BEFORE committing, not after
+
+### Branch naming
+
+Format: `<type>/<short-slug>`
+
+- `<type>`: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `ingest` (conventional-commit vocabulary)
+- `<short-slug>`: 2-5 kebab-case words
+
+Rules:
+- NO owner/handle prefix (e.g. `tieubao/...`). Author is already recorded in git metadata.
+- NO spec IDs in the branch name. `S-XX` belongs in the commit message and PR body, not the branch. Good: `feat/guardrails-installer`. Bad: `feat/s-36-guardrails-managed-installer`.
+- NO dates, except for branches that ARE a dated batch (daily ingests: `ingest/2026-04-22`).
+- Target 20-30 chars, hard cap 40. Kebab-case only.
+
+Good examples from this repo: `feat/wireguard-tunnel-fish-functions`, `fix/no-em-dashes`, `docs/suggest-dotfiles-sync`, `feat/claude-md-personal-overlay`.
