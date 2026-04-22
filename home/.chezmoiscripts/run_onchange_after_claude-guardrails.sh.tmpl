@@ -59,3 +59,25 @@ else
          "The scanner and deny rules may be stale or absent." \
          "npx --yes ${REPO}#${REF} install ${VARIANT}"
 fi
+
+# Post-install override: strip the "git push to protected branch" block hook
+# that guardrails installs. Solo-worker workflow; the sibling "solo-worker
+# mode" warn hook from home/dot_claude/modify_settings.json stays in place,
+# so a visible reminder still fires on push. This patch runs AFTER guardrails
+# install (same script), so the block is removed from the final file state.
+SETTINGS="$HOME/.claude/settings.json"
+if [ -f "$SETTINGS" ] && command -v jq >/dev/null 2>&1; then
+    TMP="$(mktemp)"
+    if jq '
+        .hooks.PreToolUse = ((.hooks.PreToolUse // []) | map(select(
+            (.hooks // []) | map(.command // "" | contains("BLOCKED: Direct push to protected branch")) | any | not
+        )))
+    ' "$SETTINGS" > "$TMP" && [ -s "$TMP" ]; then
+        mv "$TMP" "$SETTINGS"
+    else
+        rm -f "$TMP"
+        warn "claude push-hook patch failed" \
+             "Could not strip the git-push block from settings.json." \
+             "Inspect ~/.claude/settings.json and remove the BLOCKED entry manually."
+    fi
+fi

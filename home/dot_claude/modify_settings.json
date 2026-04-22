@@ -17,10 +17,13 @@
 # survives untouched.
 #
 # Managed PreToolUse hooks (each keyed by unique marker in its command):
-#   "BLOCKED: Direct push to protected branch"   -- block git push main/master/prod
 #   "solo-worker mode"                           -- soft-warn git push to protected
 #   "BLOCKED: Pipe-to-shell detected"            -- block curl|wget | bash/sh/zsh
 #   "BLOCKED: Destructive delete"                -- block rm -rf /|~|$HOME
+#
+# Note: `git push` to main/master/production is intentionally only a warning,
+# not a block. Solo workflow -- PR gating is not needed here.
+# The dedup list still strips any previously installed block hook on apply.
 #
 # Idempotent: running multiple times yields the same result. Each managed
 # hook is de-duplicated by its marker string so user-added siblings survive
@@ -36,14 +39,8 @@ fi
 
 LEARNING_HOOK_CMD='echo '"'"'{"decision":"approve","reason":"LEARNING CAPTURE CHECK: Did you just explain a root cause, make a non-obvious architectural decision, identify a pattern, or break a debugging spiral? If yes, suggest capturing it. If no, carry on."}'"'"''
 
-# Block direct `git push` to main/master/production. Regex uses boundary
-# chars to avoid matching e.g. `git push-something-main`. Marker string
-# "BLOCKED: Direct push to protected branch" is what the overlay dedups on.
-GIT_PUSH_BLOCK_CMD='bash -c '"'"'CMD=$(cat | jq -r ".tool_input.command // empty"); if echo "$CMD" | grep -qEi "(^|[&|;(])[[:space:]]*git[[:space:]]+push[[:space:]]+.*\b(main|master|production)([[:space:];|&)]|$)"; then echo "BLOCKED: Direct push to protected branch. Use a feature branch and PR." >&2; exit 2; fi'"'"''
-
 # Soft-warn on `git push` to protected branches (non-blocking, systemMessage).
-# Kept alongside the hard BLOCK for cases where the BLOCK regex does not
-# match but the loose one does. Marker: "solo-worker mode".
+# Solo-worker workflow: visible reminder, no hard block. Marker: "solo-worker mode".
 GIT_PUSH_WARN_CMD='bash -c '"'"'CMD=$(cat | jq -r ".tool_input.command // empty"); if echo "$CMD" | grep -qEi "git[[:space:]]+push[[:space:]].*\b(main|master|production)\b"; then echo "{\"systemMessage\":\"Warning: direct push to protected branch. Continuing (solo-worker mode).\"}"; fi'"'"''
 
 # Block curl|wget piped into a shell. Marker: "BLOCKED: Pipe-to-shell detected".
@@ -54,7 +51,6 @@ RM_RF_BLOCK_CMD='bash -c '"'"'CMD=$(cat | jq -r ".tool_input.command // empty");
 
 echo "$INPUT" | jq \
     --arg learning_cmd "$LEARNING_HOOK_CMD" \
-    --arg git_push_block_cmd "$GIT_PUSH_BLOCK_CMD" \
     --arg git_push_warn_cmd "$GIT_PUSH_WARN_CMD" \
     --arg pipe_shell_block_cmd "$PIPE_SHELL_BLOCK_CMD" \
     --arg rm_rf_block_cmd "$RM_RF_BLOCK_CMD" '
@@ -90,7 +86,6 @@ echo "$INPUT" | jq \
                     ($c | contains("BLOCKED: Destructive delete"))
                 ) | any | not
             ))) + [
-                {matcher: "Bash", hooks: [{type: "command", command: $git_push_block_cmd}]},
                 {matcher: "Bash", hooks: [{type: "command", command: $git_push_warn_cmd}]},
                 {matcher: "Bash", hooks: [{type: "command", command: $pipe_shell_block_cmd}]},
                 {matcher: "Bash", hooks: [{type: "command", command: $rm_rf_block_cmd}]}
