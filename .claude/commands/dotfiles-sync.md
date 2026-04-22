@@ -62,6 +62,25 @@ comm -23 <(ls ~/.config/fish/functions/ 2>/dev/null | sort) <(chezmoi managed | 
 comm -23 <(ls ~/.ssh/config.d/ 2>/dev/null | sort) <(chezmoi managed | grep 'ssh/config.d/' | xargs -I{} basename {} | sort)
 ```
 
+### SSH key backup status (notify-only)
+```bash
+# Surface disk SSH keys with no 1Password counterpart. Purely informational:
+# adopting a key into 1P is interactive (confirmation + session) so this
+# never auto-executes, it only nudges. Silent if op is unavailable, not
+# signed in, or the `dotfiles` fish function is not on PATH.
+if command -v fish >/dev/null 2>&1 && command -v op >/dev/null 2>&1 && op account get >/dev/null 2>&1; then
+  AUDIT=$(fish -l -c 'dotfiles ssh audit' 2>/dev/null)
+  SUMMARY=$(echo "$AUDIT" | grep -oE '[0-9]+ of [0-9]+ disk key' | head -1)
+  if [ -n "$SUMMARY" ]; then
+    UNBACKED=$(echo "$SUMMARY" | awk '{print $1}')
+    TOTAL=$(echo "$SUMMARY" | awk '{print $3}')
+    if [ "$UNBACKED" != "0" ]; then
+      echo "ssh: $UNBACKED of $TOTAL disk key(s) have no 1P backup"
+    fi
+  fi
+fi
+```
+
 ### Hardcoded secrets in fish config
 ```bash
 # Look for set -gx with what looks like API keys (long alphanumeric strings)
@@ -152,6 +171,10 @@ New SSH configs (N):
 Secrets:
   [any findings or "no issues"]
 
+SSH backup status (optional):
+  <N> of <M> disk key(s) have no 1P backup: <key1>, <key2>
+  (Notification only. To adopt: dotfiles ssh adopt ~/.ssh/<name>)
+
 What would you like me to do?
 ```
 
@@ -199,6 +222,7 @@ Based on the user's decisions:
 | Track SSH configs | `chezmoi add ~/.ssh/config.d/NAME` |
 | Register secrets | Append to `home/.chezmoidata/secrets.toml` |
 | Bump guardrails pin | Replace both `v<old>` occurrences (the `REF="v..."` line and the `ref=v...` hash comment) in `home/.chezmoiscripts/run_onchange_after_claude-guardrails.sh.tmpl` with `v<new>`. Do NOT auto-apply; the user should run `chezmoi apply` after reviewing the release notes. |
+| Adopt SSH keys to 1P | Notify-only. User runs `dotfiles ssh adopt ~/.ssh/<name>` per key; the command is interactive and requires an active `op` session, so the sync skill never executes it automatically. |
 
 When editing the Brewfile, preserve the existing section structure (base/dev/apps). Place new entries in the appropriate section.
 

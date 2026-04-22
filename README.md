@@ -156,6 +156,9 @@ dotfiles local list                         # show machine-specific overrides
 dotfiles local promote cask <name>          # move from local to core
 dotfiles secret list                        # show secrets + Keychain cache status
 dotfiles secret refresh <VAR>               # invalidate cache, re-fetch from 1P
+dotfiles ssh audit                          # inventory disk/agent/1P keys + backup status
+dotfiles ssh adopt ~/.ssh/<name>            # import disk key to 1P (disk copy untouched)
+dotfiles ssh backup --destination /path     # age-encrypted bundle for offline escape hatch
 dotfiles doctor                             # health check (incl. .local pattern integrity)
 ```
 
