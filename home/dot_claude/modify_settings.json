@@ -5,14 +5,26 @@
 # stdin, new target on stdout. Runs every `chezmoi apply`.
 #
 # Scope: guarantees personal fields are present (statusLine, the learning-
-# capture Stop hook, enabled plugins, skipDangerousModePermissionPrompt).
-# Deliberately DOES NOT touch $schema, permissions.deny, hooks.PreToolUse,
-# or hooks.UserPromptSubmit -- those are owned by claude-guardrails and
-# installed by the sibling run_onchange_after_claude-guardrails.sh script.
+# capture Stop hook, four personal PreToolUse safety hooks, enabled plugins,
+# skipDangerousModePermissionPrompt).
 #
-# Idempotent: running multiple times yields the same result. The Stop hook
-# is de-duplicated by marker string ("LEARNING CAPTURE CHECK") so user-
-# added Stop hooks survive and our entry stays single.
+# Deliberately DOES NOT touch $schema, permissions.deny, or
+# hooks.UserPromptSubmit -- those are owned by claude-guardrails and
+# installed by the sibling run_onchange_after_claude-guardrails.sh script.
+# For hooks.PreToolUse we use an additive merge: each managed entry is
+# de-duplicated by marker string and appended to whatever guardrails
+# (or the user) already put there, so guardrails' scan-commit.sh entry
+# survives untouched.
+#
+# Managed PreToolUse hooks (each keyed by unique marker in its command):
+#   "BLOCKED: Direct push to protected branch"   -- block git push main/master/prod
+#   "solo-worker mode"                           -- soft-warn git push to protected
+#   "BLOCKED: Pipe-to-shell detected"            -- block curl|wget | bash/sh/zsh
+#   "BLOCKED: Destructive delete"                -- block rm -rf /|~|$HOME
+#
+# Idempotent: running multiple times yields the same result. Each managed
+# hook is de-duplicated by its marker string so user-added siblings survive
+# and our entries stay single.
 set -euo pipefail
 
 INPUT="$(cat)"
@@ -24,7 +36,28 @@ fi
 
 LEARNING_HOOK_CMD='echo '"'"'{"decision":"approve","reason":"LEARNING CAPTURE CHECK: Did you just explain a root cause, make a non-obvious architectural decision, identify a pattern, or break a debugging spiral? If yes, suggest capturing it. If no, carry on."}'"'"''
 
-echo "$INPUT" | jq --arg learning_cmd "$LEARNING_HOOK_CMD" '
+# Block direct `git push` to main/master/production. Regex uses boundary
+# chars to avoid matching e.g. `git push-something-main`. Marker string
+# "BLOCKED: Direct push to protected branch" is what the overlay dedups on.
+GIT_PUSH_BLOCK_CMD='bash -c '"'"'CMD=$(cat | jq -r ".tool_input.command // empty"); if echo "$CMD" | grep -qEi "(^|[&|;(])[[:space:]]*git[[:space:]]+push[[:space:]]+.*\b(main|master|production)([[:space:];|&)]|$)"; then echo "BLOCKED: Direct push to protected branch. Use a feature branch and PR." >&2; exit 2; fi'"'"''
+
+# Soft-warn on `git push` to protected branches (non-blocking, systemMessage).
+# Kept alongside the hard BLOCK for cases where the BLOCK regex does not
+# match but the loose one does. Marker: "solo-worker mode".
+GIT_PUSH_WARN_CMD='bash -c '"'"'CMD=$(cat | jq -r ".tool_input.command // empty"); if echo "$CMD" | grep -qEi "git[[:space:]]+push[[:space:]].*\b(main|master|production)\b"; then echo "{\"systemMessage\":\"Warning: direct push to protected branch. Continuing (solo-worker mode).\"}"; fi'"'"''
+
+# Block curl|wget piped into a shell. Marker: "BLOCKED: Pipe-to-shell detected".
+PIPE_SHELL_BLOCK_CMD='bash -c '"'"'CMD=$(cat | jq -r ".tool_input.command // empty"); if echo "$CMD" | grep -qEi "curl\s.*\|\s*(bash|sh|zsh)|wget\s.*\|\s*(bash|sh|zsh)"; then echo "BLOCKED: Pipe-to-shell detected. Download first, inspect, then execute." >&2; exit 2; fi'"'"''
+
+# Block `rm -rf` against /, ~, or $HOME. Marker: "BLOCKED: Destructive delete".
+RM_RF_BLOCK_CMD='bash -c '"'"'CMD=$(cat | jq -r ".tool_input.command // empty"); if echo "$CMD" | grep -qEi "rm\s+-(r|f|rf|fr)\s+(/|~|\$HOME)"; then echo "BLOCKED: Destructive delete. Use trash or move to tmp instead." >&2; exit 2; fi'"'"''
+
+echo "$INPUT" | jq \
+    --arg learning_cmd "$LEARNING_HOOK_CMD" \
+    --arg git_push_block_cmd "$GIT_PUSH_BLOCK_CMD" \
+    --arg git_push_warn_cmd "$GIT_PUSH_WARN_CMD" \
+    --arg pipe_shell_block_cmd "$PIPE_SHELL_BLOCK_CMD" \
+    --arg rm_rf_block_cmd "$RM_RF_BLOCK_CMD" '
     . as $existing |
     $existing + {
         enableAllProjectMcpServers: ($existing.enableAllProjectMcpServers // false),
@@ -47,6 +80,21 @@ echo "$INPUT" | jq --arg learning_cmd "$LEARNING_HOOK_CMD" '
             ((.hooks.Stop // []) | map(select(
                 (.hooks // []) | map(.command // "" | contains("LEARNING CAPTURE CHECK")) | any | not
             ))) + [{hooks: [{type: "command", command: $learning_cmd, timeout: 5}]}]
+        ),
+        PreToolUse: (
+            ((.hooks.PreToolUse // []) | map(select(
+                (.hooks // []) | map(.command // "" as $c |
+                    ($c | contains("BLOCKED: Direct push to protected branch")) or
+                    ($c | contains("solo-worker mode")) or
+                    ($c | contains("BLOCKED: Pipe-to-shell detected")) or
+                    ($c | contains("BLOCKED: Destructive delete"))
+                ) | any | not
+            ))) + [
+                {matcher: "Bash", hooks: [{type: "command", command: $git_push_block_cmd}]},
+                {matcher: "Bash", hooks: [{type: "command", command: $git_push_warn_cmd}]},
+                {matcher: "Bash", hooks: [{type: "command", command: $pipe_shell_block_cmd}]},
+                {matcher: "Bash", hooks: [{type: "command", command: $rm_rf_block_cmd}]}
+            ]
         )
     })
 '
