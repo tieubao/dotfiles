@@ -6,6 +6,43 @@ context.
 
 ---
 
+## [2026-04-23] sync @ Hans Air M4
+
+Track A (minimal): rename drift + guardrails pin bump, plus 4 requested new casks.
+
+Brewfile (core):
+  - rename: `cask "zen"` -> `cask "zen-browser"` (upstream renamed back)
+  - added cask: wispr-flow (voice-to-text dictation)
+  - added cask: font-ibm-plex-sans, font-ibm-plex-sans-hebrew, font-ibm-plex-serif
+
+Guardrails:
+  - bumped pin v0.3.7 -> v0.3.8 in run_onchange_after_claude-guardrails.sh.tmpl
+    (release notes: https://github.com/dwarvesf/claude-guardrails/releases/tag/v0.3.8)
+
+Not classified this session (deferred; surfaced in report only):
+  - 22 untracked brew packages (duti, gitup, hub, jpeg-xl, libiconv, lume,
+    markdown-oxide, ocaml, ollama, opencode, pandoc, pipx, playwright-cli,
+    python@3.10, rclone, rust, shared-mime-info, subversion,
+    the_silver_searcher, tldx, wireguard-tools, xcodegen, yarn, z, zsh)
+  - 13 untracked casks (antigravity, calibre, chrysalis, codexbar, cursor,
+    grandperspective, hyprnote, microsoft-auto-update, opencode-desktop,
+    swiftdefaultappsprefpane, tana, tor-browser)
+  - 1 new fish function: fisher.fish (Fisher plugin manager bootstrap)
+  - 54 brew + 8 casks tracked-but-not-installed noise (never ran brew bundle here)
+  - 25 VS Code extensions tracked-but-not-installed (user is on Cursor/Zed)
+
+SSH backup status:
+  - 2 of 2 on-disk keys still have no 1Password backup (action: `dotfiles ssh adopt`)
+
+Earlier in same session (pre-sync):
+  - feat(secrets): split Cloudflare API token from R2 credentials
+  - feat(claude): sync personal PreToolUse hooks + Self-verification rules
+    section into dotfiles modify_ overlay (below marker)
+  - removed "# Self-verification rules" block from above-marker region of
+    ~/.claude/CLAUDE.md since it was fragile against sync-claude-context.sh
+
+---
+
 ## [2026-04-16] design session @ Mac mini
 
 Big architectural session extending the core/local pattern and rewriting secret
