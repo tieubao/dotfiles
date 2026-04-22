@@ -26,7 +26,7 @@
 # Skipped when headless (no interactive Claude Code) or when the user
 # opted out with .guardrails_variant = "none".
 #
-# guardrails: variant={{ .guardrails_variant }} ref=v0.3.7
+# guardrails: variant={{ .guardrails_variant }} ref=v0.3.8
 {{ if or .headless (eq .guardrails_variant "none") }}
 exit 0
 {{ end }}
@@ -38,7 +38,7 @@ LIB="$HOME/.config/dotfiles/lib.sh"
 [ -f "$LIB" ] && source "$LIB" || { echo "dotfiles lib not found"; exit 1; }
 
 VARIANT="{{ .guardrails_variant }}"
-REF="v0.3.7"
+REF="v0.3.8"
 REPO="github:dwarvesf/claude-guardrails"
 
 section "Installing claude-guardrails@${REF} (${VARIANT})"

@@ -776,6 +776,417 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "  cp ~/dotfiles-backup/chezmoi.toml ~/.config/chezmoi/"
             echo "  cp ~/dotfiles-backup/key.txt ~/.config/chezmoi/  # if using age"
 
+        case ssh
+            set -l sub $argv[2]
+            switch $sub
+                case audit
+                    set -l vault_default (chezmoi data 2>/dev/null | grep op_vault | head -1 | awk '{print $NF}' | tr -d '",')
+                    test -z "$vault_default"; and set vault_default Private
+
+                    echo "SSH key inventory"
+                    echo "============================================================"
+                    echo ""
+                    echo "[1] On-disk keys in ~/.ssh/"
+                    echo "-----------------------------------------------------------"
+                    set -l disk_fps
+                    set -l disk_count 0
+                    for f in (find ~/.ssh -maxdepth 1 -type f -name 'id_*' ! -name '*.pub' 2>/dev/null)
+                        set disk_count (math $disk_count + 1)
+                        set -l pubfile "$f.pub"
+                        set -l fp "?"
+                        set -l ktype "?"
+                        set -l bits "?"
+                        if test -f $pubfile
+                            set -l info (ssh-keygen -lf $pubfile 2>/dev/null)
+                            if test -n "$info"
+                                set bits (echo $info | awk '{print $1}')
+                                set fp (echo $info | awk '{print $2}')
+                                set ktype (echo $info | awk '{print $NF}' | tr -d '()')
+                            end
+                        end
+
+                        set -l pp "unknown"
+                        if test -r $f
+                            if ssh-keygen -y -P "" -f $f >/dev/null 2>&1
+                                set pp "none"
+                            else
+                                set pp "set"
+                            end
+                        end
+
+                        set -l mtime (stat -f %m $f 2>/dev/null); or set mtime 0
+                        set -l age_sec 0
+                        test $mtime -gt 0; and set age_sec (math (date +%s) - $mtime)
+                        set -l age_str "-"
+                        if test $age_sec -gt 31536000
+                            set age_str (math -s0 $age_sec / 31536000)"y"
+                        else if test $age_sec -gt 2592000
+                            set age_str (math -s0 $age_sec / 2592000)"mo"
+                        else if test $age_sec -gt 86400
+                            set age_str (math -s0 $age_sec / 86400)"d"
+                        else if test $age_sec -gt 0
+                            set age_str "<1d"
+                        end
+
+                        set -l flags ""
+                        if test "$ktype" = "RSA"; and test "$bits" != "?"
+                            test $bits -lt 3072 2>/dev/null; and set flags "$flags weak"
+                        end
+                        test $age_sec -gt 157680000; and set flags "$flags old"
+                        test "$pp" = "none"; and set flags "$flags plaintext"
+                        test -n "$flags"; and set flags "⚠$flags"
+
+                        test "$fp" != "?"; and set -a disk_fps $fp
+                        set -l name (string replace "$HOME/.ssh/" "" $f)
+                        printf "  %-32s  %-8s  pass=%-7s  age=%-6s  %s\n" $name "$ktype $bits" $pp $age_str $flags
+                    end
+                    test $disk_count -eq 0; and echo "  (none)"
+                    echo ""
+
+                    echo "[2] Keys in active SSH agent"
+                    echo "-----------------------------------------------------------"
+                    set -l agent_out (ssh-add -l 2>&1)
+                    if string match -qi "*no identities*" -- "$agent_out"
+                        echo "  (agent has no identities)"
+                    else if string match -qi "*could not open*" -- "$agent_out"
+                        echo "  (no agent running)"
+                    else
+                        for line in $agent_out
+                            echo "  $line"
+                        end
+                    end
+                    echo ""
+
+                    echo "[3] SSH keys in 1Password (vault: $vault_default)"
+                    echo "-----------------------------------------------------------"
+                    set -l op_fps
+                    if not command -q op
+                        echo "  (op CLI not installed; skipping)"
+                    else if not op account get >/dev/null 2>&1
+                        echo "  (not signed in to 1Password; run: op signin)"
+                    else
+                        set -l items_json (op item list --categories "SSH Key" --vault $vault_default --format json 2>/dev/null)
+                        if test -z "$items_json"; or test "$items_json" = "[]"
+                            echo "  (no SSH Key items in vault)"
+                        else
+                            for id in (echo $items_json | jq -r '.[].id' 2>/dev/null)
+                                set -l title (echo $items_json | jq -r ".[] | select(.id==\"$id\") | .title")
+                                set -l pubkey (op item get $id --fields label="public key" --reveal 2>/dev/null)
+                                set -l fp "?"
+                                if test -n "$pubkey"
+                                    set fp (echo $pubkey | ssh-keygen -lf - 2>/dev/null | awk '{print $2}')
+                                    test -z "$fp"; and set fp "?"
+                                end
+                                test "$fp" != "?"; and set -a op_fps $fp
+                                printf "  %-40s  fp=%s\n" $title $fp
+                            end
+                        end
+                    end
+                    echo ""
+
+                    echo "[4] Backup status"
+                    echo "-----------------------------------------------------------"
+                    if test $disk_count -eq 0
+                        echo "  (no disk keys to back up)"
+                    else
+                        set -l unbacked 0
+                        for fp in $disk_fps
+                            contains -- $fp $op_fps; or set unbacked (math $unbacked + 1)
+                        end
+                        if test $unbacked -eq 0
+                            echo "  ✓ all $disk_count disk key(s) have a 1P counterpart"
+                        else
+                            echo "  ⚠ $unbacked of $disk_count disk key(s) have no 1P backup"
+                            echo "    Run: dotfiles ssh adopt ~/.ssh/<name>"
+                        end
+                    end
+
+                case adopt
+                    set -l argc (count $argv)
+                    if test $argc -lt 3
+                        echo "Usage: dotfiles ssh adopt <key-path> [--title NAME] [--vault NAME]"
+                        echo "  Guided flow: copies the private key to clipboard, opens 1Password"
+                        echo "  desktop, waits for you to paste+save, then verifies by fingerprint."
+                        echo "  1P CLI cannot import SSH keys, so this step is manual by necessity."
+                        echo "  The on-disk file is never touched."
+                        return 1
+                    end
+
+                    set -l keyfile $argv[3]
+                    set -l title ""
+                    set -l vault ""
+
+                    set -l i 4
+                    while test $i -le $argc
+                        switch $argv[$i]
+                            case --title
+                                set i (math $i + 1)
+                                set title $argv[$i]
+                            case --vault
+                                set i (math $i + 1)
+                                set vault $argv[$i]
+                            case '*'
+                                echo "Unknown arg: $argv[$i]"
+                                return 1
+                        end
+                        set i (math $i + 1)
+                    end
+
+                    if not test -f $keyfile
+                        echo "✗ no such file: $keyfile"
+                        return 1
+                    end
+
+                    if not command -q op
+                        echo "✗ op CLI not installed. brew install 1password-cli"
+                        return 1
+                    end
+
+                    if not op account get >/dev/null 2>&1
+                        echo "✗ not signed in to 1Password. Run: op signin"
+                        return 1
+                    end
+
+                    if test -z "$vault"
+                        set vault (chezmoi data 2>/dev/null | grep op_vault | head -1 | awk '{print $NF}' | tr -d '",')
+                        test -z "$vault"; and set vault Private
+                    end
+
+                    set -l pubfile "$keyfile.pub"
+                    set -l fp
+                    if test -f $pubfile
+                        set fp (ssh-keygen -lf $pubfile 2>/dev/null | awk '{print $2}')
+                    else
+                        set fp (ssh-keygen -y -P "" -f $keyfile 2>/dev/null | ssh-keygen -lf - 2>/dev/null | awk '{print $2}')
+                    end
+                    if test -z "$fp"
+                        echo "✗ could not compute fingerprint for $keyfile"
+                        echo "  (passphrase-protected keys must be decrypted before adoption)"
+                        return 1
+                    end
+
+                    set -l items_json (op item list --categories "SSH Key" --vault $vault --format json 2>/dev/null)
+                    if test -n "$items_json"; and test "$items_json" != "[]"
+                        for id in (echo $items_json | jq -r '.[].id' 2>/dev/null)
+                            set -l ep (op item get $id --fields label="public key" --reveal 2>/dev/null)
+                            set -l efp (echo $ep | ssh-keygen -lf - 2>/dev/null | awk '{print $2}')
+                            if test "$efp" = "$fp"
+                                set -l etitle (echo $items_json | jq -r ".[] | select(.id==\"$id\") | .title")
+                                echo "✓ already adopted: $etitle (fp: $fp)"
+                                return 0
+                            end
+                        end
+                    end
+
+                    if test -z "$title"
+                        set title "SSH - "(basename $keyfile)
+                    end
+
+                    echo "Guided adoption"
+                    echo "==============="
+                    echo "  1Password CLI (op 2.x) cannot import existing SSH private keys."
+                    echo "  This command will: copy the key to your clipboard, open the"
+                    echo "  1Password desktop app, wait for you to paste and save, then"
+                    echo "  verify the import by fingerprint."
+                    echo ""
+                    echo "  Key:         $keyfile"
+                    echo "  Fingerprint: $fp"
+                    echo "  Suggested title: $title"
+                    echo "  Target vault:    $vault"
+                    echo ""
+                    read -P "Proceed with guided adoption? [y/N] " ans
+                    if not string match -qri '^y' -- $ans
+                        echo "aborted"
+                        return 1
+                    end
+
+                    if not command -q pbcopy
+                        echo "✗ pbcopy not found (expected on macOS). aborting."
+                        return 1
+                    end
+
+                    pbcopy < $keyfile
+                    echo ""
+                    echo "✓ Private key copied to clipboard."
+                    open -a "1Password" 2>/dev/null
+                    echo ""
+                    echo "In 1Password desktop:"
+                    echo "  1. New Item → category: 'SSH Key'"
+                    echo "  2. Title: $title"
+                    echo "  3. Paste into the 'private key' field (Cmd-V)"
+                    echo "  4. Move item to vault: $vault"
+                    echo "  5. Save"
+                    echo ""
+                    read -P "Press Enter after you've saved the item in 1Password... " _
+
+                    printf "" | pbcopy
+                    echo "(clipboard cleared)"
+                    echo ""
+
+                    set -l post_items (op item list --categories "SSH Key" --vault $vault --format json 2>/dev/null)
+                    set -l found 0
+                    if test -n "$post_items"; and test "$post_items" != "[]"
+                        for id in (echo $post_items | jq -r '.[].id' 2>/dev/null)
+                            set -l ipub (op item get $id --fields label="public key" --reveal 2>/dev/null)
+                            set -l ifp (echo $ipub | ssh-keygen -lf - 2>/dev/null | awk '{print $2}')
+                            if test "$ifp" = "$fp"
+                                set -l ititle (echo $post_items | jq -r ".[] | select(.id==\"$id\") | .title")
+                                echo "✓ Verified in 1P: '$ititle' (vault: $vault)"
+                                echo "  Fingerprint: $fp"
+                                echo ""
+                                echo "  The disk copy at $keyfile is untouched."
+                                echo "  When you are confident nothing needs the disk copy:"
+                                echo "    mv $keyfile{,.pub} ~/.Trash/"
+                                echo "  Re-run 'dotfiles ssh audit' to confirm 1P serves this key."
+                                set found 1
+                                break
+                            end
+                        end
+                    end
+                    if test $found -eq 0
+                        echo "✗ Did not find a 1P SSH Key item with fingerprint $fp in vault '$vault'."
+                        echo "  Possible causes:"
+                        echo "    - Item not saved yet, or saved to a different vault"
+                        echo "    - Private key content was altered during paste"
+                        echo "    - 1P has not synced yet; wait a moment and re-run"
+                        echo "  Run 'dotfiles ssh audit' to re-inventory."
+                        return 1
+                    end
+
+                case backup
+                    set -l argc (count $argv)
+                    set -l dest ""
+
+                    set -l i 3
+                    while test $i -le $argc
+                        switch $argv[$i]
+                            case --destination -d
+                                set i (math $i + 1)
+                                set dest $argv[$i]
+                            case '*'
+                                echo "Unknown arg: $argv[$i]"
+                                return 1
+                        end
+                        set i (math $i + 1)
+                    end
+
+                    if test -z "$dest"
+                        echo "Usage: dotfiles ssh backup --destination <path>"
+                        echo "  Writes an age-encrypted bundle: <path>/ssh-keys-<date>.age"
+                        echo "  Requires: age, op (signed in), ~/.config/chezmoi/key.txt"
+                        return 1
+                    end
+
+                    if not test -d $dest
+                        echo "✗ destination not a directory: $dest"
+                        return 1
+                    end
+
+                    if not command -q age
+                        echo "✗ age not installed. brew install age"
+                        return 1
+                    end
+
+                    if not command -q op
+                        echo "✗ op CLI not installed. brew install 1password-cli"
+                        return 1
+                    end
+
+                    if not op account get >/dev/null 2>&1
+                        echo "✗ not signed in to 1Password. Run: op signin"
+                        return 1
+                    end
+
+                    set -l age_key "$HOME/.config/chezmoi/key.txt"
+                    if not test -f $age_key
+                        echo "✗ no age identity found at $age_key"
+                        echo "  Set one up first:"
+                        echo "    age-keygen -o $age_key"
+                        echo "    chmod 600 $age_key"
+                        echo "  Then back it up to 1P:"
+                        echo "    dotfiles backup"
+                        return 1
+                    end
+
+                    set -l recipient (age-keygen -y $age_key 2>/dev/null)
+                    if test -z "$recipient"
+                        echo "✗ could not derive recipient from $age_key"
+                        return 1
+                    end
+
+                    set -l vault (chezmoi data 2>/dev/null | grep op_vault | head -1 | awk '{print $NF}' | tr -d '",')
+                    test -z "$vault"; and set vault Private
+
+                    set -l items_json (op item list --categories "SSH Key" --vault $vault --format json 2>/dev/null)
+                    if test -z "$items_json"; or test "$items_json" = "[]"
+                        echo "✗ no SSH Key items in vault '$vault' to back up"
+                        return 1
+                    end
+
+                    set -l tempfile (mktemp -t ssh-bundle.XXXXXX)
+                    chmod 600 $tempfile
+
+                    echo "# ssh key bundle, generated "(date '+%Y-%m-%d %H:%M:%S')" by dotfiles ssh backup" > $tempfile
+                    echo "# bundle format v1" >> $tempfile
+                    echo "" >> $tempfile
+
+                    set -l count 0
+                    for id in (echo $items_json | jq -r '.[].id')
+                        set -l title (echo $items_json | jq -r ".[] | select(.id==\"$id\") | .title")
+                        set -l pub (op item get $id --fields label="public key" --reveal 2>/dev/null)
+                        set -l priv (op item get $id --fields label="private key" --reveal 2>/dev/null | string collect)
+
+                        if test -z "$priv"
+                            echo "  ⚠ skipping '$title' (no private key field)"
+                            continue
+                        end
+
+                        echo "=== BEGIN KEY: $title ===" >> $tempfile
+                        echo "PUBLIC: $pub" >> $tempfile
+                        echo "PRIVATE:" >> $tempfile
+                        printf '%s\n' $priv >> $tempfile
+                        echo "=== END KEY ===" >> $tempfile
+                        echo "" >> $tempfile
+                        set count (math $count + 1)
+                    end
+
+                    set -l outfile "$dest/ssh-keys-"(date +%F)".age"
+                    age --encrypt --recipient $recipient --output $outfile $tempfile
+                    set -l enc_status $status
+
+                    rm -P $tempfile 2>/dev/null; or rm -f $tempfile
+
+                    if test $enc_status -ne 0
+                        echo "✗ age encryption failed"
+                        return 1
+                    end
+
+                    set -l size (du -h $outfile 2>/dev/null | awk '{print $1}')
+                    echo ""
+                    echo "✓ Wrote $outfile"
+                    echo "  Size: $size ($count keys)"
+                    echo "  Recipient: $recipient"
+                    echo ""
+                    echo "  Restore on a new machine:"
+                    echo "    age --decrypt -i $age_key $outfile"
+                    echo "  Then create a new 1P SSH Key item in the desktop app and paste each"
+                    echo "  === BEGIN KEY block's private key field. op CLI cannot import SSH keys."
+
+                case '' '-h' '--help'
+                    echo "Usage: dotfiles ssh <command>"
+                    echo ""
+                    echo "Commands:"
+                    echo "  audit                                  Inventory: disk, agent, 1P, backup status"
+                    echo "  adopt <key-path> [--title N] [--vault V]   Guided: clipboard+1P app+verify"
+                    echo "  backup --destination <path>            Age-encrypted bundle to <path>"
+                    return 1
+
+                case '*'
+                    echo "dotfiles ssh: unknown subcommand '$sub'"
+                    echo "Run 'dotfiles ssh' for help."
+                    return 1
+            end
+
         case ''
             echo "Usage: dotfiles <command>"
             echo ""
@@ -784,6 +1195,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "  drift             Detect and re-absorb drifted files"
             echo "  secret <cmd>      Manage 1Password secrets (add/rm/list)"
             echo "  local <cmd>       Manage machine-specific .local files (list/promote/demote/edit)"
+            echo "  ssh <cmd>         SSH key inventory / adopt / backup (audit/adopt/backup)"
             echo "  diff              Show pending changes"
             echo "  sync              Apply all changes"
             echo "  update            Pull latest + apply"
