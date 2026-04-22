@@ -905,8 +905,10 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                     set -l argc (count $argv)
                     if test $argc -lt 3
                         echo "Usage: dotfiles ssh adopt <key-path> [--title NAME] [--vault NAME]"
-                        echo "  Imports a disk private key into 1Password as an SSH Key item."
-                        echo "  The on-disk file is not touched."
+                        echo "  Guided flow: copies the private key to clipboard, opens 1Password"
+                        echo "  desktop, waits for you to paste+save, then verifies by fingerprint."
+                        echo "  1P CLI cannot import SSH keys, so this step is manual by necessity."
+                        echo "  The on-disk file is never touched."
                         return 1
                     end
 
@@ -980,32 +982,76 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                         set title "SSH - "(basename $keyfile)
                     end
 
-                    echo "About to adopt:"
-                    echo "  Key: $keyfile"
-                    echo "  Fingerprint: $fp"
-                    echo "  Destination: 1Password vault '$vault', item '$title'"
+                    echo "Guided adoption"
+                    echo "==============="
+                    echo "  1Password CLI (op 2.x) cannot import existing SSH private keys."
+                    echo "  This command will: copy the key to your clipboard, open the"
+                    echo "  1Password desktop app, wait for you to paste and save, then"
+                    echo "  verify the import by fingerprint."
                     echo ""
-                    read -P "Adopt this key? [y/N] " ans
+                    echo "  Key:         $keyfile"
+                    echo "  Fingerprint: $fp"
+                    echo "  Suggested title: $title"
+                    echo "  Target vault:    $vault"
+                    echo ""
+                    read -P "Proceed with guided adoption? [y/N] " ans
                     if not string match -qri '^y' -- $ans
                         echo "aborted"
                         return 1
                     end
 
-                    set -l privkey (cat $keyfile | string collect)
-                    op item create --category "SSH Key" --vault $vault --title $title "private key=$privkey" >/dev/null
-                    if test $status -ne 0
-                        echo "✗ 1P item creation failed"
+                    if not command -q pbcopy
+                        echo "✗ pbcopy not found (expected on macOS). aborting."
                         return 1
                     end
 
+                    pbcopy < $keyfile
                     echo ""
-                    echo "✓ Adopted into 1P: $title (vault: $vault)"
-                    echo "  Fingerprint: $fp"
+                    echo "✓ Private key copied to clipboard."
+                    open -a "1Password" 2>/dev/null
                     echo ""
-                    echo "  The disk copy at $keyfile is untouched."
-                    echo "  When you are confident nothing needs the disk copy:"
-                    echo "    mv $keyfile{,.pub} ~/.Trash/"
-                    echo "  Re-run 'dotfiles ssh audit' to confirm 1P serves this key."
+                    echo "In 1Password desktop:"
+                    echo "  1. New Item → category: 'SSH Key'"
+                    echo "  2. Title: $title"
+                    echo "  3. Paste into the 'private key' field (Cmd-V)"
+                    echo "  4. Move item to vault: $vault"
+                    echo "  5. Save"
+                    echo ""
+                    read -P "Press Enter after you've saved the item in 1Password... " _
+
+                    printf "" | pbcopy
+                    echo "(clipboard cleared)"
+                    echo ""
+
+                    set -l post_items (op item list --categories "SSH Key" --vault $vault --format json 2>/dev/null)
+                    set -l found 0
+                    if test -n "$post_items"; and test "$post_items" != "[]"
+                        for id in (echo $post_items | jq -r '.[].id' 2>/dev/null)
+                            set -l ipub (op item get $id --fields label="public key" --reveal 2>/dev/null)
+                            set -l ifp (echo $ipub | ssh-keygen -lf - 2>/dev/null | awk '{print $2}')
+                            if test "$ifp" = "$fp"
+                                set -l ititle (echo $post_items | jq -r ".[] | select(.id==\"$id\") | .title")
+                                echo "✓ Verified in 1P: '$ititle' (vault: $vault)"
+                                echo "  Fingerprint: $fp"
+                                echo ""
+                                echo "  The disk copy at $keyfile is untouched."
+                                echo "  When you are confident nothing needs the disk copy:"
+                                echo "    mv $keyfile{,.pub} ~/.Trash/"
+                                echo "  Re-run 'dotfiles ssh audit' to confirm 1P serves this key."
+                                set found 1
+                                break
+                            end
+                        end
+                    end
+                    if test $found -eq 0
+                        echo "✗ Did not find a 1P SSH Key item with fingerprint $fp in vault '$vault'."
+                        echo "  Possible causes:"
+                        echo "    - Item not saved yet, or saved to a different vault"
+                        echo "    - Private key content was altered during paste"
+                        echo "    - 1P has not synced yet; wait a moment and re-run"
+                        echo "  Run 'dotfiles ssh audit' to re-inventory."
+                        return 1
+                    end
 
                 case backup
                     set -l argc (count $argv)
@@ -1123,14 +1169,15 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                     echo ""
                     echo "  Restore on a new machine:"
                     echo "    age --decrypt -i $age_key $outfile"
-                    echo "  Then paste each key into a new 1P SSH Key item, or use 'op item create'."
+                    echo "  Then create a new 1P SSH Key item in the desktop app and paste each"
+                    echo "  === BEGIN KEY block's private key field. op CLI cannot import SSH keys."
 
                 case '' '-h' '--help'
                     echo "Usage: dotfiles ssh <command>"
                     echo ""
                     echo "Commands:"
                     echo "  audit                                  Inventory: disk, agent, 1P, backup status"
-                    echo "  adopt <key-path> [--title N] [--vault V]   Import disk key into 1Password"
+                    echo "  adopt <key-path> [--title N] [--vault V]   Guided: clipboard+1P app+verify"
                     echo "  backup --destination <path>            Age-encrypted bundle to <path>"
                     return 1
 

@@ -78,18 +78,34 @@ Audit is read-only. It never writes to disk, to the agent, or to 1P. Safe to run
 
 ### B. `dotfiles ssh adopt <key-path> [--title <name>] [--vault <name>]`
 
-Takes an on-disk private-key path. Creates a 1Password SSH Key item containing the private key (1P derives the public key and fingerprint). The on-disk file is **not** touched.
+Takes an on-disk private-key path. **Guided manual flow**, because 1Password CLI (op 2.x) does not support importing existing SSH private keys; only key generation is CLI-automatable. SSH Key item creation from pasted private-key material must go through the 1P desktop app per Agilebits' key-integrity policy.
 
-- `--title` defaults to a sanitized filename like `SSH - id_ed25519_trading_vps`.
+The command:
+
+1. Computes the disk key's fingerprint.
+2. Queries 1P for existing SSH Key items; if one already matches the fingerprint, prints `already adopted` and exits 0 (idempotency guard).
+3. Confirms with the user: prints key path, fingerprint, suggested title, target vault. `[y/N]`, default no.
+4. On yes: copies the private-key content to the macOS clipboard (`pbcopy`), opens the 1Password desktop app.
+5. Prints a five-step paste guide (category SSH Key, title, paste into `private key` field, move to vault, save).
+6. Waits on `read -P "Press Enter after you've saved..."`.
+7. Clears the clipboard (`printf "" | pbcopy`).
+8. Re-queries 1P, walks all SSH Key items in the target vault, matches by fingerprint.
+9. On fingerprint match: prints ✓ confirmation + retirement hint. On no match: prints ✗ with possible causes (wrong vault, sync delay, paste corrupted).
+
+Arguments:
+- `--title` defaults to `SSH - <basename-of-keyfile>`.
 - `--vault` defaults to the `op_vault` field from `chezmoi data`, falling back to `Private`.
-- Refuses to proceed if a 1P item with the same public-key fingerprint already exists (idempotency guard). Prints `already adopted` and exits 0.
-- Requires `op` CLI and an active `op` session. If not signed in, prints the exact command to run (`op signin`).
-- Confirms before writing. Shows destination vault + item title and asks `Adopt this key? [y/N]`. Default no.
 
-After success, suggests the retirement path without enforcing it:
+Guards:
+- Refuses if `op` not installed or not signed in; prints actionable next step.
+- Refuses passphrase-protected keys (fingerprint cannot be derived); user must decrypt first.
+- Refuses on missing `pbcopy` (non-macOS).
+- The disk copy is **never** touched, regardless of outcome.
+
+Output on success:
 
 ```
-✓ Adopted into 1P: SSH - id_ed25519_trading_vps (vault: Private)
+✓ Verified in 1P: 'SSH - id_ed25519_trading_vps' (vault: Private)
   Fingerprint: SHA256:tOYG...
 
   The disk copy at ~/.ssh/id_ed25519_trading_vps is untouched.
@@ -147,7 +163,8 @@ Output after success:
 
   Restore on a new machine:
     age --decrypt -i ~/.config/chezmoi/key.txt /Volumes/USB/ssh-keys-2026-04-22.age
-  Then manually paste each key into a new 1P SSH Key item, or restore via `op item create`.
+  Then create a new 1P SSH Key item in the desktop app and paste each
+  === BEGIN KEY block's private key field. op CLI cannot import SSH keys.
 ```
 
 ### D. Walkthrough in docs/guide.md
@@ -186,8 +203,8 @@ A new section `### Walkthrough: back up your SSH keys` covering:
 
 1. **Audit, clean machine.** On a fresh Mac with one 1P-managed agent key and no disk keys: `dotfiles ssh audit` prints one row, `storage = 1P agent`, no `⚠` flags.
 2. **Audit, mixed state (current machine).** Prints 4 rows matching the inventory we captured for S-38 design: two disk keys flagged `⚠ adopt`, one with `⚠ weak ⚠ old` (the 2015 RSA), one ED25519 in 1P agent.
-3. **Adopt, happy path.** `dotfiles ssh adopt ~/.ssh/id_ed25519_trading_vps` prompts once, creates a 1P item titled `SSH - id_ed25519_trading_vps`, prints fingerprint, leaves disk file untouched (`test -f ~/.ssh/id_ed25519_trading_vps`). Re-run: prints `already adopted`, exits 0.
-4. **Adopt, no op session.** With `op` signed out: prints `op signin` as the next step, exits 1. No partial writes.
+3. **Adopt, happy path (guided).** `dotfiles ssh adopt ~/.ssh/id_ed25519_trading_vps` prints fingerprint + target, confirms, copies key to clipboard, opens 1P desktop, waits for Enter, clears clipboard, re-queries 1P, verifies by fingerprint, prints ✓. Disk file untouched (`test -f ~/.ssh/id_ed25519_trading_vps`). Re-run: prints `already adopted`, exits 0 without re-prompting.
+4. **Adopt, no op session.** With `op` signed out: prints `op signin` as the next step, exits 1. No clipboard writes.
 5. **Backup, happy path.** `dotfiles ssh backup --destination /tmp/ssh-bak` creates `/tmp/ssh-bak/ssh-keys-$(date +%F).age`. `age --decrypt -i ~/.config/chezmoi/key.txt <file>` produces the plaintext bundle. `grep -c '=== BEGIN KEY' <plaintext>` equals the 1P SSH-item count.
 6. **Backup, no age identity.** With `~/.config/chezmoi/key.txt` absent: prints the exact setup command, exits 1. No file written.
 7. **Backup, missing tool.** With `age` uninstalled: prints `age not found; brew install age`, exits 1.

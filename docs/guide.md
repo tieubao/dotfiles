@@ -484,16 +484,18 @@ a backup-status summary. Any `⚠ adopt` or `⚠ plaintext` flag means the key
 is on disk only. A `⚠ weak` or `⚠ old` flag is a rotation hint, not a
 backup concern.
 
-**Step 2. Adopt each disk key into 1Password.**
+**Step 2. Adopt each disk key into 1Password (guided).**
 
 ```fish
 dotfiles ssh adopt ~/.ssh/id_ed25519_trading_vps
 ```
 
-The tool derives the fingerprint, checks 1P for a matching key (idempotent
-if already adopted), confirms once, then creates an `SSH Key` item. The
-on-disk file is not touched. After adoption, the 1P SSH agent serves the
-key automatically.
+The command is a guided manual flow: 1Password CLI cannot import existing
+SSH private keys, so the tool opens the 1P desktop app, copies the key to
+your clipboard, waits for you to create a new SSH Key item and paste, then
+verifies the import by fingerprint and clears the clipboard. The on-disk
+file is never touched. After verification, the 1P SSH agent serves the key
+automatically.
 
 **Step 3. Investigate unknown-usage keys before retiring.**
 
@@ -542,7 +544,9 @@ age --decrypt -i ~/.config/chezmoi/key.txt /Volumes/Backup/ssh-keys-YYYY-MM-DD.a
 
 Output is the plaintext bundle. Confirm it contains `=== BEGIN KEY` blocks
 for every key you expect. Then close the terminal without saving the
-output to disk.
+output to disk. To actually re-import a key on a new machine, paste the
+private-key block into a new 1P SSH Key item in the desktop app; op CLI
+cannot import SSH keys, so this step is manual.
 
 ### Walkthrough: upgrade claude-guardrails
 
