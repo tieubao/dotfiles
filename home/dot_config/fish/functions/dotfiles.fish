@@ -574,6 +574,26 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 end
             end
 
+            # Surface any registered secret with no Keychain entry yet (S-43).
+            # Informational: a fresh machine legitimately starts with an empty cache
+            # until the first interactive fish login triggers secret-cache-read.
+            set -l secrets_data (chezmoi source-path 2>/dev/null)/.chezmoidata/secrets.toml
+            if test -f $secrets_data
+                set -l empty_vars
+                for line in (grep -E '^[A-Z_][A-Z0-9_]* = ' $secrets_data)
+                    set -l var (echo $line | awk '{print $1}')
+                    if not security find-generic-password -a "$USER" -s "$var" -w >/dev/null 2>&1
+                        set -a empty_vars $var
+                    end
+                end
+                if test (count $empty_vars) -eq 0
+                    echo "[ok] all registered secrets cached in Keychain"
+                else
+                    echo "[--] registered but not cached: "(string join ", " $empty_vars)
+                    echo "     (first interactive shell triggers 1P popup; or run 'exec fish')"
+                end
+            end
+
             for f in ~/.gitconfig ~/.config/fish/config.fish ~/.ssh/config
                 if test -f $f
                     echo "[ok] $f exists"
