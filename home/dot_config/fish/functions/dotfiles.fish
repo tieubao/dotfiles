@@ -668,7 +668,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "     identity = \"$key_path\""
             echo "     recipient = \"$pubkey\""
             echo ""
-            set -l vault (chezmoi data 2>/dev/null | grep op_vault | awk '{print $NF}' | tr -d '"'); or set vault Private
+            set -l vault (__dotfiles_op_vault)
             echo "  3. Back up the key to 1Password:"
             echo "     op document create $key_path --title 'chezmoi age key' --vault=$vault"
             echo ""
@@ -726,9 +726,15 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             echo "==============="
             echo ""
 
-            set -l config_path (chezmoi config-path 2>/dev/null)
+            set -l config_path
+            for ext in toml yaml json jsonnet
+                if test -f "$HOME/.config/chezmoi/chezmoi.$ext"
+                    set config_path "$HOME/.config/chezmoi/chezmoi.$ext"
+                    break
+                end
+            end
             set -l key_path "$HOME/.config/chezmoi/key.txt"
-            set -l vault (chezmoi data 2>/dev/null | grep op_vault | awk '{print $NF}' | tr -d '"'); or set vault Private
+            set -l vault (__dotfiles_op_vault)
 
             if test -z "$config_path"; or not test -f "$config_path"
                 echo "[!!] chezmoi config not found"
@@ -780,8 +786,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
             set -l sub $argv[2]
             switch $sub
                 case audit
-                    set -l vault_default (chezmoi data 2>/dev/null | grep op_vault | head -1 | awk '{print $NF}' | tr -d '",')
-                    test -z "$vault_default"; and set vault_default Private
+                    set -l vault_default (__dotfiles_op_vault)
 
                     echo "SSH key inventory"
                     echo "============================================================"
@@ -948,8 +953,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                     end
 
                     if test -z "$vault"
-                        set vault (chezmoi data 2>/dev/null | grep op_vault | head -1 | awk '{print $NF}' | tr -d '",')
-                        test -z "$vault"; and set vault Private
+                        set vault (__dotfiles_op_vault)
                     end
 
                     set -l pubfile "$keyfile.pub"
@@ -1114,8 +1118,7 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                         return 1
                     end
 
-                    set -l vault (chezmoi data 2>/dev/null | grep op_vault | head -1 | awk '{print $NF}' | tr -d '",')
-                    test -z "$vault"; and set vault Private
+                    set -l vault (__dotfiles_op_vault)
 
                     set -l items_json (op item list --categories "SSH Key" --vault $vault --format json 2>/dev/null)
                     if test -z "$items_json"; or test "$items_json" = "[]"
