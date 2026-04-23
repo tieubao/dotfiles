@@ -47,9 +47,10 @@ chezmoi uses filename prefixes to encode target attributes:
 - `private_` → mode 0600
 - `encrypted_` → encrypted in repo, decrypted on apply
 
-### Secret injection (two backends)
+### Secret injection (three patterns, one backend)
 
-**1Password** (primary):
+**1Password** is the primary backend. Three resolution patterns coexist; pick
+the right one per secret:
 
 - **Apply-time resolution** (`onepasswordRead` in Go templates) — resolves at
   `chezmoi apply`, bakes secret into rendered file. Triggers 1P popup on every
@@ -60,6 +61,12 @@ chezmoi uses filename prefixes to encode target attributes:
   checks macOS Keychain first and only calls `op read` on cache miss. Result:
   `chezmoi apply` never touches 1Password; only the first shell on a new
   machine triggers popups.
+- **Service account token** (for agent subprocess `op read`, S-42). Register
+  `OP_SERVICE_ACCOUNT_TOKEN = "op://..."` like any other secret. Once it is
+  in env, `op` uses bearer auth instead of biometric, so subprocesses (e.g.
+  Claude Code's Bash tool) can call `op read op://...` headlessly. Requires
+  a 1Password Business/Teams plan. Prefer a dedicated `Agents` vault for
+  blast-radius isolation; see [docs/specs/S-42](docs/specs/S-42-service-account-agent-auth.md).
 
 Register auto-loaded env vars via:
 ```

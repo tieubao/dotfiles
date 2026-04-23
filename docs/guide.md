@@ -743,6 +743,55 @@ fetched when a shell actually starts for the first time on a machine, or
 after `dotfiles secret refresh`. The rendered `secrets.fish` on disk is
 safe to grep -- it contains only references, not values.
 
+### Service account for agent subprocess `op read`
+
+Claude Code (and other agents) sometimes needs to call `op read op://...`
+as a subprocess mid-session, for secrets we haven't pre-registered. Those
+calls hit a wall: `op` refuses to trigger biometric when stdin is not a
+TTY, so the read fails silently.
+
+The fix is a **1Password service account token**. Once
+`OP_SERVICE_ACCOUNT_TOKEN` is in the shell env, `op` uses bearer auth
+instead of biometric, and every subprocess inherits that capability.
+
+Requires a 1Password **Business or Teams** plan. Family/Individual plans
+cannot create service accounts; stick with per-secret registration.
+
+**One-time setup per user:**
+
+1. In the 1Password web admin, create a service account scoped to the
+   vaults the agent should see. Recommended: a dedicated `Agents` vault,
+   not `Private`, so a token leak doesn't expose personal secrets.
+2. Store the resulting `ops_...` token as a regular 1Password item,
+   e.g. `op://Private/op-service-account-<purpose>/credential`.
+
+**Per machine:**
+
+```fish
+dotfiles secret add OP_SERVICE_ACCOUNT_TOKEN "op://Private/op-service-account-<purpose>/credential"
+exec fish
+```
+
+First fish login after this prompts biometric once to cache the token in
+Keychain. Every shell after that is silent, and every agent inherits it.
+
+**Verifying it works:**
+
+```fish
+echo $OP_SERVICE_ACCOUNT_TOKEN | head -c 4   # should print "ops_"
+bash -c 'op read op://<scoped-vault>/<item>/<field>'   # non-TTY subprocess; should print the value
+```
+
+**Rotating the token:** revoke in the 1P web console, generate a new one,
+update the 1P item, then on each machine:
+
+```fish
+dotfiles secret refresh OP_SERVICE_ACCOUNT_TOKEN
+exec fish
+```
+
+Full design and blast-radius analysis: [`docs/specs/S-42`](specs/S-42-service-account-agent-auth.md).
+
 ### Why Keychain instead of a dotfile cache
 
 - **Silent after approval.** macOS prompts once per app ("allow access to this keychain item?"); after "Always Allow", reads are invisible
