@@ -148,6 +148,7 @@ The ignore file is itself a Go template. macOS-only configs (Ghostty, Zed, Brewf
 ## Important conventions
 
 - **Never commit secrets.** API keys go in 1Password with `op://` references in `.tmpl` files. The rendered output (with real secrets) only exists on the target machine, never in git.
+- **Never echo resolved secret values** (S-45). No function, script, template, or success/error hint in this repo may print a resolved secret value to stdout or stderr. Terminal scrollback, shell history, screen recordings, and LLM tool-call transcripts all capture stdout. Reference the variable name (`"loaded into $VAR"`) or the `op://` ref; never the payload. The `secret-cache-read` helper is the one exception: its stdout is captured by `()` in `secrets.fish.tmpl`, not printed to terminal.
 - **Zed settings** (`settings.json.tmpl`) contains 5 MCP server configs with 1Password-injected API keys. When adding MCP servers, use the same `onepasswordRead` pattern.
 - **VS Code settings** live in `dot_config/code/` (not the Library path). The `run_onchange_after_vscode.sh` script copies them to `~/Library/Application Support/Code/User/` at apply time.
 - **Brewfile changes auto-apply**  - editing `dot_Brewfile` and running `chezmoi apply` triggers `brew bundle` automatically.

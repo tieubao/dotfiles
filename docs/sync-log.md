@@ -6,6 +6,51 @@ context.
 
 ---
 
+## [2026-04-23] S-45 stop echoing secrets in refresh @ Hans Air M4
+
+Incident + fix in one entry.
+
+**Incident (earlier same day):** during S-43 verification I simulated
+the "empty Keychain" doctor branch by deleting an entry and then
+re-cached it with `dotfiles secret refresh OP_SERVICE_ACCOUNT_TOKEN`.
+The function printed `"Restart shell or: set -gx OP_SERVICE_ACCOUNT_TOKEN 'ops_...'"`
+which echoed the raw service account token into the terminal (and
+therefore into the Claude Code session transcript). User decided to
+rotate the token in 1P; the rotation itself is out of scope of the
+dotfiles repo.
+
+**Root cause:** `home/dot_config/fish/functions/dotfiles.fish:257` in
+the `dotfiles secret refresh` path had a success hint that interpolated
+`$val` into its output. Any transcript-capturing environment
+(screen recorder, LLM tool-call log, `script -a`, etc.) captured the
+value.
+
+**Fix (this PR, spec [S-45](specs/S-45-secret-refresh-no-echo.md)):**
+Replaced the leaky hint with phrasing that references the variable
+name only (`"Open a new shell ... to load the new value into $VAR"`).
+Matches the already-safe wording in the `secret add` success path.
+
+**Standing rule now in CLAUDE.md:** never echo resolved secret values.
+Reference the var name or op:// ref instead. `secret-cache-read` is the
+one exception (its stdout is captured by `()`, not printed).
+
+**Audit result:** only one leak site existed. `dotfiles secret add/rm/list`
+paths were checked and are clean. `secret-cache-read` is correct.
+`chezmoi apply` path was cleaned up in S-35 and remains secret-free.
+
+**Open follow-up** (not in this PR): `dotfiles secret add` passes the
+value to `op item create` as a command-line argument, briefly visible
+to local `ps`. Lower severity; documented in the spec as a known
+limitation.
+
+Repo changes:
+  - docs/specs/S-45-secret-refresh-no-echo.md (new)
+  - home/dot_config/fish/functions/dotfiles.fish: 2-line hint replacement
+  - CLAUDE.md: new "Never echo resolved secret values" convention
+  - docs/tasks.md: ticked S-45
+
+---
+
 ## [2026-04-23] S-26 Brewfile cleanup @ Hans Air M4
 
 Audit per spec [S-26](specs/S-26-brewfile-cleanup.md). Two changes

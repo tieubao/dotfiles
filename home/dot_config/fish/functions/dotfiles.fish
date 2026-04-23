@@ -249,12 +249,14 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                     security delete-generic-password -a "$USER" -s "$var" >/dev/null 2>&1
                     echo "✓ cleared cache: $var"
 
-                    # Immediately re-populate (triggers 1P popup once)
+                    # Immediately re-populate (triggers 1P popup once).
+                    # Do NOT echo $val: the hint used to print it, which leaked
+                    # values into terminal scrollback and transcripts. See S-45.
                     set -l ref (grep "^$var = " $data | sed 's/.*= //;s/"//g')
                     set -l val ($HOME/.local/bin/secret-cache-read "$var" "$ref")
                     if test -n "$val"
-                        echo "✓ re-fetched from 1Password and cached"
-                        echo "  Restart shell or: set -gx $var '$val'"
+                        echo "✓ re-fetched from 1Password and cached in Keychain."
+                        echo "  Open a new shell (or run 'exec fish') to load the new value into \$$var."
                     else
                         echo "⚠ could not fetch from 1Password (op not signed in?)"
                     end
