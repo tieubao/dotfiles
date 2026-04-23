@@ -6,6 +6,36 @@ context.
 
 ---
 
+## [2026-04-23] docs cross-refs (S-42 in README, S-44 rule in CLAUDE.md) @ Hans Air M4
+
+Post-ship audit caught two real documentation gaps:
+
+1. `README.md` §Security covered the S-35 lazy-Keychain pattern but
+   said nothing about the service account path (S-42) for agent
+   subprocesses. A fresh reader would not discover this capability
+   from the README alone.
+2. `CLAUDE.md` carried the S-45 "never echo secret values" rule but
+   not the S-44 standing rule ("shipping a spec = status + tasks.md +
+   sync-log, all three, every time"). Future LLMs reading CLAUDE.md
+   would miss it.
+
+Both fixes are one-paragraph / one-bullet additions. No new spec (this
+is a doc correction to reference existing specs, not a new design).
+
+Repo changes:
+  - README.md: new "Agents and non-interactive op read" paragraph in §Security
+  - CLAUDE.md: new "Spec status discipline (S-44)" bullet in Important conventions
+
+Non-fixes (deliberately skipped):
+  - docs/guide.md: already has the full S-42 section; doctor check
+    self-explanatory; S-45 is contributor-side, not user-side.
+  - docs/llm-dotfiles.md: generic stack-agnostic pattern doc; 1P
+    specifics do not belong.
+  - SVGs: S-42 is a specialization of the S-35 flow; diagrams still
+    accurate.
+
+---
+
 ## [2026-04-23] S-45 stop echoing secrets in refresh @ Hans Air M4
 
 Incident + fix in one entry.
