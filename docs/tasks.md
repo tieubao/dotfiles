@@ -1,8 +1,9 @@
 # Task Backlog: dwarvesf/dotfiles
 
-Updated: 2026-04-14
+Updated: 2026-04-23
 
 <!-- Old ID → New ID mapping: F-XX/R-XX/T-XX → S-XX. See docs/specs/S-*.md -->
+<!-- S-40 is intentionally unused (number skipped, no spec exists). -->
 
 ## Completed (v0.1.0)
 
@@ -32,17 +33,29 @@ Updated: 2026-04-14
 - [x] Data-driven secret registry (secrets.toml, add-secret, rm-secret, list-secrets)
 - [x] Auto-commit workflow (dfe auto-commits, dfs reverse drift sync, ADR-006)
 
-## Next up
+## Completed (post v0.1.0)
 
-- [ ] S-24: Ghostty config sync  - convert to template, review settings, add doctor check
 - [x] S-25: Starship config polish  - review modules, check Nerd Font rendering
-- [ ] S-26: Brewfile cleanup  - audit stale entries, verify casks, deduplicate
-- [ ] S-27: Gum UI helper library (lib/ui.sh)  - styled boxes, step progress, validation
 - [x] S-28: README tool showcase icons  - skillicons.dev + shields.io badges
-- [ ] S-29: VHS terminal demo  - animated GIF of install wizard
 - [x] S-30: Verification loop  - CLAUDE.md rules, subagent, hooks, slash command
 - [x] S-31: User guide  - comprehensive manual replacing customization.md
 - [x] S-32: Claude-assisted dotfiles sync  - LLM scans drift, reports, syncs on approval
+- [x] S-35: Local pattern + lazy 1Password resolution (.local overrides, Keychain cache)
+- [x] S-36: Guardrails as managed installer (pin via git tag, npx install)
+- [x] S-37: Guardrails upstream release notify (/dotfiles-sync surfaces new tags)
+- [x] S-38: SSH key inventory, adoption, and offline backup
+- [x] S-39: Dotfiles backup fixes + op_vault resolution consolidation
+- [x] S-41: SSH status surfaced in dotfiles doctor
+- [x] S-42: 1Password service account token for agent subprocess auth
+- [x] S-43: Surface registered-but-uncached secrets in sync + doctor
+- [x] S-44: Spec status frontmatter discipline + tasks.md as rolling index
+
+## Next up
+
+- [ ] S-24: Ghostty config sync  - convert to template, review settings, add doctor check
+- [ ] S-26: Brewfile cleanup  - audit stale entries, verify casks, deduplicate
+- [ ] S-27: Gum UI helper library (lib/ui.sh)  - styled boxes, step progress, validation
+- [ ] S-29: VHS terminal demo  - animated GIF of install wizard
 - [ ] S-33: Bitwarden secrets backend  - alternative to 1Password, user choice during init
 - [ ] S-34: Multi-agent LLM support  - Codex, OpenCode, Cursor alongside Claude Code
 
