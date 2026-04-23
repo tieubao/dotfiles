@@ -6,6 +6,48 @@ context.
 
 ---
 
+## [2026-04-23] S-43 sync secret cache visibility @ Hans Air M4
+
+Follow-up to S-42. The sync workflow did not surface registered-but-uncached
+secrets, so a fresh machine that inherited the `OP_SERVICE_ACCOUNT_TOKEN`
+registration but never triggered the first interactive biometric had no
+feedback loop. Agents calling `op read op://...` would just fail silently.
+
+Two additive, notify-only probes added (see spec
+[S-43](specs/S-43-sync-secret-cache-visibility.md)):
+
+  - `/dotfiles-sync` step 2: new "Secret cache status" block. Silent when
+    all registered secrets are cached or when op is absent/unauthed.
+    Gated on `op account list &>/dev/null` so headless machines stay quiet.
+    Report category: "Secret cache (optional)" under step-3 format.
+  - `dotfiles doctor`: new check after the SSH backup block. Iterates
+    `secrets.toml`, probes Keychain per var. Reports `[ok]` when everything
+    is cached, `[--]` (info) when any are empty, with a hint to run
+    `exec fish` or wait for the next interactive shell.
+
+Design choices recorded in the spec:
+  - Info-level (`[--]`) not error (`[!!]`). Empty cache is a legitimate
+    transient state on fresh machines.
+  - Reachability of the 1P ref is NOT checked (would require live op call,
+    would popup on miss). Presence of Keychain entry only.
+  - Token identity is not special-cased. The probe is uniform across all
+    registered vars; `OP_SERVICE_ACCOUNT_TOKEN` shows up like any other.
+
+Verified both branches (all-cached, one-missing) on this machine.
+
+Repo changes:
+  - docs/specs/S-43-sync-secret-cache-visibility.md (new)
+  - .claude/commands/dotfiles-sync.md: + "Secret cache status" scan block, + report line
+  - home/dot_claude/commands/dotfiles-sync.md: identical mirror of project copy
+  - home/dot_config/fish/functions/dotfiles.fish: + secrets.toml iterator in doctor
+
+Not changed (intentionally):
+  - secret-cache-read (probes are observational only)
+  - secrets.fish.tmpl loop (no new registrations)
+  - any .chezmoiscripts/ (apply path stays popup-free per S-35)
+
+---
+
 ## [2026-04-23] S-42 service account agent auth @ Hans Air M4
 
 New spec: [S-42](specs/S-42-service-account-agent-auth.md) -- document the
