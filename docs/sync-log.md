@@ -6,6 +6,40 @@ context.
 
 ---
 
+## [2026-04-23] S-42 service account agent auth @ Hans Air M4
+
+New spec: [S-42](specs/S-42-service-account-agent-auth.md) -- document the
+1Password service account pattern so Claude Code subprocesses can
+`op read op://...` headlessly.
+
+Root cause recap: `op` refuses to trigger biometric when stdin is not a TTY,
+so agent subprocess reads fail silently. Service account bearer auth
+bypasses biometric entirely once `OP_SERVICE_ACCOUNT_TOKEN` is in env.
+
+Registered locally (this machine only, per-user action, not shared):
+  - `dotfiles secret add OP_SERVICE_ACCOUNT_TOKEN "op://Private/op-service-account-trading/credential"`
+  - Token scoped server-side to the `Trading` vault in 1Password
+  - First fish login triggered one biometric; all subsequent shells silent
+
+Repo changes (shared):
+  - docs/specs/S-42-service-account-agent-auth.md (new)
+  - CLAUDE.md: expanded "Secret injection" section from two backends to three patterns
+  - docs/guide.md: added "Service account for agent subprocess `op read`" subsection under §6
+  - home/.chezmoidata/secrets.toml: added `OP_SERVICE_ACCOUNT_TOKEN` registry entry (op:// ref only, not a value)
+
+Not changed (intentional -- existing infra absorbs this):
+  - secret-cache-read helper
+  - secrets.fish.tmpl template loop
+  - dotfiles secret subcommands
+
+Blast radius note recorded in the spec: service account token reads every
+vault scoped to it. Keychain entry is per-user encrypted at rest, same
+threat model as `ANTHROPIC_API_KEY`. Recommended mitigation (dedicated
+`Agents` vault) is documented but not enforced; this machine uses the
+pre-existing `Private` vault for convenience, accepted risk.
+
+---
+
 ## [2026-04-23] sync @ Hans Air M4
 
 Track A (minimal): rename drift + guardrails pin bump, plus 4 requested new casks.
