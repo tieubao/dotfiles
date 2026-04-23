@@ -87,6 +87,20 @@ fi
 grep -n 'set -gx.*[A-Za-z0-9_]\{20,\}' ~/.config/fish/config.fish ~/.config/fish/conf.d/*.fish 2>/dev/null | grep -v 'onepasswordRead\|op://' || true
 ```
 
+### Secret cache status (notify-only)
+```bash
+# Surface any registered secret (incl. OP_SERVICE_ACCOUNT_TOKEN from S-42) that has
+# no Keychain entry yet. Silent when all are cached or when op is absent/unauthed.
+if command -v op >/dev/null 2>&1 && op account list &>/dev/null; then
+  EMPTY=$(fish -l -c 'dotfiles secret list' 2>/dev/null \
+            | awk '/^  \[ empty\]/ {print $3}')
+  if [ -n "$EMPTY" ]; then
+    echo "secrets: registered but not cached:" $EMPTY
+    echo "  (first interactive shell will biometric-prompt; run 'exec fish' to trigger now)"
+  fi
+fi
+```
+
 ### Claude-guardrails upstream release (notify-only)
 ```bash
 # Compare the pinned git tag in the onchange script against the most
@@ -170,6 +184,11 @@ New SSH configs (N):
 
 Secrets:
   [any findings or "no issues"]
+
+Secret cache (optional):
+  Registered but not cached: VAR1, VAR2
+  (Notification only. The first interactive shell on this machine will
+   biometric-prompt once per secret; run 'exec fish' to trigger now.)
 
 SSH backup status (optional):
   <N> of <M> disk key(s) have no 1P backup: <key1>, <key2>
