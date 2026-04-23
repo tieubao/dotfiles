@@ -182,6 +182,8 @@ The `op://` references do reveal 1Password vault and item names (e.g. `op://Priv
 
 **`.local` files are never committed.** Machine-specific Brewfile entries, VS Code extensions, fish/tmux/git overrides all live in gitignored `~/.X.local` files. `dotfiles doctor` audits git history to confirm none ever leaked.
 
+**Agents and non-interactive `op read`.** If a subprocess inside Claude Code (or any LLM agent) needs to call `op read op://...` directly rather than inherit an already-resolved env var, register a 1Password service account token as `OP_SERVICE_ACCOUNT_TOKEN`. The agent then uses bearer auth, no biometric prompt mid-session. Requires a 1P Business or Teams plan. Details: [docs/guide.md §6](docs/guide.md).
+
 ## Docs
 
 | Document | What it covers |
