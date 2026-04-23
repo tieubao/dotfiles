@@ -6,6 +6,31 @@ context.
 
 ---
 
+## [2026-04-23] S-44 spec status housekeeping @ Hans Air M4
+
+Audit found 6 specs with stale status frontmatter despite having shipped:
+S-32 (`planned`), S-36, S-37, S-38, S-39, S-41 (`proposed`). Root cause is procedural:
+the SDD flow never required flipping status to `done` at ship time, so
+frontmatter drifted from reality.
+
+Two-part fix (spec [S-44](specs/S-44-spec-status-housekeeping.md)):
+  - One-time: flip the five stale statuses, refresh tasks.md to list
+    S-35 through S-44 in the appropriate section, document S-40 as
+    intentionally unused (number gap, no spec).
+  - Standing rule: from now on, shipping a spec includes flipping its
+    status to done AND ticking its entry in tasks.md AND appending to
+    the sync log. All three, not optional.
+
+No runtime changes. No chezmoi apply needed. Pure bookkeeping.
+
+Files changed:
+  - docs/specs/S-44-spec-status-housekeeping.md (new)
+  - docs/specs/S-{32,36,37,38,39,41}-*.md: status frontmatter only
+  - docs/tasks.md: date + reconciliation for S-24 through S-44
+  - docs/sync-log.md: this entry
+
+---
+
 ## [2026-04-23] S-43 sync secret cache visibility @ Hans Air M4
 
 Follow-up to S-42. The sync workflow did not surface registered-but-uncached

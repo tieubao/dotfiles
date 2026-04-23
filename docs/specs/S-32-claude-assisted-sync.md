@@ -2,7 +2,7 @@
 id: S-32
 title: Claude-assisted dotfiles sync
 type: workflow
-status: planned
+status: done
 ---
 
 # Claude-assisted dotfiles sync
