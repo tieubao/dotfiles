@@ -550,6 +550,30 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                 echo "[--] 1Password SSH agent: not found (optional)"
             end
 
+            if not command -q op
+                echo "[--] SSH key backup status: op CLI not available (optional)"
+            else if not op account list &>/dev/null
+                echo "[--] SSH key backup status: op not signed in (run: op signin)"
+            else
+                set -l audit_out (dotfiles ssh audit 2>/dev/null)
+                set -l none_line (echo $audit_out | grep -oE 'no disk keys to back up' | head -1)
+                set -l all_ok_line (echo $audit_out | grep -oE 'all [0-9]+ disk key\(s\) have a 1P counterpart' | head -1)
+                set -l gap_line (echo $audit_out | grep -oE '[0-9]+ of [0-9]+ disk key\(s\) have no 1P backup' | head -1)
+                if test -n "$none_line"
+                    echo "[ok] SSH keys: none on disk (any in-use keys served by 1P agent)"
+                else if test -n "$all_ok_line"
+                    set -l n (echo $all_ok_line | awk '{print $2}')
+                    echo "[ok] SSH keys: $n on disk, all backed up to 1P"
+                else if test -n "$gap_line"
+                    set -l m (echo $gap_line | awk '{print $1}')
+                    set -l n (echo $gap_line | awk '{print $3}')
+                    echo "[!!] SSH keys: $m of $n disk key(s) lack 1P backup (run: dotfiles ssh adopt)"
+                    set issues (math $issues + 1)
+                else
+                    echo "[--] SSH key backup status: audit produced no summary"
+                end
+            end
+
             for f in ~/.gitconfig ~/.config/fish/config.fish ~/.ssh/config
                 if test -f $f
                     echo "[ok] $f exists"
