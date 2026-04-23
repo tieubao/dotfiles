@@ -6,6 +6,42 @@ context.
 
 ---
 
+## [2026-04-23] S-26 Brewfile cleanup @ Hans Air M4
+
+Audit per spec [S-26](specs/S-26-brewfile-cleanup.md). Two changes
+landed; everything else intentionally deferred.
+
+Findings:
+  - Real duplicate: `brew "tldr"` listed twice in the Core CLI block
+    (the second had the descriptive comment). Fixed: kept the earlier
+    occurrence, moved the comment onto it, deleted the duplicate.
+  - False duplicate: `font-source-code-pro` and
+    `font-sauce-code-pro-nerd-font` are separate fonts (original Adobe
+    vs Nerd-Font patched). Added a one-line comment above the pair so
+    future readers (including LLMs) do not dedupe them.
+
+Verified but not acted on:
+  - All casks resolve via `brew info --cask` (no renames needed).
+  - No commented-out brew/cask entries exist; all `#` comments are
+    install-path breadcrumbs for packages managed via cargo, npm, uv,
+    or curl | bash. Keeping them.
+  - `brew bundle check` exits 0 on the rendered `~/.Brewfile`.
+
+Flagged for future decision:
+  - `mise` + brew language runtimes (`go`, `node`, `python@3.12`,
+    `elixir`, `rustup`) overlap. Not a typo, a design question. Left
+    alone until the user picks a side.
+
+Repo changes:
+  - home/dot_Brewfile.tmpl: removed duplicate tldr, added font-pair comment
+  - docs/specs/S-26-brewfile-cleanup.md: replaced stub with full audit
+    spec, status=done
+  - docs/tasks.md: ticked S-26
+
+Standing rule from S-44 applied in this PR.
+
+---
+
 ## [2026-04-23] S-44 spec status housekeeping @ Hans Air M4
 
 Audit found 6 specs with stale status frontmatter despite having shipped:

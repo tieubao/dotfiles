@@ -1,6 +1,6 @@
 # Task Backlog: dwarvesf/dotfiles
 
-Updated: 2026-04-23
+Updated: 2026-04-23 (S-26)
 
 <!-- Old ID → New ID mapping: F-XX/R-XX/T-XX → S-XX. See docs/specs/S-*.md -->
 <!-- S-40 is intentionally unused (number skipped, no spec exists). -->
@@ -49,11 +49,11 @@ Updated: 2026-04-23
 - [x] S-42: 1Password service account token for agent subprocess auth
 - [x] S-43: Surface registered-but-uncached secrets in sync + doctor
 - [x] S-44: Spec status frontmatter discipline + tasks.md as rolling index
+- [x] S-26: Brewfile cleanup  - audit found 1 true duplicate (tldr), font pair clarified as intentional, mise/brew overlap deferred
 
 ## Next up
 
 - [ ] S-24: Ghostty config sync  - convert to template, review settings, add doctor check
-- [ ] S-26: Brewfile cleanup  - audit stale entries, verify casks, deduplicate
 - [ ] S-27: Gum UI helper library (lib/ui.sh)  - styled boxes, step progress, validation
 - [ ] S-29: VHS terminal demo  - animated GIF of install wizard
 - [ ] S-33: Bitwarden secrets backend  - alternative to 1Password, user choice during init
