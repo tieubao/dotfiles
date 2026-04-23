@@ -2,7 +2,7 @@
 id: S-36
 title: Claude-guardrails as a managed installer (not vendored)
 type: feature
-status: proposed
+status: done
 date: 2026-04-17
 ---
 

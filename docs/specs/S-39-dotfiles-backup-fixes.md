@@ -2,7 +2,7 @@
 id: S-39
 title: Fix dotfiles backup and consolidate 1P vault resolution
 type: bugfix
-status: proposed
+status: done
 date: 2026-04-23
 depends_on: S-38
 ---

@@ -2,7 +2,7 @@
 id: S-41
 title: Surface SSH key backup status in dotfiles doctor
 type: feature
-status: proposed
+status: done
 date: 2026-04-23
 depends_on: S-38
 ---

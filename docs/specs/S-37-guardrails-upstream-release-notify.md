@@ -2,7 +2,7 @@
 id: S-37
 title: Surface claude-guardrails upstream releases in /dotfiles-sync
 type: feature
-status: proposed
+status: done
 date: 2026-04-17
 depends_on: S-36
 ---

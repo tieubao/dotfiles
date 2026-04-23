@@ -2,7 +2,7 @@
 id: S-38
 title: SSH key inventory, adoption, and offline backup
 type: feature
-status: proposed
+status: done
 date: 2026-04-22
 depends_on: S-08
 ---
