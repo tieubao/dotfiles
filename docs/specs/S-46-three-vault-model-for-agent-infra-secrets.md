@@ -1,114 +1,96 @@
 ---
 id: S-46
-title: Three-vault model for agent-infra secrets (Trading + Infra + Private split)
+title: Multi-vault tiering for 1Password service-account scope
 type: feature
 status: proposed
 date: 2026-04-24
 ---
 
-# S-46: Three-vault model for agent-infra secrets
+# S-46: Multi-vault tiering for 1Password service-account scope
 
 ## Problem
 
-S-42 shipped the 1P service account token model for agent subprocess auth. The `trading-agent` SA is scoped read-only to a single vault (`Trading`). This works for secrets that belong to the trading domain (exchange keys, broker keys, HMAC signing keys, webhook URLs).
+[S-42](S-42-service-account-agent-auth.md) established the single-vault service-account pattern: one `OP_SERVICE_ACCOUNT_TOKEN`, scoped read-only to one dedicated vault, bearer-auth for agent subprocesses. The pattern holds until a second class of secret appears that:
 
-But agent workflows increasingly touch **agent-infra secrets** that are neither trading-domain nor owner-personal:
+- Needs runtime `op read` from agent code (not just env-var inherit at shell start per [S-35](S-35-local-pattern-and-lazy-secrets.md)), AND
+- Has a different blast-radius profile from the primary vault (e.g. platform/deploy credentials that widen a leak from "drain one domain" to "push malicious Workers, poison storage buckets, pivot to CI")
 
-- Cloudflare API Token (for `wrangler deploy` of vps-mon Worker, dashboard rollouts, future agent-driven redeploys).
-- R2 access keys (for knowledge-capture image uploads; potentially trading-data sinks later).
-- Deploy tokens for other services (Helius RPC, VPS provisioner keys, CI webhooks).
+At that point the natural reach is one of two tempting wrong answers:
 
-These currently live in the `Private` vault. They reach the agent only via fish env vars (chezmoi + Keychain cache at shell start, per S-35). When an agent workflow needs to **`op read`** them at runtime (not just inherit from env), the call fails: `Private` is deliberately outside SA scope by design of S-42.
-
-Two naïve paths are wrong:
-
-1. **Put CF + R2 in `Trading`.** Widens SA blast radius to cover deploy credentials. A compromised agent could push malicious Workers, poison the R2 bucket, or pivot to other Cloudflare resources. Violates the principle of least privilege that motivated S-42.
-2. **Run a second service account scoped to `Private`.** Two SA tokens can't share one `OP_SERVICE_ACCOUNT_TOKEN` env var. Requires shell wrappers to pick per-read, which breaks S-42's "zero new code" property.
+1. **Widen the SA's scope to include the new vault.** Collapses the blast radius: one leaked token now covers both tiers. Violates the least-privilege motivation of S-42.
+2. **Run a second SA scoped to the new vault.** `op read` consumes one `OP_SERVICE_ACCOUNT_TOKEN` per process. Two SAs require a wrapper that picks per-read, breaking S-42's zero-new-code property. Also doubles rotation cadence and Keychain-cache surface.
 
 ## Non-goals
 
-- **Moving the SA's own token out of `Private`.** The SA must stay blind to its own storage (defense-in-depth: a compromised agent cannot self-persist or re-emit the token).
-- **Adopting 1Password Environments.** Environments solve same-name-different-tier indirection; we use distinct names per tier (`binance-testnet` vs `binance-live`, `vps-mon-host-N`) and don't need tier indirection. Revisit only if we hit "5 live/testnet pairs with identical logical names".
-- **Migrating owner-personal secrets** (passwords, authenticator backups, non-infra notes) out of `Private`. Private stays private.
-- **Automated vault creation.** 1P vault + SA scope changes are web-UI operations. This spec assumes the owner performs them manually.
+- **Moving the SA's own token.** It must live in a vault the SA cannot read (defense-in-depth: a compromised agent cannot self-persist or re-emit its own credentials).
+- **Adopting 1Password Environments.** Environments solve same-logical-name-different-tier indirection; this pattern uses distinct names per tier. Revisit only when item count forces tier indirection.
+- **Migrating owner-personal secrets out of the personal tier.** Passwords, authenticator backups, non-infra notes stay out of SA scope entirely.
+- **Automated vault creation.** 1P vault creation + SA scope changes are web-UI operations. This pattern assumes the owner performs them manually.
 
 ## Solution
 
-Introduce a **third vault** for agent-infra secrets. Extend the `trading-agent` SA scope to `Trading + Infra` (both read-only). Owner-personal remains in `Private` (no SA access).
+Introduce an **N-vault tier model**, all scoped to the single SA:
 
-### Target layout
-
-| Vault | Contents | SA scope | Rationale |
+| Tier | Contents | SA scope | Rationale |
 |---|---|---|---|
-| `Trading` | Exchange keys, broker keys, HMAC signing keys, chat/webhook tokens | read-only | Trading-domain secrets |
-| `Infra` (new) | Cloudflare API token, R2 access keys, future deploy/RPC credentials | read-only | Agent-infra; deploy-tier blast radius |
-| `Private` | SA's own token, owner-personal items | **no SA access** | Defense-in-depth: SA cannot read own storage + protect owner-personal |
+| **Primary domain** | Domain-specific runtime secrets (exchange keys, strategy inputs, domain webhook tokens) | read-only | Original S-42 target |
+| **Infra / deploy** (new) | Platform API tokens, storage credentials, deploy tokens, cross-cutting agent-infra | read-only | Widens SA coverage without collapsing blast radius into the primary domain |
+| **Personal** | SA's own token, owner-personal items | **no SA access** | Defense-in-depth (SA can't read own storage) + protects owner-personal |
+
+The SA is scoped to `{Primary, Infra}`, both read-only. Adding a new infra secret = add to Infra vault, no scope change. Adding a new primary-domain secret = add to Primary vault, no scope change. SA token stays unreachable.
 
 ### Vault placement heuristic
 
-For any new secret introduced going forward, decide by asking:
+For any new secret, decide by asking in order:
 
-1. **Does the agent `op read` it at runtime?**
-   - Yes → must be in SA scope (`Trading` or `Infra`).
-   - No → can stay in `Private` (agent inherits value via fish env only; no vault read).
-2. **Is it trading-domain?** (Exchange connection, strategy signals, portfolio accounting, alerting tied to a trading host.)
-   - Yes → `Trading`.
-   - No → `Infra`.
-3. **Is it owner-personal?** (Passwords, backup codes, non-infra notes.)
-   - Always `Private`, regardless of the above.
-4. **Is it the SA's own token?**
-   - Always `Private`. Never in a vault the SA can read.
+1. **Is it the SA's own token?** → Personal vault. Always. No exceptions.
+2. **Is it owner-personal?** (Passwords, backup codes, non-infra notes.) → Personal vault.
+3. **Does the agent `op read` it at runtime?**
+   - No → Personal vault is acceptable (agent inherits value via env at shell start per S-35; no vault read needed).
+   - Yes → must live in SA scope (Primary or Infra).
+4. **Is it tied to the primary domain?** (Runs during domain workflows; a leak harms the domain first.)
+   - Yes → Primary vault.
+   - No (platform/deploy credential, cross-cutting infra) → Infra vault.
 
 ### Why not a second service account
 
 A second SA scoped to `Infra` alone would narrow each token's blast radius further. Rejected because:
 
-- `op read` takes one `OP_SERVICE_ACCOUNT_TOKEN` per process. Picking between two at each call requires a wrapper that encodes vault→token mapping, new code in every call site, or a fish-function indirection. Violates S-42's zero-new-code property.
+- `op read` takes one `OP_SERVICE_ACCOUNT_TOKEN` per process. Picking between two requires a wrapper that encodes vault→token mapping, new code in every call site, or a fish-function indirection. Violates S-42's zero-new-code property.
 - Two SAs = two rotation cadences = two Keychain entries = more operational surface. Current scale doesn't warrant it.
-- A compromise at `Infra` scope alone is still a full Cloudflare + R2 compromise. Marginal security benefit vs single-SA-with-Trading+Infra is low.
+- A compromise at Infra scope alone is still a full platform-credential compromise. Marginal security benefit vs single-SA-with-{Primary, Infra} is low relative to the operational cost.
 
-Revisit if: (a) a future deploy credential grants privileges orders of magnitude more dangerous than the current CF + R2 set (e.g. organization-admin tokens), or (b) multiple agents need different infra subsets.
+### When to revisit
 
-## Implementation steps
+Move to multiple SAs (not just multiple vaults) if any of:
 
-Owner-side 1P + chezmoi work. No code changes to the dotfiles install scripts; only `.chezmoidata/secrets.toml` bindings.
-
-1. **1P web UI** → Vaults → Create vault `Infra` (or `DeployOps`; pick final name at migration time).
-2. **1P web UI** → move items `cloudflare-api-token`, `r2-*` from `Private` → `Infra`.
-3. **1P web UI** → Developer Tools → Service Accounts → `trading-agent` → extend scope to include `Infra:read_items`. Verify the SA detail page now lists `Vaults (2)` with `Trading` + `Infra`, both Read.
-4. Update `.chezmoidata/secrets.toml`:
-   ```toml
-   CLOUDFLARE_API_TOKEN = "op://Infra/cloudflare-api-token/credential"
-   # R2 entries similarly updated to op://Infra/...
-   ```
-5. `chezmoi apply` to re-render `~/.config/fish/conf.d/secrets.fish`.
-6. `dotfiles secret refresh CLOUDFLARE_API_TOKEN` (plus each R2 variable) to invalidate the Keychain cache entries that still point at the old `op://Private/...` paths.
-7. `exec fish` — Touch ID fires once per refreshed entry; new paths cached.
-8. Update consumer repos:
-   - `tieubao/trading/docs/specs/SPEC-019-op-service-account-agent-shell.md` §2.1: scope claim updated from "Trading only" to "Trading + Infra"; add a cross-ref to this spec.
-   - `tieubao/trading/operations/broker-access.md`: add an `Infra` row to the "Service account + infra secret rotation" table.
+- A future credential grants privileges orders of magnitude more dangerous than the current Infra set (e.g. organization-admin tokens).
+- Multiple agent classes emerge that need disjoint infra subsets.
+- The vault count reaches the point where 1P Environments become necessary (same logical name across ≥5 tiers).
 
 ## Testing / Done definition
 
-- [ ] From a fresh Claude Code session, `op read op://Infra/cloudflare-api-token/credential` returns the token (no scope denial).
-- [ ] From the same session, `op read op://Private/op-service-account-trading/credential` still returns scope denial (SA remains blind to its own storage).
-- [ ] `tieubao/trading/operations/scripts/verify-op-trading-access.sh` continues to exit 0 / 5 of 5 (no regression on trading-vault access).
-- [ ] `wrangler deploy` from agent shell still works (CF token still loads via fish env; env-inherit behavior unchanged).
-- [ ] SPEC-019 §2.1 + broker-access.md updated and committed in the trading repo.
-- [ ] This spec's `status` flipped to `done`; `tasks.md` row added.
+For any application of this pattern, verify from a fresh shell with `OP_SERVICE_ACCOUNT_TOKEN` loaded:
 
-## Open questions
+- `op read op://<Primary>/<known-item>/credential` returns the value.
+- `op read op://<Infra>/<known-item>/credential` returns the value.
+- `op read op://<Personal>/<SA-token-item>/credential` returns a scope-denial error (SA remains blind to its own storage).
+- S-35 env-var consumers of Infra secrets continue to work (no regression on the lazy-resolve path).
+- The SA's scope detail page in 1P web UI lists exactly the two intended vaults, both Read-only.
 
-1. Final vault name: `Infra`, `DeployOps`, `Agent-Infra`, `Shared-Infra`? Bias: `Infra` (terse, parallels existing `Private` + `Trading`). Decide at migration time.
-2. Seed `Infra` with the vps-mon Telegram bot token + Discord webhook currently in `Trading`? Argument for move: they are deploy-style secrets (external service tokens). Argument against: they alert on trading hosts and the blast radius of their leak is trading-specific (attacker can spam/suppress trading alerts, nothing else). Lean: keep in `Trading`. The heuristic above prioritises security-domain over technical-layer; these are trading-domain.
+Shipping-side checklist (per-owner, per-migration):
+
+- [ ] Consumer repos that reference the SA's scope are updated with the new vault(s).
+- [ ] `docs/operations/` entry recording the specific migration (item moves, SA scope change, cache refresh) is captured.
+- [ ] `docs/sync-log.md` entry appended per [S-44](S-44-spec-status-housekeeping.md).
+- [ ] This spec's `status` flipped to `done` once the first application ships.
 
 ## References
 
-- [S-42](S-42-service-account-agent-auth.md) — parent spec: introduces the service-account agent-auth model that this spec extends.
-- [S-35](S-35-local-pattern-and-lazy-secrets.md) — pre-registered secret inherit path (still the default for env-var consumers; unaffected).
-- `tieubao/trading/docs/specs/SPEC-019-op-service-account-agent-shell.md` — consumer-side spec in the trading repo; mirrors S-42 for that repo's audience. Needs an update when this spec ships.
-- `tieubao/trading/operations/broker-access.md` — "Service account + infra secret rotation" table; gets an `Infra` row when this spec ships.
+- [S-42](S-42-service-account-agent-auth.md): parent pattern, single-vault SA for agent subprocess auth. This spec extends it to N vaults.
+- [S-35](S-35-local-pattern-and-lazy-secrets.md): pre-registered secret inherit path; unaffected by multi-vault tiering.
+- [`docs/operations/`](../operations/): where specific migration runs and SA rotations are logged. The author's first application of this pattern is recorded there.
 
 ---
 
-**Status note**: proposed, not implemented. Owner-side 1P web UI actions (vault creation, item moves, SA scope extension) cannot be automated. Revisit when: the first agent workflow needs `op read` on CF or R2 credentials at runtime; OR a new agent-infra secret joins the set; OR the next scheduled SA rotation on 2026-07-18 — whichever comes first.
+**Status note**: proposed. This is a pattern spec; no code changes to the install pipeline are required. Shipping = the owner applies the pattern to their own 1P setup; the migration record lives in `docs/operations/`, not inline here.

@@ -59,7 +59,7 @@ Updated: 2026-04-24 (S-46 proposed)
 - [ ] S-29: VHS terminal demo  - animated GIF of install wizard
 - [ ] S-33: Bitwarden secrets backend  - alternative to 1Password, user choice during init
 - [ ] S-34: Multi-agent LLM support  - Codex, OpenCode, Cursor alongside Claude Code
-- [ ] S-46: Three-vault model for agent-infra secrets (Trading + Infra + Private split)  - deferred; revisit when first agent workflow needs `op read` on CF or R2 creds, or next SA rotation 2026-07-18
+- [ ] S-46: Multi-vault tiering for 1P service-account scope  - pattern spec; author's first application recorded in `docs/operations/2026-04-1password-infra-vault-migration.md`. Apply at next SA rotation 2026-07-18 or earlier if an agent workflow needs runtime `op read` on infra creds.
 
 ## Backlog (no immediate plans)
 
