@@ -1,6 +1,6 @@
 # Task Backlog: dwarvesf/dotfiles
 
-Updated: 2026-04-23 (S-45)
+Updated: 2026-04-24 (S-46 proposed)
 
 <!-- Old ID → New ID mapping: F-XX/R-XX/T-XX → S-XX. See docs/specs/S-*.md -->
 <!-- S-40 is intentionally unused (number skipped, no spec exists). -->
@@ -59,6 +59,7 @@ Updated: 2026-04-23 (S-45)
 - [ ] S-29: VHS terminal demo  - animated GIF of install wizard
 - [ ] S-33: Bitwarden secrets backend  - alternative to 1Password, user choice during init
 - [ ] S-34: Multi-agent LLM support  - Codex, OpenCode, Cursor alongside Claude Code
+- [ ] S-46: Multi-vault tiering for 1P service-account scope  - pattern spec; author's first application recorded in `docs/operations/2026-04-1password-infra-vault-migration.md`. Apply at next SA rotation 2026-07-18 or earlier if an agent workflow needs runtime `op read` on infra creds.
 
 ## Backlog (no immediate plans)
 
