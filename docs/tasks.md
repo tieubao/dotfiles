@@ -1,6 +1,6 @@
 # Task Backlog: dwarvesf/dotfiles
 
-Updated: 2026-04-23 (S-45)
+Updated: 2026-04-24 (S-46 proposed)
 
 <!-- Old ID → New ID mapping: F-XX/R-XX/T-XX → S-XX. See docs/specs/S-*.md -->
 <!-- S-40 is intentionally unused (number skipped, no spec exists). -->
@@ -59,6 +59,7 @@ Updated: 2026-04-23 (S-45)
 - [ ] S-29: VHS terminal demo  - animated GIF of install wizard
 - [ ] S-33: Bitwarden secrets backend  - alternative to 1Password, user choice during init
 - [ ] S-34: Multi-agent LLM support  - Codex, OpenCode, Cursor alongside Claude Code
+- [ ] S-46: Three-vault model for agent-infra secrets (Trading + Infra + Private split)  - deferred; revisit when first agent workflow needs `op read` on CF or R2 creds, or next SA rotation 2026-07-18
 
 ## Backlog (no immediate plans)
 
