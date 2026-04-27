@@ -104,20 +104,20 @@ When asked directly ("migrate to uv"), follow the ask regardless of ownership.
 
 ## Git branch naming
 
-Format: `<owner>/<type>/<short-slug>`
+Format: `<type>/<short-slug>`
 
-- `<owner>`: git handle (default: `tieubao`)
 - `<type>`: one of `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `ingest` (same vocabulary as conventional commits)
 - `<short-slug>`: 2-5 kebab-case words describing the change
 
 Rules:
-- NO dates in branch names. Exception: branches that ARE a dated batch (e.g. daily ingests -> `tieubao/ingest/2026-04-22`).
+- NO owner/username prefix. Single-owner repos; prefix adds noise without identity value. Exception: multi-contributor forks where disambiguation is needed (use `<handle>/<type>/<short-slug>`).
+- NO dates in branch names. Exception: branches that ARE a dated batch (e.g. daily ingests -> `ingest/2026-04-22`).
 - NO spec IDs, ticket numbers, or phase markers (`SPEC-018`, `p1`, `phase-2`). Put those in the PR body.
-- Target 20-30 chars, hard cap 40. If you cannot describe it short, the branch is doing too much.
+- Target 15-25 chars, hard cap 35. If you cannot describe it short, the branch is doing too much.
 - Kebab-case only. No camelCase, no underscores.
 
-Good: `tieubao/feat/agent-skeleton`, `tieubao/refactor/split-domain-folders`, `tieubao/ingest/2026-04-22`
-Bad: `scaffold/spec-018-p1-agent-skeleton-2026-04-22` (date + spec ID + phase marker + vague type)
+Good: `feat/agent-skeleton`, `refactor/split-domain-folders`, `ingest/2026-04-22`, `docs/sa-rotation-sweep`
+Bad: `scaffold/spec-018-p1-agent-skeleton-2026-04-22` (date + spec ID + phase marker + vague type), `tieubao/feat/x` (owner prefix on own repo)
 
 ## When implementing from specs
 - Read the full spec before starting
