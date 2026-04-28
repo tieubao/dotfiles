@@ -6,6 +6,36 @@ context.
 
 ---
 
+## [2026-04-28] sync workflow hardening (re-verify gate) @ Hans Air M4
+
+Sync session opened with a pasted prior-session report flagging two
+blockers (chezmoi init required for `guardrails_variant` and `op_vault`;
+Zed local drift on panel-dock keys). Re-verification on the live system
+showed both already resolved: `~/.config/chezmoi/chezmoi.toml` carried
+every required var, and `diff <(chezmoi cat ~/.config/zed/settings.json)
+~/.config/zed/settings.json` was empty. The LLM (this session) had
+parroted the stale claims as actionable blockers before checking,
+which sent the user toward unnecessary interactive work.
+
+Decisions:
+  - 17 brew + 3 cask listed as new on this host: user said "skip all".
+    Nothing added to `home/dot_Brewfile.tmpl` or `~/.Brewfile.local`.
+  - 3 pulled upstream chezmoiscripts (`aa-init`, `ab-1password-check`,
+    `zz-summary`) executed via `chezmoi apply` (run by user).
+
+Workflow fix landed on `fix/sync-reverify-blockers` (a989bc7):
+  - dotfiles-sync skill (both copies): new Step 2.5 forces re-derivation
+    of every blocker claim from current state before reporting it.
+    Step 3 report header now stamps timestamp, hostname, git rev so
+    paste-ins from prior sessions are visibly snapshots.
+  - CLAUDE.md: new "Pre-action verification" subsection at the top of
+    `## Verification rules`, generalised beyond sync to any LLM-driven
+    interactive prompt.
+
+Branch not yet merged. Push + PR is a separate decision.
+
+---
+
 ## [2026-04-23] docs cross-refs (S-42 in README, S-44 rule in CLAUDE.md) @ Hans Air M4
 
 Post-ship audit caught two real documentation gaps:
