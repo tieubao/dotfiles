@@ -9,7 +9,7 @@
 // Edit: chezmoi edit ~/.config/zed/settings.json
 {
   "project_panel": {
-    "dock": "right"
+    "dock": "left"
   },
   "outline_panel": {
     "dock": "right"
@@ -41,8 +41,12 @@
 {{- end }}
   "icon_theme": "Catppuccin Frappé",
   "agent": {
-    "dock": "left",
-    "always_allow_tool_actions": true,
+    "enable_feedback": false,
+    "sidebar_side": "right",
+    "tool_permissions": {
+      "default": "allow"
+    },
+    "dock": "right",
     "default_profile": "write",
     "default_model": {
       "provider": "anthropic",
