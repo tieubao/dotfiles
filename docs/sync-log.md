@@ -6,6 +6,41 @@ context.
 
 ---
 
+## [2026-04-28] claude overlay manages `permissions.defaultMode` @ Mac mini
+
+Cross-machine drift surfaced after the morning catch-up sync: Mac Air's
+Claude Code session shows the `>> bypass permissions on` badge, Mac
+mini's does not. Root cause: Air had `permissions.defaultMode:
+"bypassPermissions"` set locally (unmanaged by dotfiles), Mac mini had
+no value.
+
+**Fix:** added `permissions.defaultMode` to the personal overlay at
+`home/dot_claude/modify_settings.json`. Uses the same `// fallback`
+pattern as the other managed fields (only sets the value if absent),
+and merges additively into `permissions` so guardrails-owned
+`permissions.deny` survives. Updated CLAUDE.md scope description to
+reflect that `permissions.defaultMode` is now ours, `permissions.deny`
+remains theirs, and `hooks.PreToolUse` is an additive merge (the prior
+"never touches PreToolUse" claim in the doc was inaccurate; fixed).
+
+**Trade-off accepted:** every machine that syncs from this point boots
+Claude Code in bypass-permissions mode by default. Per-tool confirmation
+prompts disappear; hard-block hooks (pipe-to-shell, `rm -rf` of
+`/`/`~`/`$HOME`) and guardrails' `permissions.deny` rules still fire.
+Consistent with the existing `skipDangerousModePermissionPrompt: true`
+default. Override locally by editing `~/.claude/settings.json` after
+apply -- additive merge preserves any manually-set value.
+
+**Verification:**
+- shellcheck on `modify_settings.json` clean
+- piped current settings through the script: `permissions.defaultMode`
+  emitted as `"bypassPermissions"`, `permissions.deny` array intact
+- `chezmoi apply ~/.claude/settings.json` succeeded silently
+- `jq '.permissions.defaultMode' ~/.claude/settings.json` returns
+  `"bypassPermissions"` post-apply
+
+---
+
 ## [2026-04-28] catch-up sync + Zed panel-dock absorbed @ Mac mini
 
 First sync on Mac mini after 17 upstream commits landed from Hans Air M4

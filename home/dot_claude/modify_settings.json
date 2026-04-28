@@ -6,11 +6,13 @@
 #
 # Scope: guarantees personal fields are present (statusLine, the learning-
 # capture Stop hook, four personal PreToolUse safety hooks, enabled plugins,
-# skipDangerousModePermissionPrompt).
+# skipDangerousModePermissionPrompt, permissions.defaultMode).
 #
 # Deliberately DOES NOT touch $schema, permissions.deny, or
 # hooks.UserPromptSubmit -- those are owned by claude-guardrails and
 # installed by the sibling run_onchange_after_claude-guardrails.sh script.
+# permissions.defaultMode is ours; permissions.deny is theirs. We use an
+# additive merge on the permissions object so both survive.
 # For hooks.PreToolUse we use an additive merge: each managed entry is
 # de-duplicated by marker string and appended to whatever guardrails
 # (or the user) already put there, so guardrails' scan-commit.sh entry
@@ -58,6 +60,9 @@ echo "$INPUT" | jq \
     $existing + {
         enableAllProjectMcpServers: ($existing.enableAllProjectMcpServers // false),
         skipDangerousModePermissionPrompt: ($existing.skipDangerousModePermissionPrompt // true),
+        permissions: (($existing.permissions // {}) + {
+            defaultMode: (($existing.permissions // {}).defaultMode // "bypassPermissions")
+        }),
         statusLine: ($existing.statusLine // {
             type: "command",
             command: "bash ~/.claude/statusline-command.sh"
