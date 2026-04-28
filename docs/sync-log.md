@@ -6,6 +6,91 @@ context.
 
 ---
 
+## [2026-04-28] claude overlay manages `permissions.defaultMode` @ Mac mini
+
+Cross-machine drift surfaced after the morning catch-up sync: Mac Air's
+Claude Code session shows the `>> bypass permissions on` badge, Mac
+mini's does not. Root cause: Air had `permissions.defaultMode:
+"bypassPermissions"` set locally (unmanaged by dotfiles), Mac mini had
+no value.
+
+**Fix:** added `permissions.defaultMode` to the personal overlay at
+`home/dot_claude/modify_settings.json`. Uses the same `// fallback`
+pattern as the other managed fields (only sets the value if absent),
+and merges additively into `permissions` so guardrails-owned
+`permissions.deny` survives. Updated CLAUDE.md scope description to
+reflect that `permissions.defaultMode` is now ours, `permissions.deny`
+remains theirs, and `hooks.PreToolUse` is an additive merge (the prior
+"never touches PreToolUse" claim in the doc was inaccurate; fixed).
+
+**Trade-off accepted:** every machine that syncs from this point boots
+Claude Code in bypass-permissions mode by default. Per-tool confirmation
+prompts disappear; hard-block hooks (pipe-to-shell, `rm -rf` of
+`/`/`~`/`$HOME`) and guardrails' `permissions.deny` rules still fire.
+Consistent with the existing `skipDangerousModePermissionPrompt: true`
+default. Override locally by editing `~/.claude/settings.json` after
+apply -- additive merge preserves any manually-set value.
+
+**Verification:**
+- shellcheck on `modify_settings.json` clean
+- piped current settings through the script: `permissions.defaultMode`
+  emitted as `"bypassPermissions"`, `permissions.deny` array intact
+- `chezmoi apply ~/.claude/settings.json` succeeded silently
+- `jq '.permissions.defaultMode' ~/.claude/settings.json` returns
+  `"bypassPermissions"` post-apply
+
+---
+
+## [2026-04-28] catch-up sync + Zed panel-dock absorbed @ Mac mini
+
+First sync on Mac mini after 17 upstream commits landed from Hans Air M4
+(S-36 guardrails, S-42 service account, S-44/S-45 secret discipline,
+S-46 multi-vault model, tunnel functions, Brewfile cleanup).
+
+**Pre-apply blockers resolved:**
+- `chezmoi init` re-run to pick up new template variables
+  (`guardrails_variant` from S-36, `op_vault` from S-46). Without this,
+  apply aborted on the new `run_onchange_after_claude-guardrails.sh.tmpl`.
+- Local drift on `~/.config/zed/settings.json` absorbed into source. User
+  had added `project_panel.dock=right`, `outline_panel.dock=right`,
+  `collaboration_panel.dock=right`, `git_panel.dock=right`,
+  `agent_servers.claude-acp.type=registry`, and `agent.dock=left`.
+  These are sensible defaults; promoted to core so all machines pick
+  them up.
+
+**New packages on this machine (all classified skip):** 17 brew leaves +
+3 casks were untracked, but every one is a non-issue:
+- legacy from the Zsh/Prezto era (zsh, hub, the_silver_searcher,
+  youtube-dl, z) - superseded by fish + gh + ripgrep + zoxide + yt-dlp
+- transitive deps (shared-mime-info, hashicorp/tap/terraform - the latter
+  is the tap form of `terraform` already in core)
+- machine-specific tooling not worth promoting (gitup, llvm@21, rbenv,
+  ruby, rust, subversion, typescript, yarn, pipx, htop)
+- aliases of already-tracked packages (google-cloud-sdk = renamed
+  gcloud-cli; zen-browser already added to core in the pulled
+  commits; microsoft-auto-update is auto-installed by Office)
+
+Nothing was added to `~/.Brewfile.local` this round - none of these are
+worth tracking even per-machine. They stay installed but unmanaged.
+
+**Stale entries deliberately kept:** `~/.Brewfile` lists 8 brews
+(ffmpeg, go, librsvg, node, ripgrep, sqlite, terraform, tldr) and 2
+casks (nordvpn, slack) that aren't installed on Mac mini. Not pruning
+because they're real core packages used on Hans Air M4. Mac mini just
+hasn't run `brew bundle` against the latest core list yet.
+
+Repo changes:
+  - home/dot_config/zed/settings.json.tmpl: absorbed 6 local keys
+    (panel docks + agent_servers + agent.dock)
+
+Skipped this sync (user choice):
+  - `chezmoi apply` itself. Would deploy 14 upstream files and trigger
+    `brew bundle` (which would install the 8 stale brews + 2 stale
+    casks). User can run `chezmoi apply` separately when ready.
+  - Pruning stale Brewfile entries.
+
+---
+
 ## [2026-04-28] sync workflow hardening (re-verify gate) @ Hans Air M4
 
 Sync session opened with a pasted prior-session report flagging two

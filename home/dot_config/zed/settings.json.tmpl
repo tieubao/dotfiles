@@ -8,6 +8,23 @@
 // Zed settings — managed by chezmoi
 // Edit: chezmoi edit ~/.config/zed/settings.json
 {
+  "project_panel": {
+    "dock": "right"
+  },
+  "outline_panel": {
+    "dock": "right"
+  },
+  "collaboration_panel": {
+    "dock": "right"
+  },
+  "git_panel": {
+    "dock": "right"
+  },
+  "agent_servers": {
+    "claude-acp": {
+      "type": "registry"
+    }
+  },
 {{- if .use_1password }}
   "context_servers": {
     // MCP server API keys injected from 1Password at `chezmoi apply` time.
@@ -24,6 +41,7 @@
 {{- end }}
   "icon_theme": "Catppuccin Frappé",
   "agent": {
+    "dock": "left",
     "always_allow_tool_actions": true,
     "default_profile": "write",
     "default_model": {
