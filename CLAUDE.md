@@ -171,9 +171,14 @@ The ignore file is itself a Go template. macOS-only configs (Ghostty, Zed, Brewf
 
 ## Verification rules
 
-After implementing any feature from `docs/specs/S-*.md`:
+### Pre-action verification (before recommending interactive work)
+
+Before asking the user to run `chezmoi init`, `op signin`, manual file edits, or any interactive command, re-verify the precondition is currently true. If a prior session's report (or pasted output) claims a blocker exists, re-derive it from current state (read the relevant config, run the diff) before parroting it. Drop claims that no longer hold and note the discrepancy. Never request interactive work for a precondition that is already satisfied -- it wastes the user's time and erodes trust in the workflow.
 
 ### Mandatory self-check (do NOT skip)
+
+After implementing any feature from `docs/specs/S-*.md`:
+
 1. Run the relevant verification commands (see table below)
 2. If ANY check fails, fix the issue and re-run
 3. Repeat until all checks pass or you've made 5 fix attempts

@@ -134,6 +134,20 @@ echo "--- ~/.gitconfig.local ---"
 test -f ~/.gitconfig.local && wc -l < ~/.gitconfig.local | xargs echo "(lines:" | tr -d '\n' && echo ")" || echo "(not created)"
 ```
 
+## Step 2.5: Re-verify any blocker before reporting it
+
+If a prior session's sync report appears in the conversation, **treat it as a hint, not as ground truth.** State on disk drifts between sessions; the user may have already resolved a flagged issue. Before listing any item as a blocker that requires user action (`chezmoi init`, manual signin, interactive file edit, etc.), re-derive it from current commands.
+
+| Claim type | Re-verify with |
+|---|---|
+| "chezmoi init required, var X missing" | `grep '^  X = ' ~/.config/chezmoi/chezmoi.toml` - if present, the var is set, init is not needed |
+| "config file Y has drifted" | `diff <(chezmoi cat ~/Y) ~/Y` - exit 0 means no drift |
+| "package P is new" | re-run the `comm -23` brew/cask diff from Step 2 |
+| "extension E is new" | re-run the `comm -23` extension diff from Step 2 |
+| anything else | re-run the underlying scan command from Step 2 |
+
+If a prior claim no longer holds, **drop it from the report and note the discrepancy** ("prior report said X, but X is already resolved - skipping"). Never tell the user to perform interactive work without confirming the precondition currently holds.
+
 ## Step 3: Report
 
 Present findings in plain language, grouped by category. For each category, show:
@@ -143,7 +157,8 @@ Present findings in plain language, grouped by category. For each category, show
 Use this format:
 
 ```
-Dotfiles sync report (YYYY-MM-DD)
+Dotfiles sync report - YYYY-MM-DDTHH:MM:SS @ <hostname> | rev <git-short-rev>
+(Snapshot. If pasted into a later session, re-verify each blocker before acting.)
 
 Config drift (N files):
   - path  - what changed (brief description of the diff)
