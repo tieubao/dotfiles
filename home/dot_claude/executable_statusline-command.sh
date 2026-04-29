@@ -59,6 +59,21 @@ if echo "$model" | grep -q '^{'; then
 fi
 [ -n "$model" ] && model_part=" ${DIM}│${RESET} ${MAUVE}${model}${RESET}" || model_part=""
 
+# --- Reasoning effort ---
+effort_part=""
+effort=$(echo "$input" | jq -r '.effort.level // empty')
+if [ -n "$effort" ]; then
+  case "$effort" in
+    low)    e_letter="L";   e_color="$DIM" ;;
+    medium) e_letter="M";   e_color="$SAPPHIRE" ;;
+    high)   e_letter="H";   e_color="$PEACH" ;;
+    xhigh)  e_letter="X";   e_color="$RED" ;;
+    max)    e_letter="MAX"; e_color="$RED" ;;
+    *)      e_letter="$effort"; e_color="$DIM" ;;
+  esac
+  effort_part=" ${e_color}[${e_letter}]${RESET}"
+fi
+
 # --- Context ---
 ctx_part=""
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
@@ -74,6 +89,25 @@ if [ -n "$used_pct" ]; then
   ctx_part=" ${DIM}│${RESET} ${color}${used_int}%${RESET}"
 fi
 
+# --- Rate limit reset countdown helper ---
+fmt_remaining() {
+  local resets_at=$1
+  local now d h m remaining
+  now=$(date +%s)
+  remaining=$((resets_at - now))
+  [ "$remaining" -le 0 ] && return
+  d=$((remaining / 86400))
+  h=$(((remaining % 86400) / 3600))
+  m=$(((remaining % 3600) / 60))
+  if [ "$d" -gt 0 ]; then
+    printf '%dd%dh' "$d" "$h"
+  elif [ "$h" -gt 0 ]; then
+    printf '%dh%02dm' "$h" "$m"
+  else
+    printf '%dm' "$m"
+  fi
+}
+
 # --- Rate limit ---
 rate_part=""
 five_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
@@ -86,7 +120,13 @@ if [ -n "$five_pct" ]; then
   else
     color="$SAPPHIRE"
   fi
-  rate_part=" ${color}5h:${five_int}%${RESET}"
+  five_eta=""
+  five_resets=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
+  if [ -n "$five_resets" ]; then
+    eta=$(fmt_remaining "$five_resets")
+    [ -n "$eta" ] && five_eta=" ${DIM}${eta}${RESET}"
+  fi
+  rate_part=" ${color}5h:${five_int}%${RESET}${five_eta}"
 fi
 
 # --- Weekly rate limit ---
@@ -100,7 +140,13 @@ if [ -n "$seven_pct" ]; then
   else
     color="$MAUVE"
   fi
-  rate_part="${rate_part} ${color}7d:${seven_int}%${RESET}"
+  seven_eta=""
+  seven_resets=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
+  if [ -n "$seven_resets" ]; then
+    eta=$(fmt_remaining "$seven_resets")
+    [ -n "$eta" ] && seven_eta=" ${DIM}${eta}${RESET}"
+  fi
+  rate_part="${rate_part} ${color}7d:${seven_int}%${RESET}${seven_eta}"
 fi
 
 # --- Session duration ---
@@ -117,4 +163,8 @@ if [ -n "$duration_ms" ] && [ "$duration_ms" != "0" ]; then
   fi
 fi
 
-printf '%b' "${BLUE}${dir}${RESET}${git_part}${model_part}${ctx_part}${rate_part}${duration_part}"
+# --- Hostname ---
+host=$(hostname -s 2>/dev/null)
+[ -n "$host" ] && host_part=" ${DIM}@${host}${RESET}" || host_part=""
+
+printf '%b' "${BLUE}${dir}${RESET}${git_part}${model_part}${effort_part}${ctx_part}${rate_part}${duration_part}${host_part}"
