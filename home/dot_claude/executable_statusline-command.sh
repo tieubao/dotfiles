@@ -8,6 +8,8 @@ GREEN='\033[38;2;166;227;161m'   # green
 YELLOW='\033[38;2;249;226;175m'  # yellow
 RED='\033[38;2;243;139;168m'     # red
 MAUVE='\033[38;2;203;166;247m'   # mauve
+SAPPHIRE='\033[38;2;116;199;236m' # sapphire (5h low)
+PEACH='\033[38;2;250;179;135m'   # peach (7d warn)
 DIM='\033[38;2;108;112;134m'     # overlay0
 RESET='\033[0m'
 
@@ -82,9 +84,23 @@ if [ -n "$five_pct" ]; then
   elif [ "$five_int" -ge 50 ]; then
     color="$YELLOW"
   else
-    color="$DIM"
+    color="$SAPPHIRE"
   fi
   rate_part=" ${color}5h:${five_int}%${RESET}"
+fi
+
+# --- Weekly rate limit ---
+seven_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+if [ -n "$seven_pct" ]; then
+  seven_int=$(printf '%.0f' "$seven_pct")
+  if [ "$seven_int" -ge 80 ]; then
+    color="$RED"
+  elif [ "$seven_int" -ge 50 ]; then
+    color="$PEACH"
+  else
+    color="$MAUVE"
+  fi
+  rate_part="${rate_part} ${color}7d:${seven_int}%${RESET}"
 fi
 
 # --- Session duration ---
