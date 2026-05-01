@@ -743,23 +743,32 @@ fetched when a shell actually starts for the first time on a machine, or
 after `dotfiles secret refresh`. The rendered `secrets.fish` on disk is
 safe to grep -- it contains only references, not values.
 
-### Service account for agent subprocess `op read` (S-47)
+### Service account for agent subprocess `op read` (S-49)
 
 Claude Code (and other agents) sometimes needs to call `op read op://...`
 as a subprocess mid-session, for secrets we haven't pre-registered. Those
 calls hit a wall: `op` refuses to trigger biometric when stdin is not a
 TTY, so the read fails silently.
 
-The fix is a **1Password service account token**, but injected **per
-launch**, not auto-exported into every shell.
+The fix is a **dual-mode** setup. `OP_SERVICE_ACCOUNT_TOKEN` is auto-loaded
+into every fish shell so subprocesses inherit bearer auth (headless `op read`
+works). Inside interactive fish, a small function intercepts `op` and strips
+the token inline so daily commands fall back to biometric and see all your
+vaults.
 
-Why per-launch: once `OP_SERVICE_ACCOUNT_TOKEN` is in env, `op` uses
-bearer auth and ignores the user's biometric session. If we auto-load it
-in every fish shell, the user's daily `op` CLI gets scoped to whatever
-vaults the service account can see. Wrapping the launch instead keeps
-the daily shell biometric / multi-vault, while giving agents the
-headless capability they need. (S-42 used the auto-load model and is
-superseded by this spec.)
+```
+fish login → set -gx OP_SERVICE_ACCOUNT_TOKEN ...
+   │
+   ├─ Interactive `op vault list` typed at prompt
+   │     → fish function `op` runs, status is-interactive = true
+   │     → env -u OP_SERVICE_ACCOUNT_TOKEN command op vault list
+   │     → biometric, all vaults visible
+   │
+   └─ Subprocess (zsh, bash, scripts, claude)
+         → no fish function in scope
+         → calls `op` binary directly
+         → bearer auth via env → SA-scoped, headless
+```
 
 Requires a 1Password **Business or Teams** plan. Family/Individual plans
 cannot create service accounts; stick with per-secret registration.
@@ -771,35 +780,28 @@ cannot create service accounts; stick with per-secret registration.
    not `Private`, so a token leak doesn't expose personal secrets.
 2. Store the resulting `ops_...` token as a regular 1Password item,
    e.g. `op://Private/op-service-account-<purpose>/credential`.
-3. Update the hardcoded ref at the top of
-   `home/dot_config/fish/functions/with-agent-token.fish` to match the
-   item path you used.
-
-**Daily use:**
-
-```fish
-# Default launch — biometric, all vaults visible to op CLI, but agent
-# subprocess `op read` will fail silently (no TTY).
-claude
-
-# When the agent needs ad-hoc op read mid-session — token injected into
-# this process only; daily shell unaffected.
-with-agent-token claude
-```
-
-The wrapper reads the token via the same `secret-cache-read` helper as
-every other secret. First call prompts biometric once and caches in
-Keychain; subsequent calls are silent.
+3. Register on each machine:
+   ```fish
+   dotfiles secret add OP_SERVICE_ACCOUNT_TOKEN \
+       "op://Private/op-service-account-<purpose>/credential"
+   exec fish
+   ```
 
 **Verifying it works:**
 
 ```fish
-test -z "$OP_SERVICE_ACCOUNT_TOKEN"; and echo "OK: token not in env"
-op whoami | grep "User Type:"            # USER_OF_ACCOUNT (biometric)
-op vault list                             # all vaults visible
+echo $OP_SERVICE_ACCOUNT_TOKEN | head -c 4   # ops_  (auto-loaded)
 
-with-agent-token op whoami | grep "User Type:"   # SERVICE_ACCOUNT
-with-agent-token op vault list                    # only SA-scoped vaults
+# Interactive op = biometric, all vaults
+op whoami | grep "User Type:"                # USER_OF_ACCOUNT
+op vault list                                 # all your vaults
+
+# Subprocess op = bearer auth, SA scope, headless
+bash -c 'op whoami | grep "User Type:"'       # SERVICE_ACCOUNT
+bash -c 'op vault list'                       # only SA-scoped vaults
+
+# `with-agent-token` still works as a debug escape hatch.
+with-agent-token op whoami                    # SERVICE_ACCOUNT (forced)
 ```
 
 **Rotating the token:** revoke in the 1P web console, generate a new one,
@@ -807,15 +809,24 @@ update the 1P item, then on each machine:
 
 ```fish
 dotfiles secret refresh OP_SERVICE_ACCOUNT_TOKEN
-# next with-agent-token call refreshes the Keychain cache
+exec fish
 ```
 
-**Do not register the token via `dotfiles secret add`.** That restores
-the always-on behaviour S-47 fixed. The subcommand guards against this
-and refuses without `--force`.
+**Bypassing the interceptor on demand:**
 
-Full design: [`docs/specs/S-47`](specs/S-47-agent-token-opt-in-wrapper.md).
-Historical context: [`docs/specs/S-42`](specs/S-42-service-account-agent-auth.md) (superseded).
+If you need to test the SA scope from inside fish (e.g., "what does the
+agent see?"), use either:
+
+```fish
+command op vault list      # skip the function definition
+with-agent-token op vault list   # explicit per-invocation wrapper
+```
+
+Both should return the SA-scoped subset, not your full vault list.
+
+Full design: [`docs/specs/S-49`](specs/S-49-dual-mode-op-via-fish-interceptor.md).
+History: [`docs/specs/S-47`](specs/S-47-agent-token-opt-in-wrapper.md) (amended),
+[`docs/specs/S-42`](specs/S-42-service-account-agent-auth.md) (superseded).
 
 ### Why Keychain instead of a dotfile cache
 

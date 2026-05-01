@@ -6,6 +6,47 @@ context.
 
 ---
 
+## [2026-05-01] S-49: dual-mode `op` via fish interceptor @ Hans-Air-M4
+
+S-47 had restored multi-vault biometric in the daily shell by removing
+`OP_SERVICE_ACCOUNT_TOKEN` from auto-load — but at the cost of the original
+S-42 capability: agent subprocesses (Claude Code's Bash tool runs zsh)
+could no longer do ad-hoc `op read op://...` mid-session. User wanted both.
+
+**Design.** Auto-load the token globally so subprocesses inherit bearer auth.
+Intercept `op` inside interactive fish via a tiny function
+(`home/dot_config/fish/functions/op.fish`) that runs
+`env -u OP_SERVICE_ACCOUNT_TOKEN command op $argv` when
+`status is-interactive`. Subprocesses don't see the fish function and call
+the binary directly with the token in env. Net: daily shell biometric and
+multi-vault, every subprocess (including Claude Code) headless and SA-scoped.
+No per-launch wrapper required.
+
+**Changes:**
+- New: `home/dot_config/fish/functions/op.fish` (5-line interceptor)
+- Re-added `OP_SERVICE_ACCOUNT_TOKEN` entry to `home/.chezmoidata/secrets.toml`
+- Removed the S-47 guard from `dotfiles secret add` (auto-load is the
+  intended path again)
+- S-47 frontmatter set to `status: amended by S-49`
+- `with-agent-token` retained as a debug escape hatch
+- Auto-memory rewritten to describe dual-mode
+
+**Verification (all from a fresh `fish -i -c` after `chezmoi apply`):**
+- `OP_SERVICE_ACCOUNT_TOKEN` prefix `ops_` in env ✓
+- Interactive `op vault list` returns 8 vaults ✓
+- `bash -c 'op vault list'` returns 1 vault (Trading) ✓
+- `with-agent-token op vault list` returns 1 vault (Trading) — escape hatch
+  still works ✓
+- `command op vault list` returns 1 vault (Trading) — bypasses interceptor ✓
+- `fish -n` clean on all touched function files ✓
+
+**Trade-off:** token is back in shell env (S-47's strict guarantee gone).
+Same blast-radius profile as the original S-42 model. Accepted because the
+interceptor neutralises the daily-shell side effect that drove S-47, and
+the agent-capability win is significant.
+
+---
+
 ## [2026-05-01] S-48: narrow `chezmoi apply` scope in `dotfiles secret` @ Hans-Air-M4
 
 Surfaced during S-47 verification: a `--force` re-add of

@@ -103,21 +103,6 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                         return 1
                     end
 
-                    # S-47 guard: registering OP_SERVICE_ACCOUNT_TOKEN auto-loads it
-                    # into every shell, scoping the user's daily op CLI to the SA.
-                    # Use the with-agent-token wrapper instead.
-                    if test "$var" = OP_SERVICE_ACCOUNT_TOKEN; and not contains -- --force $argv
-                        echo "✗ refusing to register OP_SERVICE_ACCOUNT_TOKEN (S-47)"
-                        echo ""
-                        echo "  Auto-loading this var into every shell scopes the user's"
-                        echo "  daily op CLI to the service account. Use the wrapper:"
-                        echo ""
-                        echo "    with-agent-token claude         # opt in per launch"
-                        echo ""
-                        echo "  Override (not recommended): pass --force"
-                        return 1
-                    end
-
                     set -l parts (string split / -- (string replace 'op://' '' -- $ref))
                     if test (count $parts) -lt 3
                         echo "✗ reference must be op://Vault/Item/field , got: $ref"

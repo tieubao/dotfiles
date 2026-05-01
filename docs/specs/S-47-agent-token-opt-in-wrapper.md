@@ -2,10 +2,20 @@
 id: S-47
 title: Opt-in `OP_SERVICE_ACCOUNT_TOKEN` via per-launch wrapper
 type: feature
-status: done
+status: amended by S-49
 date: 2026-05-01
 supersedes: S-42
 ---
+
+> **Amended by [S-49](S-49-dual-mode-op-via-fish-interceptor.md) (same day,
+> 2026-05-01).** S-47 fixed the daily-shell scoping problem by removing the
+> token from auto-load and exposing a `with-agent-token` wrapper. That
+> traded away the headless-`op read` capability for default `claude`
+> sessions. S-49 keeps S-47's daily UX *and* restores the headless agent
+> capability by auto-loading the token AND intercepting `op` in interactive
+> fish. The wrapper still ships and is functional; it's just no longer the
+> primary path. The `dotfiles secret add` guard introduced here was removed
+> in S-49.
 
 # S-47: Opt-in `OP_SERVICE_ACCOUNT_TOKEN` via per-launch wrapper
 
