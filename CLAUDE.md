@@ -61,12 +61,20 @@ the right one per secret:
   checks macOS Keychain first and only calls `op read` on cache miss. Result:
   `chezmoi apply` never touches 1Password; only the first shell on a new
   machine triggers popups.
-- **Service account token** (for agent subprocess `op read`, S-42). Register
-  `OP_SERVICE_ACCOUNT_TOKEN = "op://..."` like any other secret. Once it is
-  in env, `op` uses bearer auth instead of biometric, so subprocesses (e.g.
-  Claude Code's Bash tool) can call `op read op://...` headlessly. Requires
+- **Service account token (dual-mode, S-49).** Auto-loaded into every fish
+  shell via `secrets.toml` so subprocesses (Claude Code's Bash tool, scripts,
+  bash one-liners) inherit bearer auth and can do ad-hoc `op read op://...`
+  headlessly. **Inside interactive fish, `op` is intercepted** by
+  `home/dot_config/fish/functions/op.fish`, which strips the token inline
+  via `env -u OP_SERVICE_ACCOUNT_TOKEN command op` so daily commands use
+  biometric and see all your vaults. Subprocesses bypass the function
+  entirely. Net: full multi-vault biometric daily, headless SA-scoped
+  reads in subprocesses, no per-launch wrapper needed. `with-agent-token`
+  is kept as a debug escape hatch (force SA scope inside fish). Requires
   a 1Password Business/Teams plan. Prefer a dedicated `Agents` vault for
-  blast-radius isolation; see [docs/specs/S-42](docs/specs/S-42-service-account-agent-auth.md).
+  blast-radius isolation. See
+  [docs/specs/S-49](docs/specs/S-49-dual-mode-op-via-fish-interceptor.md);
+  S-47 is amended; S-42 is superseded.
 
 Register auto-loaded env vars via:
 ```

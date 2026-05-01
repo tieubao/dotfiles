@@ -2,9 +2,16 @@
 id: S-42
 title: 1Password service account token for agent subprocess auth
 type: feature
-status: done
+status: superseded by S-47
 date: 2026-04-23
 ---
+
+> **Superseded by [S-47](S-47-agent-token-opt-in-wrapper.md) (2026-05-01).** The auto-load
+> model documented here scopes the user's daily `op` CLI to the service
+> account, blocking interactive multi-vault access. S-47 replaces the
+> auto-load with a per-launch `with-agent-token` wrapper. The capability
+> (headless `op read` from agent subprocesses) is preserved; only the
+> opt-in surface changed. This spec is kept as historical record.
 
 # S-42: 1Password service account token for agent subprocess auth
 

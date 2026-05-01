@@ -150,10 +150,15 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                     printf '%s = "%s"\n' "$var" "$ref" >> $data
                     echo "✓ added $var → $ref"
 
-                    echo "→ chezmoi apply"
-                    chezmoi apply; or begin
-                        echo "✗ chezmoi apply failed; reverting registry"
+                    # S-48: scope apply to secrets.fish so unrelated drift in
+                    # other managed files cannot abort the apply mid-stream
+                    # after secrets.fish has already been re-rendered.
+                    set -l target $HOME/.config/fish/conf.d/secrets.fish
+                    echo "→ chezmoi apply $target"
+                    chezmoi apply $target; or begin
+                        echo "✗ chezmoi apply failed; reverting registry + target"
                         sed -i '' "/^$var = /d" $data
+                        chezmoi apply $target >/dev/null 2>&1
                         return 1
                     end
 
@@ -187,8 +192,10 @@ function dotfiles -d "Manage dotfiles via chezmoi"
                     sed -i '' "/^$var = /d" $data
                     echo "✓ removed $var"
 
-                    echo "→ chezmoi apply"
-                    chezmoi apply; or return 1
+                    # S-48: scope apply to secrets.fish only.
+                    set -l target $HOME/.config/fish/conf.d/secrets.fish
+                    echo "→ chezmoi apply $target"
+                    chezmoi apply $target; or return 1
                     echo "✓ applied. \$$var will be absent from new shells."
 
                     if test $do_commit -eq 1

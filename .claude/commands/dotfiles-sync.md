@@ -68,8 +68,15 @@ comm -23 <(ls ~/.ssh/config.d/ 2>/dev/null | sort) <(chezmoi managed | grep 'ssh
 # adopting a key into 1P is interactive (confirmation + session) so this
 # never auto-executes, it only nudges. Silent if op is unavailable, not
 # signed in, or the `dotfiles` fish function is not on PATH.
-if command -v fish >/dev/null 2>&1 && command -v op >/dev/null 2>&1 && op account get >/dev/null 2>&1; then
-  AUDIT=$(fish -l -c 'dotfiles ssh audit' 2>/dev/null)
+#
+# S-49: this skill runs inside Claude Code's Bash tool (zsh) which inherits
+# OP_SERVICE_ACCOUNT_TOKEN from the parent fish session. Drop the token
+# before checking `op account get` and running `dotfiles ssh audit` so the
+# audit sees the user's full vault list (SSH keys live in Private), not
+# just the SA-scoped subset.
+if command -v fish >/dev/null 2>&1 && command -v op >/dev/null 2>&1 \
+   && env -u OP_SERVICE_ACCOUNT_TOKEN op account get >/dev/null 2>&1; then
+  AUDIT=$(env -u OP_SERVICE_ACCOUNT_TOKEN fish -l -c 'dotfiles ssh audit' 2>/dev/null)
   SUMMARY=$(echo "$AUDIT" | grep -oE '[0-9]+ of [0-9]+ disk key' | head -1)
   if [ -n "$SUMMARY" ]; then
     UNBACKED=$(echo "$SUMMARY" | awk '{print $1}')
@@ -89,8 +96,9 @@ grep -n 'set -gx.*[A-Za-z0-9_]\{20,\}' ~/.config/fish/config.fish ~/.config/fish
 
 ### Secret cache status (notify-only)
 ```bash
-# Surface any registered secret (incl. OP_SERVICE_ACCOUNT_TOKEN from S-42) that has
-# no Keychain entry yet. Silent when all are cached or when op is absent/unauthed.
+# Surface any registered secret (incl. OP_SERVICE_ACCOUNT_TOKEN auto-loaded
+# per S-49 dual-mode design) that has no Keychain entry yet. Silent when all
+# are cached or when op is absent/unauthed.
 if command -v op >/dev/null 2>&1 && op account list &>/dev/null; then
   EMPTY=$(fish -l -c 'dotfiles secret list' 2>/dev/null \
             | awk '/^  \[ empty\]/ {print $3}')
