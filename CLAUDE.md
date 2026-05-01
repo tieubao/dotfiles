@@ -61,12 +61,17 @@ the right one per secret:
   checks macOS Keychain first and only calls `op read` on cache miss. Result:
   `chezmoi apply` never touches 1Password; only the first shell on a new
   machine triggers popups.
-- **Service account token** (for agent subprocess `op read`, S-42). Register
-  `OP_SERVICE_ACCOUNT_TOKEN = "op://..."` like any other secret. Once it is
-  in env, `op` uses bearer auth instead of biometric, so subprocesses (e.g.
-  Claude Code's Bash tool) can call `op read op://...` headlessly. Requires
-  a 1Password Business/Teams plan. Prefer a dedicated `Agents` vault for
-  blast-radius isolation; see [docs/specs/S-42](docs/specs/S-42-service-account-agent-auth.md).
+- **Service account token (opt-in per launch, S-47).** Used when an agent
+  subprocess needs ad-hoc `op read op://...` mid-session (`op` refuses
+  biometric without a TTY, so non-token reads fail silently). Inject the
+  token only into the wrapped process via `with-agent-token <cmd>`, e.g.
+  `with-agent-token claude`. Do **NOT** `dotfiles secret add OP_SERVICE_ACCOUNT_TOKEN`
+  -- that auto-loads it into every shell and scopes the user's daily `op`
+  CLI to the service account. The `secret add` subcommand guards against
+  this; bypass requires `--force`. Requires a 1Password Business/Teams
+  plan. Prefer a dedicated `Agents` vault for blast-radius isolation. See
+  [docs/specs/S-47](docs/specs/S-47-agent-token-opt-in-wrapper.md);
+  [S-42](docs/specs/S-42-service-account-agent-auth.md) is superseded.
 
 Register auto-loaded env vars via:
 ```

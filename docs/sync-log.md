@@ -6,6 +6,50 @@ context.
 
 ---
 
+## [2026-05-01] S-47: opt-in `OP_SERVICE_ACCOUNT_TOKEN` via wrapper @ Hans-Air-M4
+
+Daily `op` CLI was scoped to the `Trading` vault on this laptop because
+`OP_SERVICE_ACCOUNT_TOKEN` was registered in `secrets.toml` (S-42 model)
+and auto-exported by every fish login. Once the token is in env, `op`
+switches to bearer auth and ignores the user's biometric session. The
+user noticed: `op vault list` returned only `Trading`, all other vaults
+invisible interactively.
+
+**Fix:** unregistered the token from `home/.chezmoidata/secrets.toml`
+and added a per-launch `with-agent-token` wrapper that injects the
+token into the wrapped process only. Daily shells now do
+`op whoami` → `USER_OF_ACCOUNT` (biometric), `op vault list` returns
+all 8 vaults. Agent sessions that need ad-hoc `op read` opt in via
+`with-agent-token claude`.
+
+**Anti-regression:**
+- `dotfiles secret add OP_SERVICE_ACCOUNT_TOKEN` now refuses with a
+  message pointing at the wrapper. `--force` overrides if genuinely
+  needed.
+- S-42 frontmatter set to `status: superseded by S-47` with an
+  in-spec note. Spec body preserved as historical record.
+- `CLAUDE.md` and `docs/guide.md` rewritten to centre on the wrapper
+  and warn against re-registering the var.
+- Auto-memory entry added for this Claude account so future sessions
+  don't "helpfully" undo the change.
+
+**Verification (all passed in `env -u OP_SERVICE_ACCOUNT_TOKEN fish -i`):**
+- token absent from env after fresh fish login
+- 8 vaults visible to bare `op vault list`
+- `with-agent-token op whoami` returns `SERVICE_ACCOUNT`
+- `with-agent-token op vault list` returns 1 vault (`Trading`)
+- guard fires on `dotfiles secret add OP_SERVICE_ACCOUNT_TOKEN`
+- `--force` bypass works
+- fish syntax clean on all touched functions
+
+**Trade-off accepted:** default `claude` sessions lose ad-hoc `op read`
+mid-session (S-42's stated capability). Sessions that need it prefix
+the launch. The vast majority of secret access is via pre-registered
+env vars resolved at shell startup (S-35), which `claude` still
+inherits unchanged.
+
+---
+
 ## [2026-04-28] claude overlay manages `permissions.defaultMode` @ Mac mini
 
 Cross-machine drift surfaced after the morning catch-up sync: Mac Air's

@@ -1,6 +1,6 @@
 # Task Backlog: dwarvesf/dotfiles
 
-Updated: 2026-04-24 (S-46 proposed)
+Updated: 2026-05-01 (S-47 shipped)
 
 <!-- Old ID → New ID mapping: F-XX/R-XX/T-XX → S-XX. See docs/specs/S-*.md -->
 <!-- S-40 is intentionally unused (number skipped, no spec exists). -->
@@ -46,11 +46,12 @@ Updated: 2026-04-24 (S-46 proposed)
 - [x] S-38: SSH key inventory, adoption, and offline backup
 - [x] S-39: Dotfiles backup fixes + op_vault resolution consolidation
 - [x] S-41: SSH status surfaced in dotfiles doctor
-- [x] S-42: 1Password service account token for agent subprocess auth
+- [x] S-42: 1Password service account token for agent subprocess auth (superseded by S-47)
 - [x] S-43: Surface registered-but-uncached secrets in sync + doctor
 - [x] S-44: Spec status frontmatter discipline + tasks.md as rolling index
 - [x] S-26: Brewfile cleanup  - audit found 1 true duplicate (tldr), font pair clarified as intentional, mise/brew overlap deferred
 - [x] S-45: Stop echoing secret values in dotfiles secret refresh (fix after 2026-04-23 leak event)
+- [x] S-47: Opt-in `OP_SERVICE_ACCOUNT_TOKEN` via `with-agent-token` wrapper (replaces S-42 auto-load model; daily shell stays biometric)
 
 ## Next up
 
