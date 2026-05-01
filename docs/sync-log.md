@@ -6,6 +6,30 @@ context.
 
 ---
 
+## [2026-05-01] docs: dedicated `docs/1password.md` workflow doc @ Hans-Air-M4
+
+After the S-47 → S-49 redesign arc shipped, the inline service-account
+sections in `CLAUDE.md` and `docs/guide.md` told the right story but
+lacked a single-place explainer that ties together the mental model,
+the dual-mode design, vault tiering (S-46), trade-offs, and the spec
+chain. Added `docs/1password.md` as the source-of-truth narrative;
+inline sections now point at it.
+
+Also fixed two stale references found during audit:
+- `README.md:185`: SA-token paragraph implied the old auto-load model.
+  Rewritten to reflect dual-mode and link to the new doc.
+- `docs/specs/S-42` postscript: only mentioned S-47, breaking the
+  supersession chain for readers landing on S-42. Now shows the full
+  chain S-42 → S-47 → S-49 and points at `docs/1password.md`.
+
+CLAUDE.md and `docs/guide.md` link to `docs/1password.md` from their
+service-account sections so future Claude sessions discover the
+narrative entry-point first.
+
+No behavior changes; docs only.
+
+---
+
 ## [2026-05-01] dotfiles-sync: drop SA token before SSH-audit check @ Hans-Air-M4
 
 Follow-up to S-49 in `home/dot_claude/commands/dotfiles-sync.md` (and the
