@@ -6,6 +6,140 @@ context.
 
 ---
 
+## [2026-05-01] dotfiles-sync: drop SA token before SSH-audit check @ Hans-Air-M4
+
+Follow-up to S-49 in `home/dot_claude/commands/dotfiles-sync.md` (and the
+project mirror at `.claude/commands/dotfiles-sync.md`). The skill runs
+inside Claude Code's Bash tool, which inherits `OP_SERVICE_ACCOUNT_TOKEN`
+under the new dual-mode model. Two of its `op`-using checks needed
+`env -u OP_SERVICE_ACCOUNT_TOKEN` so they see the user's full vault list
+(SSH keys live in `Private`, not `Trading`):
+
+- `op account get` precondition gate (line 71)
+- `fish -l -c 'dotfiles ssh audit'` invocation (line 72)
+
+Without the unset, the SSH-audit step would report "0 of N keys backed
+up" because the SA-scoped view of 1P doesn't see Private items. Updated
+the explanatory comment to reference S-49 (was S-42).
+
+The Keychain-cache check (line 95) reads macOS Keychain, not 1P, so
+needs no change.
+
+---
+
+## [2026-05-01] S-49: dual-mode `op` via fish interceptor @ Hans-Air-M4
+
+S-47 had restored multi-vault biometric in the daily shell by removing
+`OP_SERVICE_ACCOUNT_TOKEN` from auto-load — but at the cost of the original
+S-42 capability: agent subprocesses (Claude Code's Bash tool runs zsh)
+could no longer do ad-hoc `op read op://...` mid-session. User wanted both.
+
+**Design.** Auto-load the token globally so subprocesses inherit bearer auth.
+Intercept `op` inside interactive fish via a tiny function
+(`home/dot_config/fish/functions/op.fish`) that runs
+`env -u OP_SERVICE_ACCOUNT_TOKEN command op $argv` when
+`status is-interactive`. Subprocesses don't see the fish function and call
+the binary directly with the token in env. Net: daily shell biometric and
+multi-vault, every subprocess (including Claude Code) headless and SA-scoped.
+No per-launch wrapper required.
+
+**Changes:**
+- New: `home/dot_config/fish/functions/op.fish` (5-line interceptor)
+- Re-added `OP_SERVICE_ACCOUNT_TOKEN` entry to `home/.chezmoidata/secrets.toml`
+- Removed the S-47 guard from `dotfiles secret add` (auto-load is the
+  intended path again)
+- S-47 frontmatter set to `status: amended by S-49`
+- `with-agent-token` retained as a debug escape hatch
+- Auto-memory rewritten to describe dual-mode
+
+**Verification (all from a fresh `fish -i -c` after `chezmoi apply`):**
+- `OP_SERVICE_ACCOUNT_TOKEN` prefix `ops_` in env ✓
+- Interactive `op vault list` returns 8 vaults ✓
+- `bash -c 'op vault list'` returns 1 vault (Trading) ✓
+- `with-agent-token op vault list` returns 1 vault (Trading) — escape hatch
+  still works ✓
+- `command op vault list` returns 1 vault (Trading) — bypasses interceptor ✓
+- `fish -n` clean on all touched function files ✓
+
+**Trade-off:** token is back in shell env (S-47's strict guarantee gone).
+Same blast-radius profile as the original S-42 model. Accepted because the
+interceptor neutralises the daily-shell side effect that drove S-47, and
+the agent-capability win is significant.
+
+---
+
+## [2026-05-01] S-48: narrow `chezmoi apply` scope in `dotfiles secret` @ Hans-Air-M4
+
+Surfaced during S-47 verification: a `--force` re-add of
+`OP_SERVICE_ACCOUNT_TOKEN` ran a full-tree `chezmoi apply`, which rendered
+the new entry into `~/.config/fish/conf.d/secrets.fish` and then aborted
+on an unrelated Zed TTY-prompt failure. The script's revert path only
+undid `secrets.toml`, not the deployed `secrets.fish`. Source/target
+silently drifted; new fish shells continued loading the unwanted token.
+
+**Fix:** scope `chezmoi apply` in `dotfiles secret add` and
+`dotfiles secret rm` to the single target file
+`~/.config/fish/conf.d/secrets.fish`. In `secret add`, the revert path
+now also re-runs the narrow apply so target re-renders without the line
+even when the original apply rendered it. `secret rm` benefits from the
+narrowing alone (its revert is a no-op by design).
+
+**Verification:**
+- Pre-condition: pending Zed drift on `~/.config/zed/settings.json`
+  (chaos input).
+- Manually appended a test entry to `secrets.toml`, ran narrow
+  `chezmoi apply ~/.config/fish/conf.d/secrets.fish`: exit 0,
+  `secrets.fish` updated, Zed file untouched.
+- Removed the test entry, re-ran narrow apply: `secrets.fish` cleaned,
+  Zed file still untouched.
+- `fish -n home/dot_config/fish/functions/dotfiles.fish` clean.
+
+---
+
+## [2026-05-01] S-47: opt-in `OP_SERVICE_ACCOUNT_TOKEN` via wrapper @ Hans-Air-M4
+
+Daily `op` CLI was scoped to the `Trading` vault on this laptop because
+`OP_SERVICE_ACCOUNT_TOKEN` was registered in `secrets.toml` (S-42 model)
+and auto-exported by every fish login. Once the token is in env, `op`
+switches to bearer auth and ignores the user's biometric session. The
+user noticed: `op vault list` returned only `Trading`, all other vaults
+invisible interactively.
+
+**Fix:** unregistered the token from `home/.chezmoidata/secrets.toml`
+and added a per-launch `with-agent-token` wrapper that injects the
+token into the wrapped process only. Daily shells now do
+`op whoami` → `USER_OF_ACCOUNT` (biometric), `op vault list` returns
+all 8 vaults. Agent sessions that need ad-hoc `op read` opt in via
+`with-agent-token claude`.
+
+**Anti-regression:**
+- `dotfiles secret add OP_SERVICE_ACCOUNT_TOKEN` now refuses with a
+  message pointing at the wrapper. `--force` overrides if genuinely
+  needed.
+- S-42 frontmatter set to `status: superseded by S-47` with an
+  in-spec note. Spec body preserved as historical record.
+- `CLAUDE.md` and `docs/guide.md` rewritten to centre on the wrapper
+  and warn against re-registering the var.
+- Auto-memory entry added for this Claude account so future sessions
+  don't "helpfully" undo the change.
+
+**Verification (all passed in `env -u OP_SERVICE_ACCOUNT_TOKEN fish -i`):**
+- token absent from env after fresh fish login
+- 8 vaults visible to bare `op vault list`
+- `with-agent-token op whoami` returns `SERVICE_ACCOUNT`
+- `with-agent-token op vault list` returns 1 vault (`Trading`)
+- guard fires on `dotfiles secret add OP_SERVICE_ACCOUNT_TOKEN`
+- `--force` bypass works
+- fish syntax clean on all touched functions
+
+**Trade-off accepted:** default `claude` sessions lose ad-hoc `op read`
+mid-session (S-42's stated capability). Sessions that need it prefix
+the launch. The vast majority of secret access is via pre-registered
+env vars resolved at shell startup (S-35), which `claude` still
+inherits unchanged.
+
+---
+
 ## [2026-04-28] claude overlay manages `permissions.defaultMode` @ Mac mini
 
 Cross-machine drift surfaced after the morning catch-up sync: Mac Air's
