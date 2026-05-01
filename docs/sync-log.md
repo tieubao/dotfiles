@@ -6,6 +6,27 @@ context.
 
 ---
 
+## [2026-05-01] dotfiles-sync: drop SA token before SSH-audit check @ Hans-Air-M4
+
+Follow-up to S-49 in `home/dot_claude/commands/dotfiles-sync.md` (and the
+project mirror at `.claude/commands/dotfiles-sync.md`). The skill runs
+inside Claude Code's Bash tool, which inherits `OP_SERVICE_ACCOUNT_TOKEN`
+under the new dual-mode model. Two of its `op`-using checks needed
+`env -u OP_SERVICE_ACCOUNT_TOKEN` so they see the user's full vault list
+(SSH keys live in `Private`, not `Trading`):
+
+- `op account get` precondition gate (line 71)
+- `fish -l -c 'dotfiles ssh audit'` invocation (line 72)
+
+Without the unset, the SSH-audit step would report "0 of N keys backed
+up" because the SA-scoped view of 1P doesn't see Private items. Updated
+the explanatory comment to reference S-49 (was S-42).
+
+The Keychain-cache check (line 95) reads macOS Keychain, not 1P, so
+needs no change.
+
+---
+
 ## [2026-05-01] S-49: dual-mode `op` via fish interceptor @ Hans-Air-M4
 
 S-47 had restored multi-vault biometric in the daily shell by removing
