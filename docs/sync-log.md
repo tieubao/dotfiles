@@ -6,6 +6,34 @@ context.
 
 ---
 
+## [2026-05-01] S-48: narrow `chezmoi apply` scope in `dotfiles secret` @ Hans-Air-M4
+
+Surfaced during S-47 verification: a `--force` re-add of
+`OP_SERVICE_ACCOUNT_TOKEN` ran a full-tree `chezmoi apply`, which rendered
+the new entry into `~/.config/fish/conf.d/secrets.fish` and then aborted
+on an unrelated Zed TTY-prompt failure. The script's revert path only
+undid `secrets.toml`, not the deployed `secrets.fish`. Source/target
+silently drifted; new fish shells continued loading the unwanted token.
+
+**Fix:** scope `chezmoi apply` in `dotfiles secret add` and
+`dotfiles secret rm` to the single target file
+`~/.config/fish/conf.d/secrets.fish`. In `secret add`, the revert path
+now also re-runs the narrow apply so target re-renders without the line
+even when the original apply rendered it. `secret rm` benefits from the
+narrowing alone (its revert is a no-op by design).
+
+**Verification:**
+- Pre-condition: pending Zed drift on `~/.config/zed/settings.json`
+  (chaos input).
+- Manually appended a test entry to `secrets.toml`, ran narrow
+  `chezmoi apply ~/.config/fish/conf.d/secrets.fish`: exit 0,
+  `secrets.fish` updated, Zed file untouched.
+- Removed the test entry, re-ran narrow apply: `secrets.fish` cleaned,
+  Zed file still untouched.
+- `fish -n home/dot_config/fish/functions/dotfiles.fish` clean.
+
+---
+
 ## [2026-05-01] S-47: opt-in `OP_SERVICE_ACCOUNT_TOKEN` via wrapper @ Hans-Air-M4
 
 Daily `op` CLI was scoped to the `Trading` vault on this laptop because
