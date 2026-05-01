@@ -72,7 +72,8 @@ the right one per secret:
   reads in subprocesses, no per-launch wrapper needed. `with-agent-token`
   is kept as a debug escape hatch (force SA scope inside fish). Requires
   a 1Password Business/Teams plan. Prefer a dedicated `Agents` vault for
-  blast-radius isolation. See
+  blast-radius isolation. **Full workflow + analysis:
+  [docs/1password.md](docs/1password.md).** Spec:
   [docs/specs/S-49](docs/specs/S-49-dual-mode-op-via-fish-interceptor.md);
   S-47 is amended; S-42 is superseded.
 

@@ -824,8 +824,10 @@ with-agent-token op vault list   # explicit per-invocation wrapper
 
 Both should return the SA-scoped subset, not your full vault list.
 
-Full design: [`docs/specs/S-49`](specs/S-49-dual-mode-op-via-fish-interceptor.md).
-History: [`docs/specs/S-47`](specs/S-47-agent-token-opt-in-wrapper.md) (amended),
+**Full workflow + analysis:** [`docs/1password.md`](1password.md) -- mental model, vault tiering, troubleshooting, spec chain.
+
+Spec history: [`docs/specs/S-49`](specs/S-49-dual-mode-op-via-fish-interceptor.md) (current),
+[`docs/specs/S-47`](specs/S-47-agent-token-opt-in-wrapper.md) (amended),
 [`docs/specs/S-42`](specs/S-42-service-account-agent-auth.md) (superseded).
 
 ### Why Keychain instead of a dotfile cache

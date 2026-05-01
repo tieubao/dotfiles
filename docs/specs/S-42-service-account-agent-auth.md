@@ -6,12 +6,14 @@ status: superseded by S-47
 date: 2026-04-23
 ---
 
-> **Superseded by [S-47](S-47-agent-token-opt-in-wrapper.md) (2026-05-01).** The auto-load
-> model documented here scopes the user's daily `op` CLI to the service
-> account, blocking interactive multi-vault access. S-47 replaces the
-> auto-load with a per-launch `with-agent-token` wrapper. The capability
-> (headless `op read` from agent subprocesses) is preserved; only the
-> opt-in surface changed. This spec is kept as historical record.
+> **Superseded.** Chain: [S-42] → [S-47](S-47-agent-token-opt-in-wrapper.md) (2026-05-01)
+> → [S-49](S-49-dual-mode-op-via-fish-interceptor.md) (2026-05-01, current).
+> S-47 swapped auto-load for an opt-in `with-agent-token` wrapper to fix the
+> daily-shell scoping problem this spec created. S-49 then restored auto-load
+> AND added a fish `op` interceptor that strips the token inline for
+> interactive calls -- the current production model. Read S-49 for the
+> active design; this spec is historical record. **For an explainer that
+> ties all three together, see [docs/1password.md](../1password.md).**
 
 # S-42: 1Password service account token for agent subprocess auth
 

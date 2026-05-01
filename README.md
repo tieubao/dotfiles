@@ -182,7 +182,7 @@ The `op://` references do reveal 1Password vault and item names (e.g. `op://Priv
 
 **`.local` files are never committed.** Machine-specific Brewfile entries, VS Code extensions, fish/tmux/git overrides all live in gitignored `~/.X.local` files. `dotfiles doctor` audits git history to confirm none ever leaked.
 
-**Agents and non-interactive `op read`.** If a subprocess inside Claude Code (or any LLM agent) needs to call `op read op://...` directly rather than inherit an already-resolved env var, register a 1Password service account token as `OP_SERVICE_ACCOUNT_TOKEN`. The agent then uses bearer auth, no biometric prompt mid-session. Requires a 1P Business or Teams plan. Details: [docs/guide.md §6](docs/guide.md).
+**Agents and non-interactive `op read` (dual-mode).** Subprocesses (Claude Code's Bash tool, scripts, bash one-liners) inherit `OP_SERVICE_ACCOUNT_TOKEN` from your fish shell and use bearer auth -- no biometric prompt mid-session. Inside interactive fish, an `op.fish` function intercepts `op` and strips the token inline so daily commands stay biometric and see all your vaults. Net: full multi-vault biometric daily, headless SA-scoped reads in any subprocess, no per-launch wrapper. Requires a 1P Business or Teams plan. Full workflow + analysis: [docs/1password.md](docs/1password.md).
 
 ## Docs
 
@@ -190,6 +190,7 @@ The `op://` references do reveal 1Password vault and item names (e.g. `op://Priv
 |----------|---------------|
 | **[docs/llm-dotfiles.md](docs/llm-dotfiles.md)** | The LLM-maintained dotfiles pattern. Shareable, stack-agnostic. Includes setup instructions. |
 | **[docs/guide.md](docs/guide.md)** | Full user guide. chezmoi details, manual commands, customization, secrets, multi-machine, troubleshooting. |
+| **[docs/1password.md](docs/1password.md)** | 1Password workflow + analysis. Mental model, dual-mode design, setup, vault tiering, troubleshooting, spec chain. |
 | **[docs/testing.md](docs/testing.md)** | End-to-end test plan for local pattern + lazy secrets. Cross-machine validation steps. |
 | **[docs/decisions/](docs/decisions/)** | Architecture decision records (why chezmoi, Fish, Ghostty, 1Password, auto-commit). |
 | **[docs/sync-log.md](docs/sync-log.md)** | Sync history. Append-only log of every Claude-assisted sync, hostname-tagged. |
