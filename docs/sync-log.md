@@ -40,6 +40,18 @@ detection, positive detection of fake skill, suppression via
 Mirrored both copies of the slash command (`.claude/commands/dotfiles-sync.md`
 and `home/dot_claude/commands/dotfiles-sync.md`); diff exits 0.
 
+**Follow-up same-day:** ran `chezmoi apply ~/.claude/commands/dotfiles-sync.md`
+to deploy the new section live on this machine (post-apply diff exit 0).
+Updated user-facing docs: bumped `docs/guide.md` "10 dimensions" to 11,
+added a "Claude skills" row to README.md's drift table, added a row to
+guide.md's local-files and quick-change tables, and authored a full
+"Walkthrough: back up a Claude skill" section. `verify-dotfiles` subagent
+ran 6 checks (shellcheck, fish syntax, chezmoi dry-run, managed-count,
+mirror parity, skill-drift detection): 6/6 passed. Side find: fish's
+`diff` function shadows `/usr/bin/diff`; future scripts should use
+`command diff` or absolute path - not blocking S-50 but a footgun worth
+recording.
+
 ---
 
 ## [2026-05-01] docs: dedicated `docs/1password.md` workflow doc @ Hans-Air-M4

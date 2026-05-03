@@ -63,6 +63,7 @@ The `/dotfiles-sync` command is installed to `~/.claude/commands/` during setup,
 | VS Code extensions | New / removed extensions (core list + per-machine list) |
 | Fish functions | Functions created outside chezmoi |
 | SSH configs | New host configs in `config.d/` |
+| Claude skills | User-authored skills in `~/.claude/skills/` not yet tracked (plugin-installed skills filtered out) |
 | Secrets | Hardcoded keys that should be in 1Password |
 
 Every sync is logged in [docs/sync-log.md](docs/sync-log.md) tagged with the machine hostname (`@ work-mac`, `@ personal-mini`), so future syncs on any machine have full cross-machine context.
