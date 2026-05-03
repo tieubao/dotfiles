@@ -35,10 +35,14 @@ SSH:
   - tracked `~/.ssh/config.d/mini.local` -> `home/dot_ssh/config.d/private_mini.local`
     (Tailscale + LAN-fallback hosts for `mini`. Internal hostnames only,
     safe for public repo.)
-  - **deferred:** `~/.ssh/config.d/trading-egress-tokyo` -- contains a
-    public IP, non-standard SSH port, and purpose-revealing key name.
-    dwarvesf/dotfiles is PUBLIC; halted on adopt and presented user
-    with three options (local-only, templated via 1P, or accept-as-is).
+  - **`~/.ssh/config.d/trading-egress-tokyo` -> Option A (local-only, deferred decision):**
+    contains a public IP, non-standard SSH port, and purpose-revealing
+    key name. dwarvesf/dotfiles is PUBLIC. User chose to keep it on
+    Hans Air M4 only for now, will revisit (likely Option B: 1P-templated
+    when they want it on Mac mini too). No chezmoi adopt, no gitignore
+    change needed -- file simply remains untracked on disk. Future
+    `/dotfiles-sync` runs will continue to surface it; that's the
+    intended re-prompt cadence.
 
 gitconfig:
   - absorbed local `[init] templatedir = ~/.git_template` into
