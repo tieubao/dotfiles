@@ -46,6 +46,102 @@ printf '%s\n' "$PREFIX"
 
 cat <<'MARKDOWN'
 
+# Tool selection
+
+Durable rule for Claude Code. Applies to every session. Default to acting. Only ask when escalation triggers fire (see bottom).
+
+## API-first principle
+
+Before reaching for any browser or GUI tool, check in this order:
+
+1. Is there an MCP tool already loaded? Use it.
+2. Is there a CLI (`wrangler`, `gh`, `gcloud`, `aws`, etc.)? Use it via bash.
+3. Is there a documented HTTP API? Use `curl` with the env-var token.
+4. Only after all three fail, reach for browser automation.
+
+If you find yourself drafting click-through steps for a service that has an API, stop. Pick the API.
+
+## Cloudflare work
+
+Order of preference:
+
+1. **Cloudflare Developer MCP** for Workers, R2, KV, D1, Hyperdrive, docs. Already loaded. Use directly.
+2. **`wrangler` in bash** for deploys, logs (`wrangler tail`), secrets, dev loops, types, env management.
+3. **Cloudflare API + curl** for anything the MCP and wrangler don't cover: DNS, firewall, Zero Trust, page rules, account settings. Use `$CLOUDFLARE_API_TOKEN` and `$ACCOUNT_ID` from env.
+4. **Terraform** only when the user explicitly asks for IaC.
+5. **Browser** only when explicitly told. Cloudflare has an API for nearly everything; reaching for a browser is almost always wrong.
+
+## Browser automation
+
+When you genuinely need a browser:
+
+1. **`/chrome` (Claude Code's Chrome integration)** is the default. Uses the user's real Chrome session, real logins, real 2FA. Best for any task touching Google, GitHub, banking, OAuth flows, anything with bot detection or active session state.
+2. **`/edge-up` + `agent-browser connect`** for logged-in flows when the Chrome extension is unavailable. Functionally equivalent to `/chrome` on macOS Edge default profile.
+3. **Playwright CLI (`npx playwright codegen` + `npx playwright test`)** for repeatable scripted flows that re-run unchanged (monthly payroll, recon, report pulls). Captures once, replays forever, no agent tokens per run. Use `--user-data-dir` to inherit the real Chrome session for logged-in scripts. Scripted-replay only; not for exploration.
+4. **Lightpanda** (`lightpanda fetch ...` or `AGENT_BROWSER_ENGINE=lightpanda agent-browser ...`) for stateless headless reads of public pages (status pages, rate cards, RSS-less polling). ~31 MB RSS vs Chrome's 2 GB. **Do not use** on logged-in SaaS, Gmail, Notion (verified to crash), Capacities, Airwallex, Xero, or modern SPA stacks (no service-worker support in nightly).
+5. **`chrome-devtools-mcp`** for page performance, Lighthouse audits, network/request replay, memory snapshots. Debug visibility, not driving. Orthogonal to all the above.
+6. **`agent-browser open` (fresh profile)** for tasks needing a separate throwaway browser profile, no logins.
+7. **Cloud browsers (Browserbase etc.)** only for headless, scheduled, or scraping work where bot detection isn't a concern. Never for Google services. Google flags cloud IPs aggressively.
+8. **Never use a browser when an API exists** (see API-first principle).
+
+Full decision tree with install commands and caveats lives in the auto-suggested skills:
+- `browser-tool-selection` (`~/.claude/skills/browser-tool-selection/SKILL.md`)
+- `cloudflare-tool-selection` (`~/.claude/skills/cloudflare-tool-selection/SKILL.md`)
+
+## Git and GitHub
+
+- Commits, branches, diffs, PRs: use `gh` CLI directly. Don't ask.
+- Pushing to a protected branch: stop, confirm.
+- Force-push, rewriting history: stop, confirm.
+
+## File system
+
+- Reading files, listing dirs, creating new files in the project: act.
+- Editing existing files in the project: act.
+- Anything outside the project root: stop, confirm.
+- `rm`, `rm -rf`, anything destructive: stop, confirm even if the path looks safe. The PreToolUse hooks in `~/.claude/settings.json` already block destructive deletes; don't try to route around them.
+
+## When to ask vs when to act
+
+**Act without asking when:**
+
+- The action is reversible (git commit, file edit in repo, idempotent API call).
+- Required credentials are already in env vars.
+- The user has stated a clear goal and the path is unambiguous.
+- The tool returns output you can verify before the next step.
+
+**Stop and ask when:**
+
+- Action is irreversible (DELETE on production data, force-push, destructive migration, sending email, charging a card).
+- Required credentials are missing and the user hasn't said where to find them.
+- The task requires choosing between two reasonable defaults (e.g. "policy is 24h or 30 days?").
+- About to switch tool category (e.g. moving from API to browser, or from local to a paid cloud service).
+- A safety hook fires.
+
+**Never ask when:**
+
+- The user has already answered the question once in this session.
+- The action is "the next obvious step in the plan you and the user already agreed on."
+- Verifying your own work (running tests, lint, build after an edit). Just run them.
+
+## Failure handling
+
+If a tool call fails:
+
+1. Read the error. Don't guess.
+2. Try the next tool in the preference order (e.g. MCP fails -> wrangler -> curl).
+3. After two failed approaches, stop and report what was tried, what failed, and what you'd try next. Don't loop.
+
+## Anti-patterns
+
+These behaviors burn user trust. Don't do them.
+
+- Asking permission for safe, reversible actions the user already implicitly approved by stating the goal.
+- Generating "you'll need to manually do X" instructions when X has an API or CLI.
+- Repeating clarifying questions that were already answered upthread.
+- Running a destructive command "to clean up" without explicit ask.
+- Switching to a heavier tool (browser, cloud service) when a lighter one (API, CLI) would work, just because you saw it first.
+
 # Tech stack preferences
 
 Applies ONLY to my own repos (check ownership: is there a `CLAUDE.md` at root, AND do recent `git log --format=%ae` authors include {{ $ownership_phrase }}?). On other engineers' repos: match their existing stack silently, no migration suggestions.
