@@ -1,0 +1,74 @@
+{{- $e := printf "%c" 27 -}}
+{{- if not (hasKey . "headless") -}}
+{{-   fail (printf "\n\n%s[38;5;204m  ✗ Missing config variable: headless%s[0m\n    Run: %s[38;5;78mchezmoi init%s[0m\n" $e $e $e $e) -}}
+{{- end -}}
+#!/bin/bash
+# Install or refresh Lightpanda headless browser at ~/.local/bin/lightpanda.
+# Lightpanda is a Zig-built browser engine optimised for AI agents (~31 MB
+# RSS vs Chrome's 2 GB). Used by agent-browser via AGENT_BROWSER_ENGINE,
+# and directly via `lightpanda fetch`. Decision tree in the
+# `browser-tool-selection` skill at
+# ~/.claude/skills/browser-tool-selection/SKILL.md.
+#
+# Why a chezmoi script, not Homebrew: Lightpanda has no brew formula
+# (nightly-only releases, no stable cut yet). A run_onchange script
+# re-runs whenever this file's hash changes -- bump the `nightly_pin`
+# comment below to pull a fresh nightly.
+#
+# When NOT to use Lightpanda (verified empirically May 2026):
+#   - Logged-in SaaS (Notion crashes with "Application error: a
+#     client-side exception has occurred"; service workers + heavy SPA)
+#   - Gmail, Capacities, Airwallex, Xero (modern SPA stacks)
+#   - Anything needing login-session reuse (no profile-dir story)
+# Right tool for: stateless headless reads of public pages (status,
+# rate cards, RSS-less polling), scheduled jobs without auth.
+#
+# Skipped on headless boxes (no agent-browser tooling there).
+#
+# nightly_pin: 2026-05-03  # bump this date to force re-download
+{{ if .headless }}
+exit 0
+{{ end }}
+
+set -eo pipefail
+
+LIB="$HOME/.config/dotfiles/lib.sh"
+# shellcheck source=/dev/null
+[ -f "$LIB" ] && source "$LIB" || { echo "dotfiles lib not found"; exit 1; }
+
+section "Installing Lightpanda nightly to ~/.local/bin/lightpanda"
+
+# Detect arch -> Lightpanda release asset name
+ARCH="$(uname -m)"
+case "$ARCH" in
+    arm64|aarch64) ASSET="lightpanda-aarch64-macos" ;;
+    x86_64)        ASSET="lightpanda-x86_64-macos" ;;
+    *)
+        warn "lightpanda: unsupported arch ${ARCH}" \
+             "Only macOS aarch64 and x86_64 nightly builds exist." \
+             "Skipping install."
+        exit 0
+        ;;
+esac
+
+URL="https://github.com/lightpanda-io/browser/releases/download/nightly/${ASSET}"
+DEST="$HOME/.local/bin/lightpanda"
+
+mkdir -p "$HOME/.local/bin"
+
+if curl -fL --max-time 120 -o "$DEST.tmp" "$URL"; then
+    chmod +x "$DEST.tmp"
+    mv -f "$DEST.tmp" "$DEST"
+    if "$DEST" help >/dev/null 2>&1; then
+        script_ok "lightpanda ($(stat -f '%z' "$DEST" | numfmt --to=iec 2>/dev/null || stat -f '%z' "$DEST") bytes)"
+    else
+        warn "lightpanda: binary downloaded but 'lightpanda help' failed" \
+             "The nightly may be broken on this arch." \
+             "Check $DEST manually."
+    fi
+else
+    rm -f "$DEST.tmp"
+    warn "lightpanda: download failed" \
+         "Could not fetch ${URL}." \
+         "Re-run chezmoi apply when network is back, or curl manually."
+fi
