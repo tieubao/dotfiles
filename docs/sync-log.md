@@ -6,6 +6,42 @@ context.
 
 ---
 
+## [2026-05-03] feat(S-50): `/dotfiles-sync` detects user-authored Claude skill drift @ Hans Air M4
+
+Background: commit `0ce60e8` (#63, 2026-04-30) wired `~/.claude/skills/`
+into the chezmoi-managed surface but adoption was opt-in per skill.
+Today's audit found 8 of 9 user-authored skills unversioned and at risk
+of loss on a fresh-machine bootstrap.
+
+One-shot absorption (all 8 promoted as **core** -- generic personal
+workflows, no machine-specific paths -- verified by grepping for owner
+identifiers; only hit was a doc example showing what NOT to write):
+
+- browser-tool-selection
+- cashflow-close
+- cloudflare-tool-selection
+- extract-workflow
+- incident-workflow
+- ingest-to-wiki
+- playwright-record
+- reconcile-properties
+
+Ongoing detection added to `/dotfiles-sync`: new section in Step 2 scans
+`~/.claude/skills/` for entries neither in `chezmoi managed` nor in
+`~/.config/dotfiles/skills.local`. Step 4 prompts core/local/skip; Step 5
+maps the choices to `chezmoi add` or an append to the local-mark file.
+Plugin-installed skills (`ouroboros:*`, `superpowers:*`, etc.) live under
+`~/.claude/plugins/` and are naturally filtered out.
+
+Verification: 8 spec tests passed (absorption sanity, idempotence, clean
+detection, positive detection of fake skill, suppression via
+`skills.local`, cleanup, plugin filter, project/user copy parity).
+
+Mirrored both copies of the slash command (`.claude/commands/dotfiles-sync.md`
+and `home/dot_claude/commands/dotfiles-sync.md`); diff exits 0.
+
+---
+
 ## [2026-05-01] docs: dedicated `docs/1password.md` workflow doc @ Hans-Air-M4
 
 After the S-47 → S-49 redesign arc shipped, the inline service-account
