@@ -24,9 +24,48 @@ on next `chezmoi apply`.
 
 ---
 
-## [2026-05-03] sync: 6 packages absorbed into core Brewfile @ Hans Air M4
+## [2026-05-03] sync: Brewfile + SSH + gitconfig batch @ Hans Air M4
 
-First /dotfiles-sync run after S-50 shipped. Promoted six packages to core:
+Multi-batch sync session. Brewfile + SSH + gitconfig changes; some asks
+turned out to be no-ops because the state was already correct.
+
+### Batch 2 (this session continuation): SSH + gitconfig
+
+SSH:
+  - tracked `~/.ssh/config.d/mini.local` -> `home/dot_ssh/config.d/private_mini.local`
+    (Tailscale + LAN-fallback hosts for `mini`. Internal hostnames only,
+    safe for public repo.)
+  - **deferred:** `~/.ssh/config.d/trading-egress-tokyo` -- contains a
+    public IP, non-standard SSH port, and purpose-revealing key name.
+    dwarvesf/dotfiles is PUBLIC; halted on adopt and presented user
+    with three options (local-only, templated via 1P, or accept-as-is).
+
+gitconfig:
+  - absorbed local `[init] templatedir = ~/.git_template` into
+    `home/dot_gitconfig.tmpl`. Post-edit `chezmoi cat ~/.gitconfig` matches
+    disk byte-for-byte.
+
+Casks ("absorb to core: 1password, font-jetbrains-mono, nordvpn, raycast"):
+  - All 4 were already in core (Brewfile). No source edits needed.
+  - 1Password.app, Raycast.app, NordVPN.app verified PRESENT in /Applications
+    (installed via direct download, not brew). Brewfile entries serve as
+    fresh-machine bootstrap; on this machine they're already covered.
+  - font-jetbrains-mono is the only genuine miss. User installs manually.
+
+Zed settings ("keep my local version"):
+  - `chezmoi status` reported `MM` but `diff <(chezmoi cat) ~/.config/zed/settings.json`
+    returned exit 0. No actual content drift. The `MM` is a cosmetic stale-cache
+    in chezmoi state DB, not real divergence. Leaving alone.
+
+Gitignore:
+  - added negation `!home/dot_ssh/config.d/*.local` so SSH fragments with
+    mDNS-style names (e.g. `mini.local`) can be tracked without removing
+    the broader `*.local` machine-override pattern.
+
+Side find: confirmed the fish-shadows-`diff` footgun still bites. Used
+`/usr/bin/diff` throughout this batch.
+
+### Batch 1 (earlier this session): 6 packages to core Brewfile
 
 Brewfile (core, AI Tools section):
   - added brew: opencode (was npm-only; now via brew)
