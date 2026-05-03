@@ -127,8 +127,10 @@ brew "yt-dlp"                 # youtube-dl successor
 # ── AI Tools ──────────────────────────────────────────────────────────
 brew "aichat"                 # multi-LLM CLI
 brew "agent-browser"          # CDP-based browser automation CLI for AI agents (Vercel Labs)
+brew "opencode"               # multi-LLM coding agent CLI (formerly npm i -g opencode-ai)
+brew "ollama"                 # local LLM runner (Llama, Mistral, etc.)
+brew "playwright-cli"         # standalone Playwright runner (separate from npm package)
 # llm via: uv tool install llm
-# opencode via: npm i -g opencode-ai
 # lightpanda (nightly headless browser for AI agents) installed via
 # .chezmoiscripts/run_onchange_after_install-lightpanda.sh.tmpl
 # (no Homebrew formula yet; nightly-only releases)
@@ -180,6 +182,7 @@ cask "qbittorrent"
 cask "gcloud-cli"             # GCP CLI tools (renamed from google-cloud-sdk)
 cask "zen-browser"            # privacy-focused browser (upstream renamed back from "zen" to "zen-browser")
 cask "wispr-flow"             # voice-to-text dictation
+cask "tailscale-app"          # Tailscale VPN/mesh networking GUI (renamed from "tailscale")
 
 # ── Fonts ─────────────────────────────────────────────────────────────
 cask "font-jetbrains-mono"
@@ -200,7 +203,7 @@ local_brewfile = File.expand_path("~/.Brewfile.local")
 eval(File.read(local_brewfile), binding) if File.exist?(local_brewfile)
 
 # ── npm Global Tools ─────────────────────────────────────────────────
-# npm i -g ccusage markdownlint-cli2 npm-check-updates opencode-ai
+# npm i -g ccusage markdownlint-cli2 npm-check-updates  # opencode now via brew
 
 # ── Cargo Tools ──────────────────────────────────────────────────────
 # cargo install obsidian-export

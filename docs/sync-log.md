@@ -24,6 +24,47 @@ on next `chezmoi apply`.
 
 ---
 
+## [2026-05-03] sync: 6 packages absorbed into core Brewfile @ Hans Air M4
+
+First /dotfiles-sync run after S-50 shipped. Promoted six packages to core:
+
+Brewfile (core, AI Tools section):
+  - added brew: opencode (was npm-only; now via brew)
+  - added brew: ollama (local LLM runner)
+  - added brew: playwright-cli (standalone Playwright runner)
+
+Brewfile (core, macOS Apps section):
+  - added cask: tailscale-app (renamed from "tailscale" upstream)
+
+Already in Brewfile, reaffirmed as core (still missing on this machine,
+user installs manually after brew CLI permission):
+  - brew: agent-browser
+  - brew: tmux
+
+Stale-comment cleanup:
+  - dropped "opencode via: npm i -g opencode-ai" (now via brew)
+  - dropped opencode-ai from npm-globals comment
+
+Skipped this round (deferred to next sync):
+  - 22 other untracked brew packages (incl. pandoc, rclone, xcodegen)
+  - 14 other untracked casks (incl. cursor, zen, tor-browser, conductor)
+  - 56 stale brew + 8 stale cask entries (no removals this run)
+  - VS Code extension drift (5 new, 1 stale)
+  - SSH config absorption (mini.local, trading-egress-tokyo)
+  - zed/settings.json `MM` drift (needs merge decision)
+  - .gitconfig drift (likely template re-render)
+  - 1 SSH key without 1P backup
+
+Pre-existing Brewfile bug surfaced (NOT introduced this run): `brew "terraform"`
+fails on `brew bundle install` because terraform was removed from the main
+Homebrew tap (BSL license). Fix: change to `brew "hashicorp/tap/terraform"`.
+Filed mentally as next-sync follow-up.
+
+Claude skill drift detection: clean (0 entries surfaced) - successful first
+post-S-50 sync, the new check works as designed.
+
+---
+
 ## [2026-05-03] feat(S-50): `/dotfiles-sync` detects user-authored Claude skill drift @ Hans Air M4
 
 Background: commit `0ce60e8` (#63, 2026-04-30) wired `~/.claude/skills/`
