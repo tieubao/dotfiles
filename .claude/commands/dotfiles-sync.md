@@ -62,6 +62,20 @@ comm -23 <(ls ~/.config/fish/functions/ 2>/dev/null | sort) <(chezmoi managed | 
 comm -23 <(ls ~/.ssh/config.d/ 2>/dev/null | sort) <(chezmoi managed | grep 'ssh/config.d/' | xargs -I{} basename {} | sort)
 ```
 
+### New Claude skills (user-authored, not managed by chezmoi)
+```bash
+# User-authored skills under ~/.claude/skills/ that are neither tracked in
+# chezmoi nor marked local. Plugin-installed skills live under
+# ~/.claude/plugins/, NOT ~/.claude/skills/, so this scan is naturally
+# filtered to the user's hand-rolled skills.
+comm -23 <(ls ~/.claude/skills/ 2>/dev/null | sort) \
+        <(cat <(chezmoi managed 2>/dev/null \
+                  | grep '^\.claude/skills/' \
+                  | awk -F/ '{print $3}' | sort -u) \
+              <(cat ~/.config/dotfiles/skills.local 2>/dev/null | sort) \
+              | sort -u)
+```
+
 ### SSH key backup status (notify-only)
 ```bash
 # Surface disk SSH keys with no 1Password counterpart. Purely informational:
@@ -152,6 +166,7 @@ If a prior session's sync report appears in the conversation, **treat it as a hi
 | "config file Y has drifted" | `diff <(chezmoi cat ~/Y) ~/Y` - exit 0 means no drift |
 | "package P is new" | re-run the `comm -23` brew/cask diff from Step 2 |
 | "extension E is new" | re-run the `comm -23` extension diff from Step 2 |
+| "skill S is new" | re-run the `comm -23` Claude-skills diff from Step 2 - if S is in `~/.config/dotfiles/skills.local` it is intentionally suppressed |
 | anything else | re-run the underlying scan command from Step 2 |
 
 If a prior claim no longer holds, **drop it from the report and note the discrepancy** ("prior report said X, but X is already resolved - skipping"). Never tell the user to perform interactive work without confirming the precondition currently holds.
@@ -205,6 +220,9 @@ New fish functions (N):
 New SSH configs (N):
   host1, host2, ...
 
+New Claude skills (N):
+  skill1, skill2, ... (user-authored, untracked)
+
 Secrets:
   [any findings or "no issues"]
 
@@ -245,6 +263,11 @@ You can say: "all core", "all local", or classify individually
 
 If the user says "do it all" without classifying, ask once: "Should new packages go to core (repo) or local (this machine)?" Default to local if the user doesn't specify.
 
+**For new Claude skills, the same three-way classification applies** (core / local / skip):
+- **core** -- generic skill useful on every machine; gets versioned in the repo
+- **local** -- machine-specific or experimental; suppressed from future syncs via `~/.config/dotfiles/skills.local`
+- **skip** -- decide later; resurfaces next sync
+
 ## Step 5: Execute
 
 Based on the user's decisions:
@@ -262,6 +285,8 @@ Based on the user's decisions:
 | Add VS Code ext to local | Append to `~/.config/code/extensions.local.txt` (create if needed) |
 | Track fish functions | `chezmoi add ~/.config/fish/functions/NAME.fish` |
 | Track SSH configs | `chezmoi add ~/.ssh/config.d/NAME` |
+| Track Claude skill (core) | `chezmoi add ~/.claude/skills/NAME` (whole directory tree, includes SKILL.md and any references/) |
+| Mark Claude skill (local) | `mkdir -p ~/.config/dotfiles && echo NAME >> ~/.config/dotfiles/skills.local` (one name per line; suppressed from future drift scans, not committed) |
 | Register secrets | Append to `home/.chezmoidata/secrets.toml` |
 | Bump guardrails pin | Replace both `v<old>` occurrences (the `REF="v..."` line and the `ref=v...` hash comment) in `home/.chezmoiscripts/run_onchange_after_claude-guardrails.sh.tmpl` with `v<new>`. Do NOT auto-apply; the user should run `chezmoi apply` after reviewing the release notes. |
 | Adopt SSH keys to 1P | Notify-only. User runs `dotfiles ssh adopt ~/.ssh/<name>` per key; the command is interactive and requires an active `op` session, so the sync skill never executes it automatically. |

@@ -12,10 +12,11 @@ LLM-maintained dotfiles pattern, see [llm-dotfiles.md](llm-dotfiles.md).
 The primary way to maintain this repo is to ask Claude.
 
 Run `/dotfiles-sync` in Claude Code (or just say "catch up with my
-dotfiles"). Claude scans your machine across 10 dimensions: config
+dotfiles"). Claude scans your machine across 11 dimensions: config
 drift, brew packages, casks, VS Code extensions, fish functions, SSH
-configs, secrets, and more. It reports what changed in plain language
-and waits for your instructions.
+configs, user-authored Claude skills (`~/.claude/skills/`), secrets,
+and more. It reports what changed in plain language and waits for
+your instructions.
 
 ```
 You:    /dotfiles-sync
@@ -100,6 +101,7 @@ packages available to move in each direction.
 | Tmux | `~/.config/tmux/tmux.local.conf` | `source-file -q` at end of tmux.conf |
 | Git | `~/.gitconfig.local` | `[include] path = ...` |
 | SSH | `~/.ssh/config.d/*` | `Include config.d/*` |
+| Claude skills | `~/.config/dotfiles/skills.local` (one skill name per line) | Read by `/dotfiles-sync` to suppress drift detection |
 
 All `.local` paths are in `.chezmoiignore`, so `chezmoi add` won't accidentally
 track them.
@@ -362,6 +364,7 @@ All subcommands have tab completions. Abbreviations expand on space (e.g. type `
 | Claude Code security (guardrails) variant | `run_onchange_after_claude-guardrails.sh.tmpl` hash comment | edit + `chezmoi apply` |
 | Personal Claude settings.json fields | `home/dot_claude/modify_settings.json` | edit + `chezmoi apply` |
 | Personal Claude rules (`~/.claude/CLAUDE.md`) | `home/dot_claude/modify_CLAUDE.md.tmpl` | edit + `chezmoi apply` |
+| User-authored Claude skill | `home/dot_claude/skills/NAME/` (full directory tree) | `chezmoi add ~/.claude/skills/NAME` (or surfaced automatically by `/dotfiles-sync`) |
 
 ### Walkthrough: add a new fish function
 
@@ -587,6 +590,54 @@ Run `chezmoi apply`. On `none`, the install script exits early and no
 guardrails are written; existing security fields in `~/.claude/settings.json`
 will stay until you remove them by hand (uninstall is not automatic, by
 design - silent removal of security is a bigger risk than leftover state).
+
+### Walkthrough: back up a Claude skill
+
+**Goal:** make a hand-written skill at `~/.claude/skills/my-skill/` survive a
+fresh-machine bootstrap and reach your other Macs.
+**File:** `home/dot_claude/skills/my-skill/` (whole directory tree)
+
+Two paths work, pick whichever fits the moment.
+
+**Easy path (next sync):** do nothing. The next time you run
+`/dotfiles-sync`, the skill is surfaced under "New Claude skills" with the
+standard prompt:
+
+```
+[Core]  versioned in repo, deployed to every machine
+[Local] this machine only (recorded in ~/.config/dotfiles/skills.local)
+[Skip]  decide later, resurfaces next sync
+```
+
+Choose **core** for skills you want everywhere; **local** for experimental
+or machine-specific ones.
+
+**Manual path (right now):**
+
+```fish
+chezmoi add ~/.claude/skills/my-skill   # whole directory: SKILL.md + any references/ + templates/
+chezmoi diff                            # review what got added
+git -C $(chezmoi source-path) add home/dot_claude/skills/my-skill
+git -C $(chezmoi source-path) commit -m "feat(claude): track my-skill under chezmoi"
+```
+
+**Expected result:** the skill is present at
+`home/dot_claude/skills/my-skill/` in the repo, and `chezmoi apply` on any
+other machine deploys it to `~/.claude/skills/my-skill/`. Plugin-installed
+skills live under `~/.claude/plugins/` (not `~/.claude/skills/`) and are
+filtered out of the drift scan, so the marketplace remains the source of
+truth for those.
+
+To stop tracking a skill that turned out to be machine-specific:
+
+```fish
+chezmoi forget ~/.claude/skills/my-skill
+mkdir -p ~/.config/dotfiles && echo my-skill >> ~/.config/dotfiles/skills.local
+```
+
+(`dotfiles local promote/demote` does not yet support skills the way it
+does brew, cask, and ext. Filed as a follow-up if the manual flow proves
+too clunky in practice.)
 
 ### Walkthrough: add a personal Claude Code setting
 
