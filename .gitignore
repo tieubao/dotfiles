@@ -28,3 +28,7 @@ key.txt
 # and these patterns block `git add` from catching anything that sneaks in.
 *.local
 *.local.*
+
+# SSH config fragments may legitimately contain ".local" (mDNS hostname
+# convention, e.g. mac-mini.local). Re-allow them inside config.d/.
+!home/dot_ssh/config.d/*.local
