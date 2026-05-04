@@ -6,6 +6,24 @@ context.
 
 ---
 
+## [2026-05-05] feat: track `vn-contract-format` Claude skill @ Hans Air M4
+
+Adopted user-authored skill `~/.claude/skills/vn-contract-format/` into the
+managed surface at `home/dot_claude/skills/vn-contract-format/`.
+
+Skill contents (3 files):
+  - `SKILL.md` (344 lines) -- print-ready Vietnamese legal documents
+    workflow (biên bản thanh lý, giấy uỷ quyền, etc.) with markdown +
+    python-docx generator, A4 / TNR 13pt styling.
+  - `references/build_bien_ban_thanh_ly.py` (453 lines)
+  - `references/build_giay_uy_quyen.py` (293 lines)
+
+Verified `chezmoi managed | grep vn-contract` lists all 4 entries; dry-run
+shows zero drift (source = target on this host). Will deploy on Mac mini
+on next `chezmoi apply`.
+
+---
+
 ## [2026-05-03] feat(S-50): `/dotfiles-sync` detects user-authored Claude skill drift @ Hans Air M4
 
 Background: commit `0ce60e8` (#63, 2026-04-30) wired `~/.claude/skills/`
