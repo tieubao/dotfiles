@@ -88,6 +88,24 @@ Full decision tree with install commands and caveats lives in the auto-suggested
 - `browser-tool-selection` (`~/.claude/skills/browser-tool-selection/SKILL.md`)
 - `cloudflare-tool-selection` (`~/.claude/skills/cloudflare-tool-selection/SKILL.md`)
 
+## Cross-repo personal tools (ops-toolkit)
+
+Han keeps a private monorepo at `tieubao/ops-toolkit` (`~/workspace/tieubao/ops-toolkit/`) for the personal-tools gradient: matured cross-repo tooling under `tools/`, scratch experiments and tech trials under `experiments/`. Lifecycle: experiment, then harden into `tools/` OR distill to public `tieubao/til`.
+
+**Suggest saving there when**:
+
+- Building a tool or script that is not tied to the current repo's domain.
+- Running a quick tech experiment with no obvious repo home.
+- User asks "where should I put this?" and no domain repo applies.
+
+**Do not suggest when**:
+
+- Artifact is domain-tied: `dfoundation` for ops / Notion / Xero / Hermes, `tieubao/trading` for PnL / strategy, `tieubao/neko` for the product, `tieubao/family-office` for personal cashflow / properties, etc.
+- Destination is public knowledge, which goes to `tieubao/til` via the privacy-strip path.
+- User has already named a destination.
+
+Full rules: `~/workspace/tieubao/ops-toolkit/CLAUDE.md`. A cross-repo discovery flywheel (auto-MANIFEST, CLI, SessionStart hook) is designed at `~/workspace/tieubao/dfoundation/docs/specs/infra/SPEC-044-ops-toolkit-consolidation.md` but parked; ignore that layer until unpark.
+
 ## Git and GitHub
 
 - Commits, branches, diffs, PRs: use `gh` CLI directly. Don't ask.
