@@ -6,6 +6,42 @@ context.
 
 ---
 
+## [2026-05-05] feat(/dotfiles-sync): privacy gate for SSH fragments + 1P-backup check @ Hans Air M4
+
+Follow-up to the SSH fragment refactor: the `/dotfiles-sync` command was the
+upstream cause of the leak (PR #69). Detection step surfaced new SSH fragments
+as a 3-way classify (core/local/skip) with no privacy gate, so `mini.local`
+got routed to `core` and committed plaintext into a public repo.
+
+Updates to both mirror copies of `dotfiles-sync.md`:
+
+- **Detection**: each new SSH fragment is now tagged `[clean]` or `[private]`
+  based on a heuristic (Tailscale `.ts.net` FQDN, IP in HostName, multi-segment
+  internal hostnames, non-standard SSH port, purpose-revealing identity-file
+  names like `id_ed25519_trading_vps`).
+- **Classification**: SSH fragments are now FOUR-way (core / local / private /
+  skip). The `private` route renames to `*.local` (gitignored) and creates a
+  1P Secure Note titled `SSH config: <name>`. Repo is PUBLIC; flagged-private
+  fragments must NEVER go to core.
+- **Backup-status check (notify-only)**: scan `~/.ssh/config.d/*.local`
+  fragments without a matching 1P Secure Note. Parallels the existing SSH-key
+  audit. Drops `OP_SERVICE_ACCOUNT_TOKEN` per S-49 dual-mode so the lookup
+  sees the user's full vault list (Notes may live in Private or Trading), not
+  just the SA-scoped subset.
+- **Action table**: new row "Back up SSH fragment privately" with the literal
+  `op item create` command. Existing "Track SSH configs" row now reads
+  "Track SSH configs (core)" and adds "only after verifying NO infra
+  fingerprint" as a guard.
+- **Report template**: SSH fragments show `[clean]` or `[⚠ private]` flags;
+  added a "SSH fragment backup status" section parallel to "SSH backup
+  status".
+
+Heuristic smoke-tested locally on three synthetic fragments (clean / private
+hostname / private port): all classified correctly. Mirror parity preserved
+(`/usr/bin/diff` returns 0).
+
+---
+
 ## [2026-05-05] security: move private SSH host fragments out of public source @ Hans Air M4
 
 PR #69 landed `home/dot_ssh/config.d/private_mini.local` as plaintext into
