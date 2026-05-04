@@ -467,6 +467,50 @@ Save and close.
 `~/.ssh/config` includes everything in `config.d/` via `Include config.d/*`.
 The change is auto-committed.
 
+> **Don't commit infra fingerprints.** This repo is public. SSH fragments
+> that contain internal Tailscale hostnames, public VPS IPs, non-standard
+> ports, or purpose-revealing key names belong in `~/.ssh/config.d/*.local`
+> (machine-only, gitignored) with the contents backed up to a 1Password
+> Secure Note. See the next walkthrough for the restore flow.
+
+### Walkthrough: restore private SSH host fragments
+
+**Goal:** on a fresh machine, restore SSH fragments that aren't in this repo
+because they fingerprint infrastructure (Tailscale hostnames, VPS IPs, etc.).
+
+**Backing store:** 1Password Secure Notes, one per fragment. Each note's
+`notesPlain` field holds the literal SSH config block.
+
+**Restore on a fresh machine:**
+
+```fish
+# Mac mini (personal infra, Private vault)
+op read "op://Private/SSH config: mini/notesPlain" \
+  > ~/.ssh/config.d/mini.local
+
+# Trading VPS (Trading vault)
+op read "op://Trading/SSH config: trading-egress-tokyo/notesPlain" \
+  > ~/.ssh/config.d/trading-egress-tokyo.local
+
+chmod 600 ~/.ssh/config.d/*.local
+```
+
+**Verify:** `ssh -G mini` (or whichever host) prints the resolved config.
+The main `~/.ssh/config` already does `Include config.d/*`, so untracked
+fragments dropped into that directory are picked up automatically.
+
+**Adding a new private fragment:**
+
+1. Edit `~/.ssh/config.d/<host>.local` directly with `chmod 600` afterward.
+2. Create a Secure Note in 1Password with title `SSH config: <host>` and
+   paste the contents into the notes field.
+3. The `*.local` suffix is gitignored repo-wide; nothing else to do.
+
+**Why this isn't `chezmoi`-templated:** the file is tiny, rarely changes,
+and `chezmoi apply` should stay popup-free. A Secure Note + a one-line
+`op read` on bootstrap is simpler than threading `onepasswordRead` through
+templates that fire a biometric on every apply.
+
 ### Walkthrough: back up your SSH keys
 
 **Goal:** make sure no SSH private key exists on only one machine, and keep

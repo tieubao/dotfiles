@@ -23,12 +23,12 @@ key.txt
 !.claude/commands
 !.claude/commands/*
 
-# Machine-specific overrides — never committed to the shared repo.
+# Machine-specific overrides, never committed to the shared repo.
 # Defense-in-depth: .chezmoiignore blocks `chezmoi add` from tracking these,
 # and these patterns block `git add` from catching anything that sneaks in.
+# SSH host fragments containing internal hostnames, public IPs, or anything
+# that fingerprints infrastructure live as `~/.ssh/config.d/*.local` on each
+# machine and are restored on fresh-machine bootstrap from 1Password Secure
+# Notes. See docs/guide.md > "Restore private SSH host fragments".
 *.local
 *.local.*
-
-# SSH config fragments may legitimately contain ".local" (mDNS hostname
-# convention, e.g. mac-mini.local). Re-allow them inside config.d/.
-!home/dot_ssh/config.d/*.local

@@ -6,6 +6,59 @@ context.
 
 ---
 
+## [2026-05-05] security: move private SSH host fragments out of public source @ Hans Air M4
+
+PR #69 landed `home/dot_ssh/config.d/private_mini.local` as plaintext into
+the public dwarvesf/dotfiles repo (commit `a1f532f`). Source exposed:
+internal Tailscale hostname `mac-mini-danang`, mDNS hostname
+`Mac-mini.local`, SSH user `server`, identity file path. The `private_`
+prefix only sets mode 0600 on the deployed file; the source on GitHub was
+world-readable.
+
+**Pattern decision:** machine-local file (`~/.ssh/config.d/*.local`,
+gitignored) + 1Password Secure Note backup, restored via a one-line
+`op read` on fresh-machine bootstrap. Rejected `onepasswordRead` (would
+trigger biometric on every `chezmoi apply`, violates design philosophy
+#5 "apply must be silent and idempotent"). Rejected `encrypted_` (chezmoi
+age) because the source still leaks file existence/structure and adds
+key-management surface for non-secret-grade hostname data. The local-only
+pattern aligns with existing `*.local` conventions (Brewfile, fish, tmux,
+gitconfig) and `dot_ssh/config.tmpl` already does `Include config.d/*` so
+untracked drop-ins work for free.
+
+**Bundled `trading-egress-tokyo`** (deferred Option A from PR #69 sync log)
+under the same pattern: contained a public VPS IP, non-standard SSH port,
+and purpose-revealing key name. Now lives only at
+`~/.ssh/config.d/trading-egress-tokyo` on Hans Air M4 with backup at
+`op://Trading/SSH config: trading-egress-tokyo/notesPlain`.
+
+**Git history:** NOT rewritten. Repo is public, has 2 forks, 6 stars; the
+plaintext blob is in commit `a1f532f` and was likely fetched by watchers
+within the merge window. Force-push is theatre with coordination cost.
+Treating the leaked hostname `mac-mini-danang` as already public going
+forward; Tailscale ACL + SSH key remain the actual security boundary, not
+hostname obscurity.
+
+Changes:
+  - `git rm home/dot_ssh/config.d/private_mini.local`
+  - `chezmoi forget ~/.ssh/config.d/mini.local` (deployed file preserved)
+  - `.gitignore`: dropped the `!home/dot_ssh/config.d/*.local` negation
+    that was added in PR #69; SSH fragments named `*.local` are now
+    blocked from `git add` defense-in-depth-style.
+  - `docs/guide.md`: added "Walkthrough: restore private SSH host
+    fragments" + a warning callout in "add an SSH host" about what
+    not to commit.
+
+1Password Secure Notes created (Hans Air M4 session):
+  - `op://Private/SSH config: mini/notesPlain`
+  - `op://Trading/SSH config: trading-egress-tokyo/notesPlain`
+
+Verification: `chezmoi apply --dry-run` shows no drift; `ssh -G mini`
+still resolves to `mac-mini-danang` (the deployed `~/.ssh/config.d/mini.local`
+remains in place); `git ls-files home/dot_ssh/config.d/` empty.
+
+---
+
 ## [2026-05-05] feat: track `vn-contract-format` Claude skill @ Hans Air M4
 
 Adopted user-authored skill `~/.claude/skills/vn-contract-format/` into the
