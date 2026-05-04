@@ -24,6 +24,117 @@ on next `chezmoi apply`.
 
 ---
 
+## [2026-05-03] sync: Brewfile + SSH + gitconfig batch @ Hans Air M4
+
+Multi-batch sync session. Brewfile + SSH + gitconfig changes; some asks
+turned out to be no-ops because the state was already correct.
+
+### Batch 2 (this session continuation): SSH + gitconfig
+
+SSH:
+  - tracked `~/.ssh/config.d/mini.local` -> `home/dot_ssh/config.d/private_mini.local`
+    (Tailscale + LAN-fallback hosts for `mini`. Internal hostnames only,
+    safe for public repo.)
+  - **`~/.ssh/config.d/trading-egress-tokyo` -> Option A (local-only, deferred decision):**
+    contains a public IP, non-standard SSH port, and purpose-revealing
+    key name. dwarvesf/dotfiles is PUBLIC. User chose to keep it on
+    Hans Air M4 only for now, will revisit (likely Option B: 1P-templated
+    when they want it on Mac mini too). No chezmoi adopt, no gitignore
+    change needed -- file simply remains untracked on disk. Future
+    `/dotfiles-sync` runs will continue to surface it; that's the
+    intended re-prompt cadence.
+
+gitconfig:
+  - absorbed local `[init] templatedir = ~/.git_template` into
+    `home/dot_gitconfig.tmpl`. Post-edit `chezmoi cat ~/.gitconfig` matches
+    disk byte-for-byte.
+
+Casks ("absorb to core: 1password, font-jetbrains-mono, nordvpn, raycast"):
+  - All 4 were already in core (Brewfile). No source edits needed.
+  - 1Password.app, Raycast.app, NordVPN.app verified PRESENT in /Applications
+    (installed via direct download, not brew). Brewfile entries serve as
+    fresh-machine bootstrap; on this machine they're already covered.
+  - font-jetbrains-mono is the only genuine miss. User installs manually.
+
+Zed settings ("keep my local version"):
+  - `chezmoi status` reported `MM` but `diff <(chezmoi cat) ~/.config/zed/settings.json`
+    returned exit 0. No actual content drift. The `MM` is a cosmetic stale-cache
+    in chezmoi state DB, not real divergence. Leaving alone.
+
+Gitignore:
+  - added negation `!home/dot_ssh/config.d/*.local` so SSH fragments with
+    mDNS-style names (e.g. `mini.local`) can be tracked without removing
+    the broader `*.local` machine-override pattern.
+
+Side find: confirmed the fish-shadows-`diff` footgun still bites. Used
+`/usr/bin/diff` throughout this batch.
+
+### Batch 3 (continuation): zen rename + zed state-cache refresh
+
+Brewfile:
+  - renamed `cask "zen-browser"` -> `cask "zen"` per upstream brew alias
+    (Zen Browser cask was renamed; both names worked but `zen` is now
+    canonical. Verified via `brew info --cask zen-browser` resolving to
+    `zen`.)
+
+Zed settings.json:
+  - User asked to "override dotfiles by my local version", but verified
+    the rendered template and disk are byte-identical (md5
+    206831e8b5b55e2ac9cb985fb324b3be on both sides). The `MM` flag in
+    `chezmoi status` was metadata-cache lag, not actual content drift.
+    Resolved with `chezmoi apply --force ~/.config/zed/settings.json`
+    (safe given the md5 match): file unchanged, MM cleared.
+  - No source edit needed; the template is correct.
+
+User-requested install/absorb to core (9 items):
+  - All 9 already in core Brewfile. No source edits needed for them.
+  - Already installed locally (no action): node, ripgrep, pnpm, zoxide.
+  - Need install (user runs manually after permission hook): rustup,
+    font-jetbrains-mono-nerd-font.
+  - **Risky** (already in /Applications via direct install): 1password,
+    raycast, nordvpn. `brew install --cask` would need `--force` to
+    overwrite. For 1Password specifically this could orphan vault data
+    and signed-in account state. Halted; awaiting user decision.
+
+### Batch 1 (earlier this session): 6 packages to core Brewfile
+
+Brewfile (core, AI Tools section):
+  - added brew: opencode (was npm-only; now via brew)
+  - added brew: ollama (local LLM runner)
+  - added brew: playwright-cli (standalone Playwright runner)
+
+Brewfile (core, macOS Apps section):
+  - added cask: tailscale-app (renamed from "tailscale" upstream)
+
+Already in Brewfile, reaffirmed as core (still missing on this machine,
+user installs manually after brew CLI permission):
+  - brew: agent-browser
+  - brew: tmux
+
+Stale-comment cleanup:
+  - dropped "opencode via: npm i -g opencode-ai" (now via brew)
+  - dropped opencode-ai from npm-globals comment
+
+Skipped this round (deferred to next sync):
+  - 22 other untracked brew packages (incl. pandoc, rclone, xcodegen)
+  - 14 other untracked casks (incl. cursor, zen, tor-browser, conductor)
+  - 56 stale brew + 8 stale cask entries (no removals this run)
+  - VS Code extension drift (5 new, 1 stale)
+  - SSH config absorption (mini.local, trading-egress-tokyo)
+  - zed/settings.json `MM` drift (needs merge decision)
+  - .gitconfig drift (likely template re-render)
+  - 1 SSH key without 1P backup
+
+Pre-existing Brewfile bug surfaced (NOT introduced this run): `brew "terraform"`
+fails on `brew bundle install` because terraform was removed from the main
+Homebrew tap (BSL license). Fix: change to `brew "hashicorp/tap/terraform"`.
+Filed mentally as next-sync follow-up.
+
+Claude skill drift detection: clean (0 entries surfaced) - successful first
+post-S-50 sync, the new check works as designed.
+
+---
+
 ## [2026-05-03] feat(S-50): `/dotfiles-sync` detects user-authored Claude skill drift @ Hans Air M4
 
 Background: commit `0ce60e8` (#63, 2026-04-30) wired `~/.claude/skills/`

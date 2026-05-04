@@ -1,0 +1,16 @@
+Host mini mac-mini-danang
+  HostName mac-mini-danang
+  User server
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  ForwardAgent yes
+  ServerAliveInterval 60
+  ServerAliveCountMax 3
+
+# Keep the old LAN-only entry around for offline / pre-Tailscale fallback.
+Host mini-lan
+  HostName Mac-mini.local
+  User server
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  ForwardAgent yes
