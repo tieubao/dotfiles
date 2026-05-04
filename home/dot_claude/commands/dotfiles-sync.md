@@ -58,8 +58,35 @@ comm -23 <(ls ~/.config/fish/functions/ 2>/dev/null | sort) <(chezmoi managed | 
 
 ### New SSH config fragments
 ```bash
-# SSH config.d files not managed
-comm -23 <(ls ~/.ssh/config.d/ 2>/dev/null | sort) <(chezmoi managed | grep 'ssh/config.d/' | xargs -I{} basename {} | sort)
+# SSH config.d files not managed by chezmoi.
+# Tag each one with a privacy verdict so the user can route to the right
+# destination. Repo is PUBLIC (dwarvesf/dotfiles), so any fragment matching
+# an infra-fingerprint pattern must NOT go to core; it belongs in a 1P
+# Secure Note with the on-disk file as `*.local` (gitignored).
+#
+# Patterns flagged as "private":
+#   - Tailscale .ts.net hostnames or any non-public hostname revealing infra
+#   - Public IPv4 addresses (rough match, excluding RFC1918 / 100.64/10 / loopback)
+#   - Non-standard SSH ports (Port other than 22)
+#   - Identity files with purpose-revealing names (id_ed25519_<purpose>)
+#
+# Output format: <name> [verdict]   where verdict is "clean" or "private".
+for f in $(comm -23 <(ls ~/.ssh/config.d/ 2>/dev/null | sort) \
+                    <(chezmoi managed | grep 'ssh/config.d/' | xargs -I{} basename {} | sort)); do
+  path=~/.ssh/config.d/$f
+  verdict="clean"
+  # Any of: tailnet FQDN, IP in HostName, multi-segment internal hostname,
+  # purpose-revealing identity file (id_<algo>_<purpose>)
+  if grep -qE '\.ts\.net|HostName +([0-9]{1,3}\.){3}[0-9]{1,3}|HostName +[a-z0-9]+(-[a-z0-9]+){1,}$|IdentityFile +.*id_[a-z0-9]+_[a-z]+' "$path" 2>/dev/null; then
+    verdict="private"
+  fi
+  # Non-standard SSH port (anything that isn't `Port 22`)
+  if grep -qE '^Port +[0-9]+' "$path" 2>/dev/null \
+     && ! grep -qE '^Port +22$' "$path" 2>/dev/null; then
+    verdict="private"
+  fi
+  echo "$f [$verdict]"
+done
 ```
 
 ### New Claude skills (user-authored, not managed by chezmoi)
@@ -74,6 +101,33 @@ comm -23 <(ls ~/.claude/skills/ 2>/dev/null | sort) \
                   | awk -F/ '{print $3}' | sort -u) \
               <(cat ~/.config/dotfiles/skills.local 2>/dev/null | sort) \
               | sort -u)
+```
+
+### SSH fragment backup status (notify-only)
+```bash
+# Surface ~/.ssh/config.d/*.local fragments that have no 1P Secure Note
+# backup. Pattern: a fragment named foo.local should have a corresponding
+# 1P item titled "SSH config: foo" in any vault the user has access to.
+# Notify-only; restoration is a one-line `op read` on fresh-machine bootstrap
+# (see docs/guide.md > "Restore private SSH host fragments").
+if command -v op >/dev/null 2>&1 \
+   && env -u OP_SERVICE_ACCOUNT_TOKEN op account get >/dev/null 2>&1; then
+  unbacked=()
+  for path in ~/.ssh/config.d/*.local; do
+    [ -e "$path" ] || continue
+    name=$(basename "$path" .local)
+    title="SSH config: $name"
+    if ! env -u OP_SERVICE_ACCOUNT_TOKEN op item get "$title" >/dev/null 2>&1; then
+      unbacked+=("$name")
+    fi
+  done
+  if [ "${#unbacked[@]}" -gt 0 ]; then
+    echo "ssh-config: ${#unbacked[@]} private fragment(s) with no 1P backup: ${unbacked[*]}"
+    echo "  (Notification only. To back up: op item create --category 'Secure Note' \\"
+    echo "   --title 'SSH config: <name>' --vault Private \\"
+    echo "   \"notesPlain=\$(cat ~/.ssh/config.d/<name>.local)\")"
+  fi
+fi
 ```
 
 ### SSH key backup status (notify-only)
@@ -218,7 +272,8 @@ New fish functions (N):
   func1, func2, ...
 
 New SSH configs (N):
-  host1, host2, ...
+  host1 [clean]
+  host2 [⚠ private] - contains infra fingerprint, must not go to core
 
 New Claude skills (N):
   skill1, skill2, ... (user-authored, untracked)
@@ -230,6 +285,10 @@ Secret cache (optional):
   Registered but not cached: VAR1, VAR2
   (Notification only. The first interactive shell on this machine will
    biometric-prompt once per secret; run 'exec fish' to trigger now.)
+
+SSH fragment backup status (optional):
+  <N> private fragment(s) with no 1P backup: <name1>, <name2>
+  (Notification only. Run the op item create snippet to back up.)
 
 SSH backup status (optional):
   <N> of <M> disk key(s) have no 1P backup: <key1>, <key2>
@@ -268,6 +327,19 @@ If the user says "do it all" without classifying, ask once: "Should new packages
 - **local** -- machine-specific or experimental; suppressed from future syncs via `~/.config/dotfiles/skills.local`
 - **skip** -- decide later; resurfaces next sync
 
+**For new SSH config fragments, classification is FOUR-way** (core / local / private / skip):
+- **core** -- generic, no infra fingerprints; safe in a public repo (rare)
+- **local** -- machine-specific, low-sensitivity; lives only on this machine
+- **private** -- contains internal hostnames, public IPs, non-standard ports, or
+  purpose-revealing key names; rename to `*.local` (gitignored) and back up to
+  a 1Password Secure Note titled `SSH config: <name>`. The repo is PUBLIC; do
+  NOT route flagged-private fragments to core, ever.
+- **skip** -- decide later; resurfaces next sync
+
+If the detection step flagged a fragment as `[private]`, the default
+recommendation is `private`. Do not route to `core` without an explicit user
+override AND verification that the file truly contains nothing sensitive.
+
 ## Step 5: Execute
 
 Based on the user's decisions:
@@ -284,7 +356,8 @@ Based on the user's decisions:
 | Add VS Code ext to core | Update `home/dot_config/code/extensions.txt` |
 | Add VS Code ext to local | Append to `~/.config/code/extensions.local.txt` (create if needed) |
 | Track fish functions | `chezmoi add ~/.config/fish/functions/NAME.fish` |
-| Track SSH configs | `chezmoi add ~/.ssh/config.d/NAME` |
+| Track SSH configs (core) | `chezmoi add ~/.ssh/config.d/NAME` (only after verifying NO infra fingerprint) |
+| Back up SSH fragment privately | Rename file to `~/.ssh/config.d/NAME.local` (`*.local` is gitignored), then `op item create --category 'Secure Note' --title "SSH config: NAME" --vault Private "notesPlain=$(cat ~/.ssh/config.d/NAME.local)"`. Do NOT `chezmoi add`. |
 | Track Claude skill (core) | `chezmoi add ~/.claude/skills/NAME` (whole directory tree, includes SKILL.md and any references/) |
 | Mark Claude skill (local) | `mkdir -p ~/.config/dotfiles && echo NAME >> ~/.config/dotfiles/skills.local` (one name per line; suppressed from future drift scans, not committed) |
 | Register secrets | Append to `home/.chezmoidata/secrets.toml` |
