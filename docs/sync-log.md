@@ -6,6 +6,46 @@ context.
 
 ---
 
+## [2026-05-05] security: rewrite history to scrub leaked SSH file @ Hans Air M4
+
+Following the privacy-gate work in PR #72, decided to also retroactively scrub
+the leaked `home/dot_ssh/config.d/private_mini.local` blob from git history
+on `main`. Earlier "leak is theatre, just sanitize forward" framing was
+revised: tooling was clean (no open PRs to rebase, no signed commits, no
+tags in range, both forks 33 days behind the leak), so the work-to-payoff
+ratio for a full rewrite was actually defensible.
+
+Sequence:
+  1. Verified backups: 1P Secure Notes `op://Private/SSH config: mini` and
+     `op://Trading/SSH config: trading-egress-tokyo` both readable; on-disk
+     `~/.ssh/config.d/mini.local` and `~/.ssh/config.d/trading-egress-tokyo`
+     both intact.
+  2. Tagged `pre-rewrite-2026-05-05` on origin (backup ref before rewrite).
+  3. `git filter-repo --invert-paths --path home/dot_ssh/config.d/private_mini.local --force`
+     rewrote 95 commits in 0.07s. The leaked blob
+     `9763977e34868e6c5145ae13f87547c096d37276` is now orphaned locally.
+  4. Branch-protection ruleset `"Protect main"` (id 14664913) was disabled
+     for ~13 seconds via gh API (PUT enforcement=disabled), force-pushed
+     `main` (`164eaeb` -> `7d2ff43`), then re-enabled (PUT enforcement=active).
+  5. Deleted the `pre-rewrite-2026-05-05` tag on origin (kept locally) so
+     no ref pins the orphaned commits.
+
+Verification: `gh api .../contents/home/dot_ssh/config.d/private_mini.local?ref=7d2ff43`
+returns 404. Direct blob SHA lookup still resolves on GitHub (orphan persists
+until GitHub's internal GC, typically days-weeks). For hostname-grade leaked
+content, accepting that residual SHA-cache rather than escalating to GitHub
+Support.
+
+Forks/collaborators: 2 forks (hieu-ht, redstrike) at SHA `f8c3c48` are 42
+commits behind the leak window and never pulled it. 3 admin collaborators
+(monotykamary, lmquang, zlatanpham) had no recent activity within the
+21-minute leak window. No coordination message sent.
+
+Local backup tag `pre-rewrite-2026-05-05` (pointing to `164eaeb`, the
+pre-rewrite tip) retained on Hans Air M4 for ~24h then will be deleted.
+
+---
+
 ## [2026-05-05] feat(/dotfiles-sync): privacy gate for SSH fragments + 1P-backup check @ Hans Air M4
 
 Follow-up to the SSH fragment refactor: the `/dotfiles-sync` command was the
